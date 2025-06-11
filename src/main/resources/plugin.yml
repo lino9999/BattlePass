@@ -1,0 +1,24 @@
+name: BattlePass
+version: '1.0'
+main: com.Lino.battlePass.BattlePass
+api-version: '1.21'
+author: Lino
+
+commands:
+  battlepass:
+    description: Open the BattlePass GUI
+    usage: /battlepass [reload]
+    aliases: [bp, pass]
+    permission: battlepass.use
+    permission-message: You don't have permission to use this command!
+
+permissions:
+  battlepass.use:
+    description: Allows use of /battlepass command
+    default: true
+  battlepass.premium:
+    description: Access to premium battlepass rewards
+    default: false
+  battlepass.admin:
+    description: Access to admin commands
+    default: op

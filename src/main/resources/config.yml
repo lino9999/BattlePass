@@ -1,0 +1,304 @@
+rewards:
+  free:
+    level-1:
+      material: IRON_INGOT
+      amount: 16
+    level-2:
+      material: GOLD_INGOT
+      amount: 8
+    level-3:
+      material: COAL
+      amount: 32
+    level-4:
+      material: REDSTONE
+      amount: 16
+    level-5:
+      material: LAPIS_LAZULI
+      amount: 16
+    level-6:
+      material: EMERALD
+      amount: 4
+    level-7:
+      material: DIAMOND
+      amount: 2
+    level-8:
+      material: IRON_BLOCK
+      amount: 2
+    level-9:
+      material: GOLD_BLOCK
+      amount: 1
+    level-10:
+      material: GOLDEN_APPLE
+      amount: 2
+    level-11:
+      material: ENDER_PEARL
+      amount: 8
+    level-12:
+      material: BLAZE_ROD
+      amount: 4
+    level-13:
+      material: GHAST_TEAR
+      amount: 2
+    level-14:
+      material: MAGMA_CREAM
+      amount: 8
+    level-15:
+      material: EXPERIENCE_BOTTLE
+      amount: 16
+    level-16:
+      material: QUARTZ
+      amount: 32
+    level-17:
+      material: GLOWSTONE
+      amount: 16
+    level-18:
+      material: PRISMARINE_SHARD
+      amount: 16
+    level-19:
+      material: PRISMARINE_CRYSTALS
+      amount: 8
+    level-20:
+      material: DIAMOND
+      amount: 4
+    level-21:
+      material: SLIME_BALL
+      amount: 16
+    level-22:
+      material: GUNPOWDER
+      amount: 16
+    level-23:
+      material: STRING
+      amount: 32
+    level-24:
+      material: SPIDER_EYE
+      amount: 8
+    level-25:
+      material: SHULKER_SHELL
+      amount: 1
+    level-26:
+      material: PHANTOM_MEMBRANE
+      amount: 4
+    level-27:
+      material: NAUTILUS_SHELL
+      amount: 2
+    level-28:
+      material: RABBIT_FOOT
+      amount: 4
+    level-29:
+      material: TURTLE_SCUTE
+      amount: 2
+    level-30:
+      material: ENCHANTED_BOOK
+      amount: 1
+    level-31:
+      material: IRON_HORSE_ARMOR
+      amount: 1
+    level-32:
+      material: GOLD_HORSE_ARMOR
+      amount: 1
+    level-33:
+      material: SADDLE
+      amount: 1
+    level-34:
+      material: NAME_TAG
+      amount: 2
+    level-35:
+      material: GOLDEN_CARROT
+      amount: 8
+    level-36:
+      material: GLISTERING_MELON_SLICE
+      amount: 8
+    level-37:
+      material: FERMENTED_SPIDER_EYE
+      amount: 4
+    level-38:
+      material: BLAZE_POWDER
+      amount: 8
+    level-39:
+      material: ENDER_EYE
+      amount: 2
+    level-40:
+      material: DIAMOND_BLOCK
+      amount: 1
+    level-41:
+      material: EMERALD_BLOCK
+      amount: 1
+    level-42:
+      material: ANCIENT_DEBRIS
+      amount: 1
+    level-43:
+      material: NETHERITE_SCRAP
+      amount: 1
+    level-44:
+      material: CRYING_OBSIDIAN
+      amount: 8
+    level-45:
+      material: RESPAWN_ANCHOR
+      amount: 1
+    level-46:
+      material: LODESTONE
+      amount: 1
+    level-47:
+      material: HONEYCOMB
+      amount: 16
+    level-48:
+      material: HONEY_BLOCK
+      amount: 4
+    level-49:
+      material: SHULKER_SHELL
+      amount: 2
+    level-50:
+      material: TOTEM_OF_UNDYING
+      amount: 1
+
+  premium:
+    level-1:
+      material: DIAMOND
+      amount: 8
+    level-2:
+      material: NETHERITE_INGOT
+      amount: 1
+    level-3:
+      material: GOLDEN_APPLE
+      amount: 4
+    level-4:
+      material: ENCHANTED_GOLDEN_APPLE
+      amount: 1
+    level-5:
+      material: BEACON
+      amount: 1
+    level-6:
+      material: ELYTRA
+      amount: 1
+    level-7:
+      material: NETHER_STAR
+      amount: 2
+    level-8:
+      material: DRAGON_HEAD
+      amount: 1
+    level-9:
+      material: HEART_OF_THE_SEA
+      amount: 1
+    level-10:
+      material: TOTEM_OF_UNDYING
+      amount: 2
+    level-11:
+      material: TRIDENT
+      amount: 1
+    level-12:
+      material: DIAMOND_HELMET
+      amount: 1
+    level-13:
+      material: DIAMOND_CHESTPLATE
+      amount: 1
+    level-14:
+      material: DIAMOND_LEGGINGS
+      amount: 1
+    level-15:
+      material: DIAMOND_BOOTS
+      amount: 1
+    level-16:
+      material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+      amount: 1
+    level-17:
+      material: DIAMOND_HORSE_ARMOR
+      amount: 1
+    level-18:
+      material: ENCHANTED_BOOK
+      amount: 3
+    level-19:
+      material: EXPERIENCE_BOTTLE
+      amount: 64
+    level-20:
+      material: DRAGON_EGG
+      amount: 1
+    level-21:
+      material: NETHERITE_HELMET
+      amount: 1
+    level-22:
+      material: NETHERITE_CHESTPLATE
+      amount: 1
+    level-23:
+      material: NETHERITE_LEGGINGS
+      amount: 1
+    level-24:
+      material: NETHERITE_BOOTS
+      amount: 1
+    level-25:
+      material: BEACON
+      amount: 2
+    level-26:
+      material: ENCHANTMENT_TABLE
+      amount: 1
+    level-27:
+      material: ANVIL
+      amount: 3
+    level-28:
+      material: BREWING_STAND
+      amount: 3
+    level-29:
+      material: ENDER_CHEST
+      amount: 2
+    level-30:
+      material: SHULKER_BOX
+      amount: 1
+    level-31:
+      material: CONDUIT
+      amount: 1
+    level-32:
+      material: MUSIC_DISC_PIGSTEP
+      amount: 1
+    level-33:
+      material: MUSIC_DISC_OTHERSIDE
+      amount: 1
+    level-34:
+      material: CREEPER_HEAD
+      amount: 1
+    level-35:
+      material: ZOMBIE_HEAD
+      amount: 1
+    level-36:
+      material: SKELETON_SKULL
+      amount: 1
+    level-37:
+      material: WITHER_SKELETON_SKULL
+      amount: 3
+    level-38:
+      material: NETHERITE_INGOT
+      amount: 3
+    level-39:
+      material: NETHERITE_BLOCK
+      amount: 1
+    level-40:
+      material: ELYTRA
+      amount: 2
+    level-41:
+      material: DRAGON_BREATH
+      amount: 16
+    level-42:
+      material: END_CRYSTAL
+      amount: 4
+    level-43:
+      material: CHORUS_FRUIT
+      amount: 32
+    level-44:
+      material: TOTEM_OF_UNDYING
+      amount: 3
+    level-45:
+      material: NETHER_STAR
+      amount: 4
+    level-46:
+      material: ENCHANTED_GOLDEN_APPLE
+      amount: 3
+    level-47:
+      material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+      amount: 3
+    level-48:
+      material: MACE
+      amount: 1
+    level-49:
+      material: HEAVY_CORE
+      amount: 1
+    level-50:
+      material: DRAGON_EGG
+      amount: 2
