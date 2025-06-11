@@ -18,6 +18,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -28,6 +29,7 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public class BattlePass extends JavaPlugin implements Listener, CommandExecutor {
 
@@ -39,6 +41,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     private final List<Reward> premiumRewards = new ArrayList<>();
     private FileConfiguration config;
     private LocalDateTime nextMissionReset;
+    private LocalDateTime seasonEndDate;
+    private int seasonDuration = 30;
 
     @Override
     public void onEnable() {
@@ -47,6 +51,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
         getServer().getPluginManager().registerEvents(this, this);
         initDatabase();
+        loadSeasonData();
         loadRewardsFromConfig();
         generateDailyMissions();
         calculateNextReset();
@@ -58,6 +63,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             public void run() {
                 saveAllPlayers();
                 checkMissionReset();
+                checkSeasonReset();
+                checkRewardNotifications();
             }
         }.runTaskTimer(this, 6000L, 1200L);
 
@@ -67,6 +74,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     @Override
     public void onDisable() {
         saveAllPlayers();
+        saveSeasonData();
         try {
             if (connection != null && !connection.isClosed()) {
                 connection.close();
@@ -113,7 +121,9 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                             "xp INTEGER DEFAULT 0," +
                             "level INTEGER DEFAULT 1," +
                             "claimed_free TEXT DEFAULT ''," +
-                            "claimed_premium TEXT DEFAULT '')"
+                            "claimed_premium TEXT DEFAULT ''," +
+                            "last_notification INTEGER DEFAULT 0," +
+                            "total_levels INTEGER DEFAULT 0)"
             );
 
             stmt.executeUpdate(
@@ -125,10 +135,153 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                             "PRIMARY KEY (uuid, mission, date))"
             );
 
+            stmt.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS season_data (" +
+                            "id INTEGER PRIMARY KEY," +
+                            "end_date TEXT," +
+                            "duration INTEGER)"
+            );
+
             stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    private void loadSeasonData() {
+        try {
+            PreparedStatement ps = connection.prepareStatement("SELECT * FROM season_data WHERE id = 1");
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                seasonEndDate = LocalDateTime.parse(rs.getString("end_date"));
+                seasonDuration = rs.getInt("duration");
+
+                if (LocalDateTime.now().isAfter(seasonEndDate)) {
+                    resetSeason();
+                }
+            } else {
+                seasonDuration = config.getInt("season.duration", 30);
+                seasonEndDate = LocalDateTime.now().plusDays(seasonDuration);
+                saveSeasonData();
+            }
+
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            seasonDuration = 30;
+            seasonEndDate = LocalDateTime.now().plusDays(seasonDuration);
+        }
+    }
+
+    private void saveSeasonData() {
+        try {
+            PreparedStatement ps = connection.prepareStatement(
+                    "INSERT OR REPLACE INTO season_data (id, end_date, duration) VALUES (1, ?, ?)"
+            );
+            ps.setString(1, seasonEndDate.toString());
+            ps.setInt(2, seasonDuration);
+            ps.executeUpdate();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void checkSeasonReset() {
+        if (LocalDateTime.now().isAfter(seasonEndDate)) {
+            resetSeason();
+        }
+    }
+
+    private void resetSeason() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.sendMessage("§6§l[SEASON RESET] §eThe Battle Pass season has ended! A new season begins now!");
+            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
+        }
+
+        try {
+            Statement stmt = connection.createStatement();
+            stmt.executeUpdate("UPDATE players SET xp = 0, level = 1, claimed_free = '', claimed_premium = ''");
+            stmt.executeUpdate("DELETE FROM missions");
+            stmt.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        playerCache.clear();
+        seasonEndDate = LocalDateTime.now().plusDays(seasonDuration);
+        saveSeasonData();
+        generateDailyMissions();
+    }
+
+    private String getTimeUntilSeasonEnd() {
+        LocalDateTime now = LocalDateTime.now();
+        long days = ChronoUnit.DAYS.between(now, seasonEndDate);
+        long hours = ChronoUnit.HOURS.between(now, seasonEndDate) % 24;
+
+        return String.format("%dd %dh", days, hours);
+    }
+
+    private void checkRewardNotifications() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            PlayerData data = loadPlayer(player.getUniqueId());
+            int availableRewards = countAvailableRewards(player, data);
+
+            if (availableRewards > data.lastNotification) {
+                player.sendMessage("§6§l[BATTLE PASS] §eYou have §f" + (availableRewards - data.lastNotification) + " §enew rewards to claim!");
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+                data.lastNotification = availableRewards;
+            }
+        }
+    }
+
+    private int countAvailableRewards(Player player, PlayerData data) {
+        int count = 0;
+        boolean hasPremium = player.hasPermission("battlepass.premium");
+
+        for (Reward reward : freeRewards) {
+            if (data.level >= reward.level && !data.claimedFreeRewards.contains(reward.level)) {
+                count++;
+            }
+        }
+
+        if (hasPremium) {
+            for (Reward reward : premiumRewards) {
+                if (data.level >= reward.level && !data.claimedPremiumRewards.contains(reward.level)) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    private List<PlayerData> getTop10Players() {
+        List<PlayerData> allPlayers = new ArrayList<>();
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(
+                    "SELECT * FROM players ORDER BY total_levels DESC, level DESC, xp DESC LIMIT 10"
+            );
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                PlayerData data = new PlayerData(UUID.fromString(rs.getString("uuid")));
+                data.xp = rs.getInt("xp");
+                data.level = rs.getInt("level");
+                data.totalLevels = rs.getInt("total_levels");
+                allPlayers.add(data);
+            }
+
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return allPlayers;
     }
 
     private void loadRewardsFromConfig() {
@@ -237,6 +390,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             if (rs.next()) {
                 data.xp = rs.getInt("xp");
                 data.level = rs.getInt("level");
+                data.lastNotification = rs.getInt("last_notification");
+                data.totalLevels = rs.getInt("total_levels");
 
                 String claimedFree = rs.getString("claimed_free");
                 if (!claimedFree.isEmpty()) {
@@ -253,7 +408,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 }
             } else {
                 PreparedStatement insert = connection.prepareStatement(
-                        "INSERT INTO players (uuid, xp, level, claimed_free, claimed_premium) VALUES (?, 0, 1, '', '')"
+                        "INSERT INTO players (uuid, xp, level, claimed_free, claimed_premium, last_notification, total_levels) VALUES (?, 0, 1, '', '', 0, 0)"
                 );
                 insert.setString(1, uuid.toString());
                 insert.executeUpdate();
@@ -292,13 +447,15 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
         try {
             PreparedStatement ps = connection.prepareStatement(
-                    "UPDATE players SET xp = ?, level = ?, claimed_free = ?, claimed_premium = ? WHERE uuid = ?"
+                    "UPDATE players SET xp = ?, level = ?, claimed_free = ?, claimed_premium = ?, last_notification = ?, total_levels = ? WHERE uuid = ?"
             );
             ps.setInt(1, data.xp);
             ps.setInt(2, data.level);
             ps.setString(3, String.join(",", data.claimedFreeRewards.stream().map(String::valueOf).toArray(String[]::new)));
             ps.setString(4, String.join(",", data.claimedPremiumRewards.stream().map(String::valueOf).toArray(String[]::new)));
-            ps.setString(5, uuid.toString());
+            ps.setInt(5, data.lastNotification);
+            ps.setInt(6, data.totalLevels);
+            ps.setString(7, uuid.toString());
             ps.executeUpdate();
             ps.close();
 
@@ -328,7 +485,19 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        loadPlayer(event.getPlayer().getUniqueId());
+        Player player = event.getPlayer();
+        PlayerData data = loadPlayer(player.getUniqueId());
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                int available = countAvailableRewards(player, data);
+                if (available > 0) {
+                    player.sendMessage("§6§l[BATTLE PASS] §eYou have §f" + available + " §erewards available to claim!");
+                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+                }
+            }
+        }.runTaskLater(this, 40L);
     }
 
     @EventHandler
@@ -417,8 +586,15 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         while (data.xp >= requiredXP && data.level < 54) {
             data.xp -= requiredXP;
             data.level++;
+            data.totalLevels++;
             player.sendMessage("§6§lLEVEL UP! §fYou are now level §e" + data.level);
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+
+            int available = countAvailableRewards(player, data);
+            if (available > 0) {
+                player.sendMessage("§e§lNEW REWARDS! §fYou have new rewards available to claim!");
+            }
+
             requiredXP = data.level * 200;
         }
     }
@@ -438,6 +614,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 "§7XP: §e" + data.xp + "§7/§e" + (data.level * 200),
                 "",
                 "§7Premium Pass: " + (hasPremium ? "§a§lACTIVE" : "§c§lINACTIVE"),
+                "§7Season Ends: §e" + getTimeUntilSeasonEnd(),
                 "",
                 "§7Complete missions to earn XP",
                 "§7and unlock rewards!"
@@ -512,6 +689,70 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         missions.setItemMeta(missionsMeta);
         gui.setItem(49, missions);
 
+        ItemStack leaderboard = new ItemStack(Material.GOLDEN_HELMET);
+        ItemMeta leaderMeta = leaderboard.getItemMeta();
+        leaderMeta.setDisplayName("§6§lLeaderboard");
+        leaderMeta.setLore(Arrays.asList(
+                "§7View the top 10 players",
+                "§7with highest battle pass levels!",
+                "",
+                "§e§lCLICK TO VIEW"
+        ));
+        leaderboard.setItemMeta(leaderMeta);
+        gui.setItem(48, leaderboard);
+
+        player.openInventory(gui);
+    }
+
+    private void openLeaderboardGUI(Player player) {
+        Inventory gui = Bukkit.createInventory(null, 54, "§6§lBattle Pass Leaderboard");
+
+        ItemStack title = new ItemStack(Material.GOLDEN_HELMET);
+        ItemMeta titleMeta = title.getItemMeta();
+        titleMeta.setDisplayName("§6§lTop 10 Players");
+        titleMeta.setLore(Arrays.asList(
+                "§7Season ends in: §e" + getTimeUntilSeasonEnd(),
+                "",
+                "§7Compete for the top spots!"
+        ));
+        title.setItemMeta(titleMeta);
+        gui.setItem(4, title);
+
+        List<PlayerData> topPlayers = getTop10Players();
+        int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
+
+        for (int i = 0; i < topPlayers.size() && i < 10; i++) {
+            PlayerData topPlayer = topPlayers.get(i);
+            String playerName = Bukkit.getOfflinePlayer(topPlayer.uuid).getName();
+
+            ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
+            SkullMeta skullMeta = (SkullMeta) skull.getItemMeta();
+            skullMeta.setOwningPlayer(Bukkit.getOfflinePlayer(topPlayer.uuid));
+
+            String rank = "§7#" + (i + 1);
+            if (i == 0) rank = "§6§l#1";
+            else if (i == 1) rank = "§7§l#2";
+            else if (i == 2) rank = "§c§l#3";
+
+            skullMeta.setDisplayName(rank + " §f" + playerName);
+            skullMeta.setLore(Arrays.asList(
+                    "§7Level: §e" + topPlayer.level,
+                    "§7Total Levels: §e" + topPlayer.totalLevels,
+                    "§7XP: §e" + topPlayer.xp,
+                    "",
+                    topPlayer.uuid.equals(player.getUniqueId()) ? "§a§lTHIS IS YOU!" : "§7Keep grinding to beat them!"
+            ));
+            skull.setItemMeta(skullMeta);
+            gui.setItem(slots[i], skull);
+        }
+
+        ItemStack back = new ItemStack(Material.BARRIER);
+        ItemMeta backMeta = back.getItemMeta();
+        backMeta.setDisplayName("§c§lBack");
+        backMeta.setLore(Arrays.asList("§7Return to Battle Pass"));
+        back.setItemMeta(backMeta);
+        gui.setItem(49, back);
+
         player.openInventory(gui);
     }
 
@@ -579,6 +820,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     "§7Reward: §f" + reward.amount + "x " + formatMaterial(reward.material),
                     "§7Required Level: §e" + reward.level,
                     "",
+                    "§7Season ends in: §c" + getTimeUntilSeasonEnd(),
+                    "",
                     "§a§lCLICK TO CLAIM!"
             ));
         } else if (claimedSet.contains(reward.level)) {
@@ -588,6 +831,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             meta.setLore(Arrays.asList(
                     "§7Reward: §f" + reward.amount + "x " + formatMaterial(reward.material),
                     "§7Required Level: §e" + reward.level,
+                    "",
+                    "§7Season ends in: §c" + getTimeUntilSeasonEnd(),
                     "",
                     "§7§lALREADY CLAIMED"
             ));
@@ -599,6 +844,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     "§7Reward: §f" + reward.amount + "x " + formatMaterial(reward.material),
                     "§7Required Level: §e" + reward.level,
                     "",
+                    "§7Season ends in: §c" + getTimeUntilSeasonEnd(),
+                    "",
                     "§6§lPREMIUM ONLY"
             ));
         } else {
@@ -608,6 +855,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             meta.setLore(Arrays.asList(
                     "§7Reward: §f" + reward.amount + "x " + formatMaterial(reward.material),
                     "§7Required Level: §e" + reward.level,
+                    "",
+                    "§7Season ends in: §c" + getTimeUntilSeasonEnd(),
                     "",
                     "§c§lLOCKED (Level " + reward.level + " Required)"
             ));
@@ -621,7 +870,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     public void onInventoryClick(InventoryClickEvent event) {
         String title = event.getView().getTitle();
 
-        if (title.startsWith("§6§lBattle Pass")) {
+        if (title.startsWith("§6§lBattle Pass") && !title.contains("Leaderboard")) {
             event.setCancelled(true);
             Player player = (Player) event.getWhoClicked();
             ItemStack clicked = event.getCurrentItem();
@@ -639,6 +888,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 }
             } else if (clicked.getType() == Material.BOOK) {
                 openMissionsGUI(player);
+            } else if (clicked.getType() == Material.GOLDEN_HELMET) {
+                openLeaderboardGUI(player);
             } else if (clicked.getType() == Material.CHEST_MINECART) {
                 PlayerData data = loadPlayer(player.getUniqueId());
                 int slot = event.getSlot();
@@ -681,6 +932,14 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     }
                 }
             }
+        } else if (title.equals("§6§lBattle Pass Leaderboard")) {
+            event.setCancelled(true);
+
+            if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.BARRIER) {
+                Player player = (Player) event.getWhoClicked();
+                int page = currentPages.getOrDefault(player.getEntityId(), 1);
+                openBattlePassGUI(player, page);
+            }
         } else if (title.equals("§b§lDaily Missions")) {
             event.setCancelled(true);
 
@@ -700,6 +959,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         UUID uuid;
         int xp = 0;
         int level = 1;
+        int lastNotification = 0;
+        int totalLevels = 0;
         Map<String, Integer> missionProgress = new HashMap<>();
         Set<Integer> claimedFreeRewards = new HashSet<>();
         Set<Integer> claimedPremiumRewards = new HashSet<>();

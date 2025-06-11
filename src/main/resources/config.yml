@@ -1,3 +1,6 @@
+season:
+  duration: 30
+
 rewards:
   free:
     level-1:
