@@ -604,6 +604,11 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         PlayerData data = loadPlayer(player.getUniqueId());
         boolean hasPremium = player.hasPermission("battlepass.premium");
 
+        // Debug del permesso
+        if (hasPremium) {
+            getLogger().info(player.getName() + " has premium permission!");
+        }
+
         currentPages.put(player.getEntityId(), page);
 
         ItemStack info = new ItemStack(Material.NETHER_STAR);
@@ -812,6 +817,11 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         ItemStack item;
         ItemMeta meta;
 
+        // Debug
+        if (isPremium) {
+            getLogger().info("Creating premium reward item - Level: " + reward.level + ", HasAccess: " + hasAccess + ", PlayerLevel: " + data.level);
+        }
+
         if (data.level >= reward.level && hasAccess && !claimedSet.contains(reward.level)) {
             item = new ItemStack(Material.CHEST_MINECART, 1);
             meta = item.getItemMeta();
@@ -900,19 +910,31 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     int index = slot - 9;
                     int level = startLevel + index;
 
-                    if (player.hasPermission("battlepass.premium")) {
+                    // Ricontrolla il permesso al momento del click
+                    boolean hasPremium = player.hasPermission("battlepass.premium");
+                    getLogger().info("Click premium reward - Player: " + player.getName() + ", Has premium: " + hasPremium);
+
+                    if (hasPremium) {
                         Reward reward = premiumRewards.stream()
                                 .filter(r -> r.level == level)
                                 .findFirst()
                                 .orElse(null);
 
-                        if (reward != null && data.level >= reward.level && !data.claimedPremiumRewards.contains(reward.level)) {
-                            data.claimedPremiumRewards.add(reward.level);
-                            player.getInventory().addItem(new ItemStack(reward.material, reward.amount));
-                            player.sendMessage("§6§lPremium Reward Claimed! §fYou received " + reward.amount + "x " + formatMaterial(reward.material));
-                            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-                            openBattlePassGUI(player, currentPage);
+                        if (reward != null) {
+                            getLogger().info("Found reward for level " + level + ", player level: " + data.level);
+                            if (data.level >= reward.level && !data.claimedPremiumRewards.contains(reward.level)) {
+                                data.claimedPremiumRewards.add(reward.level);
+                                player.getInventory().addItem(new ItemStack(reward.material, reward.amount));
+                                player.sendMessage("§6§lPremium Reward Claimed! §fYou received " + reward.amount + "x " + formatMaterial(reward.material));
+                                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                                openBattlePassGUI(player, currentPage);
+                            } else {
+                                player.sendMessage("§cYou cannot claim this reward!");
+                            }
                         }
+                    } else {
+                        player.sendMessage("§c§lYou need the Premium Pass to claim this reward!");
+                        player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                     }
                 } else if (slot >= 27 && slot <= 35) {
                     int index = slot - 27;
@@ -923,12 +945,15 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                             .findFirst()
                             .orElse(null);
 
-                    if (reward != null && data.level >= reward.level && !data.claimedFreeRewards.contains(reward.level)) {
-                        data.claimedFreeRewards.add(reward.level);
-                        player.getInventory().addItem(new ItemStack(reward.material, reward.amount));
-                        player.sendMessage("§a§lFree Reward Claimed! §fYou received " + reward.amount + "x " + formatMaterial(reward.material));
-                        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-                        openBattlePassGUI(player, currentPage);
+                    if (reward != null) {
+                        getLogger().info("Free reward click - Level " + level + ", player level: " + data.level);
+                        if (data.level >= reward.level && !data.claimedFreeRewards.contains(reward.level)) {
+                            data.claimedFreeRewards.add(reward.level);
+                            player.getInventory().addItem(new ItemStack(reward.material, reward.amount));
+                            player.sendMessage("§a§lFree Reward Claimed! §fYou received " + reward.amount + "x " + formatMaterial(reward.material));
+                            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                            openBattlePassGUI(player, currentPage);
+                        }
                     }
                 }
             }
