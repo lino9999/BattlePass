@@ -150,6 +150,18 @@ rewards:
     level-50:
       material: TOTEM_OF_UNDYING
       amount: 1
+    level-51:
+      material: COPPER_BLOCK
+      amount: 16
+    level-52:
+      material: AMETHYST_SHARD
+      amount: 32
+    level-53:
+      material: ECHO_SHARD
+      amount: 4
+    level-54:
+      material: NETHER_STAR
+      amount: 1
 
   premium:
     level-1:
@@ -294,11 +306,23 @@ rewards:
       material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
       amount: 3
     level-48:
-      material: MACE
+      material: NETHERITE_SWORD
       amount: 1
     level-49:
-      material: HEAVY_CORE
-      amount: 1
+      material: AMETHYST_BLOCK
+      amount: 8
     level-50:
       material: DRAGON_EGG
       amount: 2
+    level-51:
+      material: ECHO_SHARD
+      amount: 8
+    level-52:
+      material: SPYGLASS
+      amount: 1
+    level-53:
+      material: RECOVERY_COMPASS
+      amount: 1
+    level-54:
+      material: DRAGON_EGG
+      amount: 3

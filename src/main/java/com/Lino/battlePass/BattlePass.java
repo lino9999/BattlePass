@@ -135,7 +135,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         freeRewards.clear();
         premiumRewards.clear();
 
-        for (int i = 1; i <= 50; i++) {
+        for (int i = 1; i <= 54; i++) {
             String freePath = "rewards.free.level-" + i;
             String premiumPath = "rewards.premium.level-" + i;
 
@@ -414,7 +414,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
     private void checkLevelUp(Player player, PlayerData data) {
         int requiredXP = data.level * 200;
-        while (data.xp >= requiredXP && data.level < 50) {
+        while (data.xp >= requiredXP && data.level < 54) {
             data.xp -= requiredXP;
             data.level++;
             player.sendMessage("§6§lLEVEL UP! §fYou are now level §e" + data.level);
@@ -434,7 +434,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         ItemMeta infoMeta = info.getItemMeta();
         infoMeta.setDisplayName("§6§lYour Progress");
         infoMeta.setLore(Arrays.asList(
-                "§7Level: §e" + data.level + "§7/§e50",
+                "§7Level: §e" + data.level + "§7/§e54",
                 "§7XP: §e" + data.xp + "§7/§e" + (data.level * 200),
                 "",
                 "§7Premium Pass: " + (hasPremium ? "§a§lACTIVE" : "§c§lINACTIVE"),
@@ -446,9 +446,9 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         gui.setItem(4, info);
 
         int startLevel = (page - 1) * 9 + 1;
-        int endLevel = Math.min(startLevel + 8, 50);
+        int endLevel = Math.min(startLevel + 8, 54);
 
-        for (int i = 0; i <= 8 && startLevel + i <= 50; i++) {
+        for (int i = 0; i <= 8 && startLevel + i <= 54; i++) {
             int level = startLevel + i;
 
             Reward premium = premiumRewards.stream()
@@ -459,6 +459,12 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             if (premium != null) {
                 ItemStack premiumItem = createRewardItem(premium, data, hasPremium, true);
                 gui.setItem(9 + i, premiumItem);
+            } else {
+                ItemStack empty = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1);
+                ItemMeta emptyMeta = empty.getItemMeta();
+                emptyMeta.setDisplayName(" ");
+                empty.setItemMeta(emptyMeta);
+                gui.setItem(9 + i, empty);
             }
 
             Reward free = freeRewards.stream()
@@ -468,15 +474,21 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
             if (free != null) {
                 ItemStack freeItem = createRewardItem(free, data, true, false);
-                gui.setItem(18 + i, freeItem);
+                gui.setItem(27 + i, freeItem);
+            } else {
+                ItemStack empty = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1);
+                ItemMeta emptyMeta = empty.getItemMeta();
+                emptyMeta.setDisplayName(" ");
+                empty.setItemMeta(emptyMeta);
+                gui.setItem(27 + i, empty);
             }
         }
 
-        ItemStack separator = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemStack separator = new ItemStack(Material.GRAY_STAINED_GLASS_PANE, 1);
         ItemMeta sepMeta = separator.getItemMeta();
         sepMeta.setDisplayName(" ");
         separator.setItemMeta(sepMeta);
-        for (int i = 27; i < 36; i++) {
+        for (int i = 18; i < 27; i++) {
             gui.setItem(i, separator);
         }
 
@@ -489,7 +501,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             gui.setItem(45, prevPage);
         }
 
-        if (endLevel < 50) {
+        if (endLevel < 54) {
             ItemStack nextPage = new ItemStack(Material.ARROW);
             ItemMeta nextMeta = nextPage.getItemMeta();
             nextMeta.setDisplayName("§e§lNext Page");
@@ -635,7 +647,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 }
             } else if (clicked.getType() == Material.BOOK) {
                 openMissionsGUI(player);
-            } else if (clicked.getType() == Material.LIME_STAINED_GLASS_PANE) {
+            } else if (clicked.getType() == Material.CHEST_MINECART) {
                 PlayerData data = loadPlayer(player.getUniqueId());
                 int slot = event.getSlot();
                 int currentPage = currentPages.getOrDefault(player.getEntityId(), 1);
@@ -659,8 +671,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                             openBattlePassGUI(player, currentPage);
                         }
                     }
-                } else if (slot >= 18 && slot <= 26) {
-                    int index = slot - 18;
+                } else if (slot >= 27 && slot <= 35) {
+                    int index = slot - 27;
                     int level = startLevel + index;
 
                     Reward reward = freeRewards.stream()
