@@ -459,12 +459,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             if (premium != null) {
                 ItemStack premiumItem = createRewardItem(premium, data, hasPremium, true);
                 gui.setItem(9 + i, premiumItem);
-            } else {
-                ItemStack empty = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1);
-                ItemMeta emptyMeta = empty.getItemMeta();
-                emptyMeta.setDisplayName(" ");
-                empty.setItemMeta(emptyMeta);
-                gui.setItem(9 + i, empty);
             }
 
             Reward free = freeRewards.stream()
@@ -475,12 +469,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             if (free != null) {
                 ItemStack freeItem = createRewardItem(free, data, true, false);
                 gui.setItem(27 + i, freeItem);
-            } else {
-                ItemStack empty = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1);
-                ItemMeta emptyMeta = empty.getItemMeta();
-                emptyMeta.setDisplayName(" ");
-                empty.setItemMeta(emptyMeta);
-                gui.setItem(27 + i, empty);
             }
         }
 
@@ -579,12 +567,13 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     }
 
     private ItemStack createRewardItem(Reward reward, PlayerData data, boolean hasAccess, boolean isPremium) {
-        ItemStack item = new ItemStack(reward.material, reward.amount);
-        ItemMeta meta = item.getItemMeta();
-
         Set<Integer> claimedSet = isPremium ? data.claimedPremiumRewards : data.claimedFreeRewards;
+        ItemStack item;
+        ItemMeta meta;
 
         if (data.level >= reward.level && hasAccess && !claimedSet.contains(reward.level)) {
+            item = new ItemStack(Material.CHEST_MINECART, 1);
+            meta = item.getItemMeta();
             meta.setDisplayName("§a§lLevel " + reward.level + " " + (isPremium ? "Premium" : "Free") + " Reward");
             meta.setLore(Arrays.asList(
                     "§7Reward: §f" + reward.amount + "x " + formatMaterial(reward.material),
@@ -592,8 +581,9 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     "",
                     "§a§lCLICK TO CLAIM!"
             ));
-            item.setType(Material.LIME_STAINED_GLASS_PANE);
         } else if (claimedSet.contains(reward.level)) {
+            item = new ItemStack(reward.material, reward.amount);
+            meta = item.getItemMeta();
             meta.setDisplayName("§7§lLevel " + reward.level + " " + (isPremium ? "Premium" : "Free") + " Reward");
             meta.setLore(Arrays.asList(
                     "§7Reward: §f" + reward.amount + "x " + formatMaterial(reward.material),
@@ -602,6 +592,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     "§7§lALREADY CLAIMED"
             ));
         } else if (!hasAccess && isPremium) {
+            item = new ItemStack(Material.MINECART, 1);
+            meta = item.getItemMeta();
             meta.setDisplayName("§6§lLevel " + reward.level + " Premium Reward");
             meta.setLore(Arrays.asList(
                     "§7Reward: §f" + reward.amount + "x " + formatMaterial(reward.material),
@@ -609,8 +601,9 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     "",
                     "§6§lPREMIUM ONLY"
             ));
-            item.setType(Material.ORANGE_STAINED_GLASS_PANE);
         } else {
+            item = new ItemStack(Material.MINECART, 1);
+            meta = item.getItemMeta();
             meta.setDisplayName("§c§lLevel " + reward.level + " " + (isPremium ? "Premium" : "Free") + " Reward");
             meta.setLore(Arrays.asList(
                     "§7Reward: §f" + reward.amount + "x " + formatMaterial(reward.material),
@@ -618,7 +611,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     "",
                     "§c§lLOCKED (Level " + reward.level + " Required)"
             ));
-            item.setType(Material.RED_STAINED_GLASS_PANE);
         }
 
         item.setItemMeta(meta);
