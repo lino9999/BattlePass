@@ -1,3 +1,29 @@
+# Battle Pass Configuration
+#
+# Reward Configuration Examples:
+#
+# Single item reward:
+#   level-X:
+#     material: DIAMOND
+#     amount: 5
+#
+# Command reward:
+#   level-X:
+#     command: "eco give <player> 1000"
+#     display: "$1000"
+#
+# Multiple rewards in one level:
+#   level-X:
+#     items:
+#       reward1:
+#         material: DIAMOND
+#         amount: 5
+#       reward2:
+#         command: "kit vip <player>"
+#         display: "VIP Kit"
+#
+# <player> will be replaced with the player's name
+
 season:
   duration: 30
 
@@ -16,8 +42,17 @@ rewards:
       material: REDSTONE
       amount: 16
     level-5:
-      material: LAPIS_LAZULI
-      amount: 16
+      # Esempio di multipli rewards in un livello
+      items:
+        item1:
+          material: LAPIS_LAZULI
+          amount: 16
+        item2:
+          material: EXPERIENCE_BOTTLE
+          amount: 8
+        money:
+          command: "eco give <player> 1000"
+          display: "$1000"
     level-6:
       material: EMERALD
       amount: 4
@@ -31,8 +66,9 @@ rewards:
       material: GOLD_BLOCK
       amount: 1
     level-10:
-      material: GOLDEN_APPLE
-      amount: 2
+      # Esempio di reward con solo comando
+      command: "eco give <player> 5000"
+      display: "$5000 Money"
     level-11:
       material: ENDER_PEARL
       amount: 8
@@ -46,8 +82,14 @@ rewards:
       material: MAGMA_CREAM
       amount: 8
     level-15:
-      material: EXPERIENCE_BOTTLE
-      amount: 16
+      # Esempio misto: items + comando
+      items:
+        bottles:
+          material: EXPERIENCE_BOTTLE
+          amount: 16
+        money:
+          command: "eco give <player> 2500"
+          display: "$2500"
     level-16:
       material: QUARTZ
       amount: 32
@@ -61,8 +103,17 @@ rewards:
       material: PRISMARINE_CRYSTALS
       amount: 8
     level-20:
-      material: DIAMOND
-      amount: 4
+      # Reward speciale con multipli comandi
+      items:
+        diamonds:
+          material: DIAMOND
+          amount: 4
+        money:
+          command: "eco give <player> 10000"
+          display: "$10,000"
+        permission:
+          command: "lp user <player> permission set kit.vip true"
+          display: "VIP Kit Access"
     level-21:
       material: SLIME_BALL
       amount: 16
@@ -168,8 +219,17 @@ rewards:
 
   premium:
     level-1:
-      material: DIAMOND
-      amount: 8
+      # Esempio premium con multipli rewards
+      items:
+        diamonds:
+          material: DIAMOND
+          amount: 8
+        money:
+          command: "eco give <player> 5000"
+          display: "$5000"
+        kit:
+          command: "kit premium <player>"
+          display: "Premium Kit"
     level-2:
       material: NETHERITE_INGOT
       amount: 1
@@ -180,8 +240,13 @@ rewards:
       material: ENCHANTED_GOLDEN_APPLE
       amount: 1
     level-5:
-      material: BEACON
-      amount: 1
+      items:
+        beacon:
+          material: BEACON
+          amount: 1
+        money:
+          command: "eco give <player> 15000"
+          display: "$15,000"
     level-6:
       material: ELYTRA
       amount: 1
@@ -195,8 +260,20 @@ rewards:
       material: HEART_OF_THE_SEA
       amount: 1
     level-10:
-      material: TOTEM_OF_UNDYING
-      amount: 2
+      # Esempio di mega reward premium
+      items:
+        totem:
+          material: TOTEM_OF_UNDYING
+          amount: 2
+        money:
+          command: "eco give <player> 25000"
+          display: "$25,000"
+        fly:
+          command: "lp user <player> permission set essentials.fly true"
+          display: "Fly Permission"
+        announce:
+          command: "say <player> has reached Battle Pass Level 10!"
+          display: "Server Announcement"
     level-11:
       material: TRIDENT
       amount: 1
