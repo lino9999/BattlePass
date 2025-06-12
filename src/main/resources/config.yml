@@ -42,7 +42,6 @@ rewards:
       material: REDSTONE
       amount: 16
     level-5:
-      # Example of multiple rewards in one level
       items:
         item1:
           material: LAPIS_LAZULI
@@ -66,7 +65,6 @@ rewards:
       material: GOLD_BLOCK
       amount: 1
     level-10:
-      # Example of command-only reward
       command: "eco give <player> 5000"
       display: "$5000 Money"
     level-11:
@@ -82,7 +80,6 @@ rewards:
       material: MAGMA_CREAM
       amount: 8
     level-15:
-      # Mixed example: items + command
       items:
         bottles:
           material: EXPERIENCE_BOTTLE
@@ -103,7 +100,6 @@ rewards:
       material: PRISMARINE_CRYSTALS
       amount: 8
     level-20:
-      # Special reward with multiple commands
       items:
         diamonds:
           material: DIAMOND
@@ -142,8 +138,16 @@ rewards:
       material: TURTLE_SCUTE
       amount: 2
     level-30:
-      material: ENCHANTED_BOOK
-      amount: 1
+      items:
+        enchantedbook:
+          material: ENCHANTED_BOOK
+          amount: 1
+        money:
+          command: "eco give <player> 7500"
+          display: "$7,500"
+        xp:
+          command: "xp give <player> 100L"
+          display: "100 XP Levels"
     level-31:
       material: IRON_HORSE_ARMOR
       amount: 1
@@ -172,8 +176,16 @@ rewards:
       material: ENDER_EYE
       amount: 2
     level-40:
-      material: DIAMOND_BLOCK
-      amount: 1
+      items:
+        diamond:
+          material: DIAMOND_BLOCK
+          amount: 1
+        money:
+          command: "eco give <player> 20000"
+          display: "$20,000"
+        effect:
+          command: "effect give <player> minecraft:speed 3600 2"
+          display: "Speed II (1 hour)"
     level-41:
       material: EMERALD_BLOCK
       amount: 1
@@ -214,12 +226,22 @@ rewards:
       material: ECHO_SHARD
       amount: 4
     level-54:
-      material: NETHER_STAR
-      amount: 1
+      items:
+        star:
+          material: NETHER_STAR
+          amount: 1
+        money:
+          command: "eco give <player> 30000"
+          display: "$30,000"
+        title:
+          command: "lp user <player> meta addprefix 100 \"&6[Battle Master] \""
+          display: "Battle Master Title"
+        announce:
+          command: "say <player> has completed the entire Battle Pass!"
+          display: "Server-wide Recognition"
 
   premium:
     level-1:
-      # Premium example with multiple rewards
       items:
         diamonds:
           material: DIAMOND
@@ -260,7 +282,6 @@ rewards:
       material: HEART_OF_THE_SEA
       amount: 1
     level-10:
-      # Example of a mega premium reward
       items:
         totem:
           material: TOTEM_OF_UNDYING
@@ -302,8 +323,19 @@ rewards:
       material: EXPERIENCE_BOTTLE
       amount: 64
     level-20:
-      material: DRAGON_EGG
-      amount: 1
+      items:
+        dragonegg:
+          material: DRAGON_EGG
+          amount: 1
+        money:
+          command: "eco give <player> 50000"
+          display: "$50,000"
+        rank:
+          command: "lp user <player> parent add vip"
+          display: "VIP Rank"
+        crate:
+          command: "crate give <player> legendary 3"
+          display: "3x Legendary Crates"
     level-21:
       material: NETHERITE_HELMET
       amount: 1
@@ -362,8 +394,16 @@ rewards:
       material: NETHERITE_BLOCK
       amount: 1
     level-40:
-      material: ELYTRA
-      amount: 2
+      items:
+        elytra:
+          material: ELYTRA
+          amount: 2
+        money:
+          command: "eco give <player> 75000"
+          display: "$75,000"
+        effect:
+          command: "effect give <player> minecraft:regeneration 7200 2"
+          display: "Regeneration II (2 hours)"
     level-41:
       material: DRAGON_BREATH
       amount: 16
@@ -404,5 +444,19 @@ rewards:
       material: RECOVERY_COMPASS
       amount: 1
     level-54:
-      material: DRAGON_EGG
-      amount: 3
+      items:
+        dragonegg:
+          material: DRAGON_EGG
+          amount: 3
+        money:
+          command: "eco give <player> 100000"
+          display: "$100,000"
+        rank:
+          command: "lp user <player> parent add legend"
+          display: "Legend Rank"
+        title:
+          command: "lp user <player> meta addprefix 100 \"&5[Legend] \""
+          display: "Legend Title"
+        announce:
+          command: "say <player> has become a LEGEND by completing the Premium Battle Pass!"
+          display: "Legendary Achievement"

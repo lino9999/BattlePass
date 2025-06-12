@@ -87,7 +87,19 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length > 0) {
-            if (args[0].equalsIgnoreCase("reload") && sender.hasPermission("battlepass.admin")) {
+            if (args[0].equalsIgnoreCase("help")) {
+                sender.sendMessage("§6§lBattle Pass Commands:");
+                sender.sendMessage("§e/battlepass §7- Open the Battle Pass GUI");
+                sender.sendMessage("§e/bp help §7- Show this help menu");
+                if (sender.hasPermission("battlepass.admin")) {
+                    sender.sendMessage("§e/bp reload §7- Reload the configuration");
+                    sender.sendMessage("§e/bp addpremium <player> §7- Give premium pass to a player");
+                    sender.sendMessage("§e/bp removepremium <player> §7- Remove premium pass from a player");
+                    sender.sendMessage("§e/bp addxp <player> <amount> §7- Add XP to a player");
+                    sender.sendMessage("§e/bp removexp <player> <amount> §7- Remove XP from a player");
+                }
+                return true;
+            } else if (args[0].equalsIgnoreCase("reload") && sender.hasPermission("battlepass.admin")) {
                 reloadConfig();
                 config = getConfig();
                 loadRewardsFromConfig();
@@ -133,6 +145,77 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 sender.sendMessage("§cPremium pass removed from " + target.getName() + "!");
                 target.sendMessage("§cYour Premium Battle Pass has been removed!");
                 return true;
+            } else if (args[0].equalsIgnoreCase("addxp") && sender.hasPermission("battlepass.admin")) {
+                if (args.length < 3) {
+                    sender.sendMessage("§cUsage: /battlepass addxp <player> <amount>");
+                    return true;
+                }
+
+                Player target = Bukkit.getPlayer(args[1]);
+                if (target == null) {
+                    sender.sendMessage("§cPlayer not found!");
+                    return true;
+                }
+
+                try {
+                    int amount = Integer.parseInt(args[2]);
+                    if (amount <= 0) {
+                        sender.sendMessage("§cAmount must be positive!");
+                        return true;
+                    }
+
+                    PlayerData data = loadPlayer(target.getUniqueId());
+                    data.xp += amount;
+                    checkLevelUp(target, data);
+                    savePlayer(target.getUniqueId());
+
+                    sender.sendMessage("§aAdded " + amount + " XP to " + target.getName() + "'s Battle Pass!");
+                    target.sendMessage("§a§lYou received " + amount + " Battle Pass XP!");
+                    return true;
+                } catch (NumberFormatException e) {
+                    sender.sendMessage("§cInvalid amount! Please enter a number.");
+                    return true;
+                }
+            } else if (args[0].equalsIgnoreCase("removexp") && sender.hasPermission("battlepass.admin")) {
+                if (args.length < 3) {
+                    sender.sendMessage("§cUsage: /battlepass removexp <player> <amount>");
+                    return true;
+                }
+
+                Player target = Bukkit.getPlayer(args[1]);
+                if (target == null) {
+                    sender.sendMessage("§cPlayer not found!");
+                    return true;
+                }
+
+                try {
+                    int amount = Integer.parseInt(args[2]);
+                    if (amount <= 0) {
+                        sender.sendMessage("§cAmount must be positive!");
+                        return true;
+                    }
+
+                    PlayerData data = loadPlayer(target.getUniqueId());
+                    data.xp = Math.max(0, data.xp - amount);
+
+                    int newLevel = 1;
+                    int totalXP = data.xp;
+                    while (totalXP >= newLevel * 200 && newLevel < 54) {
+                        totalXP -= newLevel * 200;
+                        newLevel++;
+                    }
+                    data.level = newLevel;
+                    data.xp = totalXP;
+
+                    savePlayer(target.getUniqueId());
+
+                    sender.sendMessage("§cRemoved " + amount + " XP from " + target.getName() + "'s Battle Pass!");
+                    target.sendMessage("§c§l" + amount + " Battle Pass XP has been removed!");
+                    return true;
+                } catch (NumberFormatException e) {
+                    sender.sendMessage("§cInvalid amount! Please enter a number.");
+                    return true;
+                }
             }
         }
 
@@ -184,7 +267,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                             "duration INTEGER)"
             );
 
-            // Controlla se la colonna has_premium esiste, altrimenti aggiungila
             ResultSet rs = stmt.executeQuery("PRAGMA table_info(players)");
             boolean hasPremiumExists = false;
             while (rs.next()) {
@@ -299,7 +381,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         int count = 0;
         boolean hasPremium = data.hasPremium;
 
-        // Conta i livelli free non riscattati
         Set<Integer> freeLevels = new HashSet<>();
         for (Reward reward : freeRewards) {
             if (data.level >= reward.level && !data.claimedFreeRewards.contains(reward.level)) {
@@ -309,7 +390,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         count += freeLevels.size();
 
         if (hasPremium) {
-            // Conta i livelli premium non riscattati
             Set<Integer> premiumLevels = new HashSet<>();
             for (Reward reward : premiumRewards) {
                 if (data.level >= reward.level && !data.claimedPremiumRewards.contains(reward.level)) {
@@ -357,28 +437,20 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             String premiumPath = "rewards.premium.level-" + i;
             int requiredXP = (i - 1) * 200;
 
-            // Carica free rewards
             if (config.contains(freePath)) {
-                // Controlla se è un singolo reward o una lista
                 if (config.contains(freePath + ".material") || config.contains(freePath + ".command")) {
-                    // Singolo reward
                     loadSingleReward(freePath, i, requiredXP, true);
                 } else if (config.contains(freePath + ".items")) {
-                    // Multipli rewards
                     for (String key : config.getConfigurationSection(freePath + ".items").getKeys(false)) {
                         loadSingleReward(freePath + ".items." + key, i, requiredXP, true);
                     }
                 }
             }
 
-            // Carica premium rewards
             if (config.contains(premiumPath)) {
-                // Controlla se è un singolo reward o una lista
                 if (config.contains(premiumPath + ".material") || config.contains(premiumPath + ".command")) {
-                    // Singolo reward
                     loadSingleReward(premiumPath, i, requiredXP, false);
                 } else if (config.contains(premiumPath + ".items")) {
-                    // Multipli rewards
                     for (String key : config.getConfigurationSection(premiumPath + ".items").getKeys(false)) {
                         loadSingleReward(premiumPath + ".items." + key, i, requiredXP, false);
                     }
@@ -389,7 +461,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
     private void loadSingleReward(String path, int level, int requiredXP, boolean isFree) {
         if (config.contains(path + ".command")) {
-            // Command reward
             String command = config.getString(path + ".command");
             String displayName = config.getString(path + ".display", "Mystery Reward");
 
@@ -400,7 +471,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 premiumRewards.add(reward);
             }
         } else if (config.contains(path + ".material")) {
-            // Item reward
             String material = config.getString(path + ".material", "DIRT");
             int amount = config.getInt(path + ".amount", 1);
 
@@ -435,7 +505,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
         Collections.shuffle(templates);
 
-        for (int i = 0; i < 5 && i < templates.size(); i++) {
+        for (int i = 0; i < 7 && i < templates.size(); i++) {
             MissionTemplate template = templates.get(i);
             int required = ThreadLocalRandom.current().nextInt(template.minRequired, template.maxRequired + 1);
             int xpReward = ThreadLocalRandom.current().nextInt(template.minXP, template.maxXP + 1);
@@ -704,11 +774,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         PlayerData data = loadPlayer(player.getUniqueId());
         boolean hasPremium = data.hasPremium;
 
-        // Debug del permesso
-        if (hasPremium) {
-            getLogger().info(player.getName() + " has premium pass!");
-        }
-
         currentPages.put(player.getEntityId(), page);
 
         ItemStack info = new ItemStack(Material.NETHER_STAR);
@@ -733,7 +798,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         for (int i = 0; i <= 8 && startLevel + i <= 54; i++) {
             int level = startLevel + i;
 
-            // Trova il primo premium reward per questo livello
             Reward premium = premiumRewards.stream()
                     .filter(r -> r.level == level)
                     .findFirst()
@@ -744,7 +808,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 gui.setItem(9 + i, premiumItem);
             }
 
-            // Trova il primo free reward per questo livello
             Reward free = freeRewards.stream()
                     .filter(r -> r.level == level)
                     .findFirst()
@@ -880,11 +943,9 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         timer.setItemMeta(timerMeta);
         gui.setItem(4, timer);
 
-        int slot = 19;
-        for (Mission mission : dailyMissions) {
-            if (slot > 25) slot = 28;
-            if (slot > 34) break;
-
+        int[] slots = {19, 20, 21, 22, 23, 24, 25};
+        for (int i = 0; i < dailyMissions.size() && i < slots.length; i++) {
+            Mission mission = dailyMissions.get(i);
             String key = mission.name.toLowerCase().replace(" ", "_");
             int progress = data.missionProgress.getOrDefault(key, 0);
             boolean completed = progress >= mission.required;
@@ -901,7 +962,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     completed ? "§a§lCOMPLETED" : "§e§lIN PROGRESS"
             ));
             missionItem.setItemMeta(missionMeta);
-            gui.setItem(slot++, missionItem);
+            gui.setItem(slots[i], missionItem);
         }
 
         ItemStack back = new ItemStack(Material.BARRIER);
@@ -919,15 +980,9 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         ItemStack item;
         ItemMeta meta;
 
-        // Ottieni tutti i rewards per questo livello
         List<Reward> levelRewards = isPremium ?
                 premiumRewards.stream().filter(r -> r.level == reward.level).collect(Collectors.toList()) :
                 freeRewards.stream().filter(r -> r.level == reward.level).collect(Collectors.toList());
-
-        // Debug
-        if (isPremium) {
-            getLogger().info("Creating premium reward item - Level: " + reward.level + ", HasAccess: " + hasAccess + ", PlayerLevel: " + data.level);
-        }
 
         if (data.level >= reward.level && hasAccess && !claimedSet.contains(reward.level)) {
             item = new ItemStack(Material.CHEST_MINECART, 1);
@@ -948,7 +1003,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             meta.setLore(lore);
 
         } else if (claimedSet.contains(reward.level)) {
-            // Mostra il primo reward materiale come icona
             Material displayMat = reward.material;
             int displayAmount = reward.amount;
             for (Reward r : levelRewards) {
@@ -1051,9 +1105,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     int index = slot - 9;
                     int level = startLevel + index;
 
-                    // Usa il premium dal database
                     boolean hasPremium = data.hasPremium;
-                    getLogger().info("Click premium reward - Player: " + player.getName() + ", Has premium: " + hasPremium);
 
                     if (hasPremium) {
                         List<Reward> levelRewards = premiumRewards.stream()
@@ -1061,7 +1113,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                                 .collect(Collectors.toList());
 
                         if (!levelRewards.isEmpty()) {
-                            getLogger().info("Found " + levelRewards.size() + " rewards for level " + level + ", player level: " + data.level);
                             if (data.level >= level && !data.claimedPremiumRewards.contains(level)) {
                                 data.claimedPremiumRewards.add(level);
 
@@ -1069,12 +1120,10 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
                                 for (Reward reward : levelRewards) {
                                     if (reward.command != null) {
-                                        // Esegui comando
                                         String command = reward.command.replace("<player>", player.getName());
                                         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
                                         message.append("\n§f• ").append(reward.displayName);
                                     } else {
-                                        // Dai item
                                         player.getInventory().addItem(new ItemStack(reward.material, reward.amount));
                                         message.append("\n§f• ").append(reward.amount).append("x ").append(formatMaterial(reward.material));
                                     }
@@ -1100,7 +1149,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                             .collect(Collectors.toList());
 
                     if (!levelRewards.isEmpty()) {
-                        getLogger().info("Free reward click - Level " + level + ", player level: " + data.level);
                         if (data.level >= level && !data.claimedFreeRewards.contains(level)) {
                             data.claimedFreeRewards.add(level);
 
@@ -1108,12 +1156,10 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
                             for (Reward reward : levelRewards) {
                                 if (reward.command != null) {
-                                    // Esegui comando
                                     String command = reward.command.replace("<player>", player.getName());
                                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
                                     message.append("\n§f• ").append(reward.displayName);
                                 } else {
-                                    // Dai item
                                     player.getInventory().addItem(new ItemStack(reward.material, reward.amount));
                                     message.append("\n§f• ").append(reward.amount).append("x ").append(formatMaterial(reward.material));
                                 }
@@ -1206,7 +1252,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         String command;
         String displayName;
 
-        // Constructor per item reward
         Reward(int level, int requiredXP, Material material, int amount, boolean isFree) {
             this.level = level;
             this.requiredXP = requiredXP;
@@ -1217,7 +1262,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             this.displayName = amount + "x " + formatMaterialStatic(material);
         }
 
-        // Constructor per command reward
         Reward(int level, int requiredXP, String command, String displayName, boolean isFree) {
             this.level = level;
             this.requiredXP = requiredXP;
