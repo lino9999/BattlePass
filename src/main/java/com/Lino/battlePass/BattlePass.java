@@ -43,11 +43,13 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     private LocalDateTime nextMissionReset;
     private LocalDateTime seasonEndDate;
     private int seasonDuration = 30;
+    private int xpPerLevel = 200;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         config = getConfig();
+        xpPerLevel = config.getInt("experience.xp-per-level", 200);
 
         getServer().getPluginManager().registerEvents(this, this);
         initDatabase();
@@ -102,7 +104,9 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             } else if (args[0].equalsIgnoreCase("reload") && sender.hasPermission("battlepass.admin")) {
                 reloadConfig();
                 config = getConfig();
+                xpPerLevel = config.getInt("experience.xp-per-level", 200);
                 loadRewardsFromConfig();
+                generateDailyMissions();
                 sender.sendMessage("§aBattlePass configuration reloaded!");
                 return true;
             } else if (args[0].equalsIgnoreCase("addpremium") && sender.hasPermission("battlepass.admin")) {
@@ -196,12 +200,12 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     }
 
                     PlayerData data = loadPlayer(target.getUniqueId());
-                    data.xp = Math.max(0, data.xp - amount);
+                    int totalXP = (data.level - 1) * xpPerLevel + data.xp;
+                    totalXP = Math.max(0, totalXP - amount);
 
                     int newLevel = 1;
-                    int totalXP = data.xp;
-                    while (totalXP >= newLevel * 200 && newLevel < 54) {
-                        totalXP -= newLevel * 200;
+                    while (totalXP >= xpPerLevel && newLevel < 54) {
+                        totalXP -= xpPerLevel;
                         newLevel++;
                     }
                     data.level = newLevel;
@@ -435,36 +439,35 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         for (int i = 1; i <= 54; i++) {
             String freePath = "rewards.free.level-" + i;
             String premiumPath = "rewards.premium.level-" + i;
-            int requiredXP = (i - 1) * 200;
 
             if (config.contains(freePath)) {
                 if (config.contains(freePath + ".material") || config.contains(freePath + ".command")) {
-                    loadSingleReward(freePath, i, requiredXP, true);
+                    loadSingleReward(freePath, i, true);
                 } else if (config.contains(freePath + ".items")) {
                     for (String key : config.getConfigurationSection(freePath + ".items").getKeys(false)) {
-                        loadSingleReward(freePath + ".items." + key, i, requiredXP, true);
+                        loadSingleReward(freePath + ".items." + key, i, true);
                     }
                 }
             }
 
             if (config.contains(premiumPath)) {
                 if (config.contains(premiumPath + ".material") || config.contains(premiumPath + ".command")) {
-                    loadSingleReward(premiumPath, i, requiredXP, false);
+                    loadSingleReward(premiumPath, i, false);
                 } else if (config.contains(premiumPath + ".items")) {
                     for (String key : config.getConfigurationSection(premiumPath + ".items").getKeys(false)) {
-                        loadSingleReward(premiumPath + ".items." + key, i, requiredXP, false);
+                        loadSingleReward(premiumPath + ".items." + key, i, false);
                     }
                 }
             }
         }
     }
 
-    private void loadSingleReward(String path, int level, int requiredXP, boolean isFree) {
+    private void loadSingleReward(String path, int level, boolean isFree) {
         if (config.contains(path + ".command")) {
             String command = config.getString(path + ".command");
             String displayName = config.getString(path + ".display", "Mystery Reward");
 
-            Reward reward = new Reward(level, requiredXP, command, displayName, isFree);
+            Reward reward = new Reward(level, command, displayName, isFree);
             if (isFree) {
                 freeRewards.add(reward);
             } else {
@@ -476,7 +479,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
             try {
                 Material mat = Material.valueOf(material.toUpperCase());
-                Reward reward = new Reward(level, requiredXP, mat, amount, isFree);
+                Reward reward = new Reward(level, mat, amount, isFree);
                 if (isFree) {
                     freeRewards.add(reward);
                 } else {
@@ -490,18 +493,87 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
     private void generateDailyMissions() {
         dailyMissions.clear();
-        List<MissionTemplate> templates = Arrays.asList(
-                new MissionTemplate("Kill %d Mobs", MissionType.KILL_MOBS, 10, 30, 100, 200),
-                new MissionTemplate("Break %d Blocks", MissionType.BREAK_BLOCKS, 50, 200, 150, 250),
-                new MissionTemplate("Kill %d Players", MissionType.KILL_PLAYERS, 3, 10, 200, 400),
-                new MissionTemplate("Mine %d Diamonds", MissionType.MINE_DIAMONDS, 10, 30, 300, 500),
-                new MissionTemplate("Kill %d Endermen", MissionType.KILL_ENDERMEN, 3, 10, 250, 400),
-                new MissionTemplate("Kill %d Zombies", MissionType.KILL_ZOMBIES, 20, 50, 150, 250),
-                new MissionTemplate("Kill %d Skeletons", MissionType.KILL_SKELETONS, 15, 40, 150, 250),
-                new MissionTemplate("Mine %d Iron Ore", MissionType.MINE_IRON, 30, 100, 100, 200),
-                new MissionTemplate("Mine %d Gold Ore", MissionType.MINE_GOLD, 20, 50, 200, 300),
-                new MissionTemplate("Kill %d Creepers", MissionType.KILL_CREEPERS, 10, 25, 200, 300)
-        );
+        List<MissionTemplate> templates = new ArrayList<>();
+
+        if (config.contains("missions.kill-mobs")) {
+            templates.add(new MissionTemplate("Kill %d Mobs", MissionType.KILL_MOBS,
+                    config.getInt("missions.kill-mobs.min-required", 10),
+                    config.getInt("missions.kill-mobs.max-required", 30),
+                    config.getInt("missions.kill-mobs.min-xp", 100),
+                    config.getInt("missions.kill-mobs.max-xp", 200)));
+        }
+
+        if (config.contains("missions.break-blocks")) {
+            templates.add(new MissionTemplate("Break %d Blocks", MissionType.BREAK_BLOCKS,
+                    config.getInt("missions.break-blocks.min-required", 50),
+                    config.getInt("missions.break-blocks.max-required", 200),
+                    config.getInt("missions.break-blocks.min-xp", 150),
+                    config.getInt("missions.break-blocks.max-xp", 250)));
+        }
+
+        if (config.contains("missions.kill-players")) {
+            templates.add(new MissionTemplate("Kill %d Players", MissionType.KILL_PLAYERS,
+                    config.getInt("missions.kill-players.min-required", 3),
+                    config.getInt("missions.kill-players.max-required", 10),
+                    config.getInt("missions.kill-players.min-xp", 200),
+                    config.getInt("missions.kill-players.max-xp", 400)));
+        }
+
+        if (config.contains("missions.mine-diamonds")) {
+            templates.add(new MissionTemplate("Mine %d Diamonds", MissionType.MINE_DIAMONDS,
+                    config.getInt("missions.mine-diamonds.min-required", 10),
+                    config.getInt("missions.mine-diamonds.max-required", 30),
+                    config.getInt("missions.mine-diamonds.min-xp", 300),
+                    config.getInt("missions.mine-diamonds.max-xp", 500)));
+        }
+
+        if (config.contains("missions.kill-endermen")) {
+            templates.add(new MissionTemplate("Kill %d Endermen", MissionType.KILL_ENDERMEN,
+                    config.getInt("missions.kill-endermen.min-required", 3),
+                    config.getInt("missions.kill-endermen.max-required", 10),
+                    config.getInt("missions.kill-endermen.min-xp", 250),
+                    config.getInt("missions.kill-endermen.max-xp", 400)));
+        }
+
+        if (config.contains("missions.kill-zombies")) {
+            templates.add(new MissionTemplate("Kill %d Zombies", MissionType.KILL_ZOMBIES,
+                    config.getInt("missions.kill-zombies.min-required", 20),
+                    config.getInt("missions.kill-zombies.max-required", 50),
+                    config.getInt("missions.kill-zombies.min-xp", 150),
+                    config.getInt("missions.kill-zombies.max-xp", 250)));
+        }
+
+        if (config.contains("missions.kill-skeletons")) {
+            templates.add(new MissionTemplate("Kill %d Skeletons", MissionType.KILL_SKELETONS,
+                    config.getInt("missions.kill-skeletons.min-required", 15),
+                    config.getInt("missions.kill-skeletons.max-required", 40),
+                    config.getInt("missions.kill-skeletons.min-xp", 150),
+                    config.getInt("missions.kill-skeletons.max-xp", 250)));
+        }
+
+        if (config.contains("missions.mine-iron")) {
+            templates.add(new MissionTemplate("Mine %d Iron Ore", MissionType.MINE_IRON,
+                    config.getInt("missions.mine-iron.min-required", 30),
+                    config.getInt("missions.mine-iron.max-required", 100),
+                    config.getInt("missions.mine-iron.min-xp", 100),
+                    config.getInt("missions.mine-iron.max-xp", 200)));
+        }
+
+        if (config.contains("missions.mine-gold")) {
+            templates.add(new MissionTemplate("Mine %d Gold Ore", MissionType.MINE_GOLD,
+                    config.getInt("missions.mine-gold.min-required", 20),
+                    config.getInt("missions.mine-gold.max-required", 50),
+                    config.getInt("missions.mine-gold.min-xp", 200),
+                    config.getInt("missions.mine-gold.max-xp", 300)));
+        }
+
+        if (config.contains("missions.kill-creepers")) {
+            templates.add(new MissionTemplate("Kill %d Creepers", MissionType.KILL_CREEPERS,
+                    config.getInt("missions.kill-creepers.min-required", 10),
+                    config.getInt("missions.kill-creepers.max-required", 25),
+                    config.getInt("missions.kill-creepers.min-xp", 200),
+                    config.getInt("missions.kill-creepers.max-xp", 300)));
+        }
 
         Collections.shuffle(templates);
 
@@ -752,9 +824,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     }
 
     private void checkLevelUp(Player player, PlayerData data) {
-        int requiredXP = data.level * 200;
-        while (data.xp >= requiredXP && data.level < 54) {
-            data.xp -= requiredXP;
+        while (data.xp >= xpPerLevel && data.level < 54) {
+            data.xp -= xpPerLevel;
             data.level++;
             data.totalLevels++;
             player.sendMessage("§6§lLEVEL UP! §fYou are now level §e" + data.level);
@@ -764,8 +835,6 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             if (available > 0) {
                 player.sendMessage("§e§lNEW REWARDS! §fYou have new rewards available to claim!");
             }
-
-            requiredXP = data.level * 200;
         }
     }
 
@@ -781,7 +850,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         infoMeta.setDisplayName("§6§lYour Progress");
         infoMeta.setLore(Arrays.asList(
                 "§7Level: §e" + data.level + "§7/§e54",
-                "§7XP: §e" + data.xp + "§7/§e" + (data.level * 200),
+                "§7XP: §e" + data.xp + "§7/§e" + xpPerLevel,
                 "",
                 "§7Premium Pass: " + (hasPremium ? "§a§lACTIVE" : "§c§lINACTIVE"),
                 "§7Season Ends: §e" + getTimeUntilSeasonEnd(),
@@ -1245,16 +1314,14 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
     private static class Reward {
         int level;
-        int requiredXP;
         Material material;
         int amount;
         boolean isFree;
         String command;
         String displayName;
 
-        Reward(int level, int requiredXP, Material material, int amount, boolean isFree) {
+        Reward(int level, Material material, int amount, boolean isFree) {
             this.level = level;
-            this.requiredXP = requiredXP;
             this.material = material;
             this.amount = amount;
             this.isFree = isFree;
@@ -1262,9 +1329,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             this.displayName = amount + "x " + formatMaterialStatic(material);
         }
 
-        Reward(int level, int requiredXP, String command, String displayName, boolean isFree) {
+        Reward(int level, String command, String displayName, boolean isFree) {
             this.level = level;
-            this.requiredXP = requiredXP;
             this.material = Material.COMMAND_BLOCK;
             this.amount = 1;
             this.isFree = isFree;
