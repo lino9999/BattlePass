@@ -42,7 +42,7 @@ rewards:
       material: REDSTONE
       amount: 16
     level-5:
-      # Esempio di multipli rewards in un livello
+      # Example of multiple rewards in one level
       items:
         item1:
           material: LAPIS_LAZULI
@@ -66,7 +66,7 @@ rewards:
       material: GOLD_BLOCK
       amount: 1
     level-10:
-      # Esempio di reward con solo comando
+      # Example of command-only reward
       command: "eco give <player> 5000"
       display: "$5000 Money"
     level-11:
@@ -82,7 +82,7 @@ rewards:
       material: MAGMA_CREAM
       amount: 8
     level-15:
-      # Esempio misto: items + comando
+      # Mixed example: items + command
       items:
         bottles:
           material: EXPERIENCE_BOTTLE
@@ -103,7 +103,7 @@ rewards:
       material: PRISMARINE_CRYSTALS
       amount: 8
     level-20:
-      # Reward speciale con multipli comandi
+      # Special reward with multiple commands
       items:
         diamonds:
           material: DIAMOND
@@ -219,7 +219,7 @@ rewards:
 
   premium:
     level-1:
-      # Esempio premium con multipli rewards
+      # Premium example with multiple rewards
       items:
         diamonds:
           material: DIAMOND
@@ -260,7 +260,7 @@ rewards:
       material: HEART_OF_THE_SEA
       amount: 1
     level-10:
-      # Esempio di mega reward premium
+      # Example of a mega premium reward
       items:
         totem:
           material: TOTEM_OF_UNDYING
