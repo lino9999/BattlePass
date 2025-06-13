@@ -24,6 +24,7 @@
 #
 # <player> will be replaced with the player's name
 
+# Season duration in days
 season:
   duration: 30
 
@@ -38,65 +39,7 @@ season:
 experience:
   xp-per-level: 400
 
-# Mission configuration
-# Adjust min/max required amounts and XP rewards for each mission type
-# With 7 daily missions and 30 days = 210 total missions
-# Average XP per mission needed for level 54:
-# - 100 XP per level: ~25 XP per mission
-# - 400 XP per level: ~100 XP per mission
-# - 1000 XP per level: ~250 XP per mission
-# - 2000 XP per level: ~500 XP per mission
-missions:
-  kill-mobs:
-    min-required: 10
-    max-required: 30
-    min-xp: 100
-    max-xp: 200
-  break-blocks:
-    min-required: 50
-    max-required: 200
-    min-xp: 150
-    max-xp: 250
-  kill-players:
-    min-required: 3
-    max-required: 10
-    min-xp: 250
-    max-xp: 400
-  mine-diamonds:
-    min-required: 5
-    max-required: 15
-    min-xp: 300
-    max-xp: 500
-  kill-endermen:
-    min-required: 3
-    max-required: 10
-    min-xp: 250
-    max-xp: 400
-  kill-zombies:
-    min-required: 20
-    max-required: 50
-    min-xp: 150
-    max-xp: 250
-  kill-skeletons:
-    min-required: 15
-    max-required: 40
-    min-xp: 150
-    max-xp: 250
-  mine-iron:
-    min-required: 30
-    max-required: 100
-    min-xp: 100
-    max-xp: 200
-  mine-gold:
-    min-required: 20
-    max-required: 50
-    min-xp: 200
-    max-xp: 300
-  kill-creepers:
-    min-required: 10
-    max-required: 25
-    min-xp: 200
-    max-xp: 300
+# Missions are now configured in missions.yml
 
 rewards:
   free:

@@ -1,26 +1,34 @@
 package com.Lino.battlePass;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.*;
+import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.*;
+import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.Statistic;
+import org.bukkit.Location;
 
 import java.io.*;
 import java.sql.*;
@@ -36,20 +44,27 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     private Connection connection;
     private final Map<UUID, PlayerData> playerCache = new HashMap<>();
     private final Map<Integer, Integer> currentPages = new HashMap<>();
+    private final Map<UUID, Location> lastLocations = new HashMap<>();
+    private final Map<UUID, Long> playTimeStart = new HashMap<>();
     private List<Mission> dailyMissions = new ArrayList<>();
     private final List<Reward> freeRewards = new ArrayList<>();
     private final List<Reward> premiumRewards = new ArrayList<>();
     private FileConfiguration config;
+    private FileConfiguration missionsConfig;
+    private FileConfiguration messagesConfig;
     private LocalDateTime nextMissionReset;
     private LocalDateTime seasonEndDate;
     private int seasonDuration = 30;
     private int xpPerLevel = 200;
+    private int dailyMissionsCount = 7;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        config = getConfig();
-        xpPerLevel = config.getInt("experience.xp-per-level", 200);
+        saveResource("missions.yml", false);
+        saveResource("messages.yml", false);
+
+        loadConfigurations();
 
         getServer().getPluginManager().registerEvents(this, this);
         initDatabase();
@@ -67,10 +82,11 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 checkMissionReset();
                 checkSeasonReset();
                 checkRewardNotifications();
+                updatePlayTime();
             }
         }.runTaskTimer(this, 6000L, 1200L);
 
-        getLogger().info("BattlePass enabled successfully!");
+        getLogger().info(getMessage("messages.plugin-enabled"));
     }
 
     @Override
@@ -86,38 +102,65 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         }
     }
 
+    private void loadConfigurations() {
+        config = getConfig();
+        xpPerLevel = config.getInt("experience.xp-per-level", 200);
+
+        File missionsFile = new File(getDataFolder(), "missions.yml");
+        missionsConfig = YamlConfiguration.loadConfiguration(missionsFile);
+        dailyMissionsCount = missionsConfig.getInt("daily-missions-count", 7);
+
+        File messagesFile = new File(getDataFolder(), "messages.yml");
+        messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
+    }
+
+    private String getMessage(String path, Object... replacements) {
+        String message = messagesConfig.getString(path, path);
+
+        if (replacements.length % 2 == 0) {
+            for (int i = 0; i < replacements.length; i += 2) {
+                message = message.replace(replacements[i].toString(), replacements[i + 1].toString());
+            }
+        }
+
+        return ChatColor.translateAlternateColorCodes('&', message);
+    }
+
+    private String getPrefix() {
+        return ChatColor.translateAlternateColorCodes('&', messagesConfig.getString("prefix", "&6&l[BATTLE PASS] &e"));
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length > 0) {
             if (args[0].equalsIgnoreCase("help")) {
-                sender.sendMessage("§6§lBattle Pass Commands:");
-                sender.sendMessage("§e/battlepass §7- Open the Battle Pass GUI");
-                sender.sendMessage("§e/bp help §7- Show this help menu");
+                sender.sendMessage(getMessage("messages.help.header"));
+                sender.sendMessage(getMessage("messages.help.battlepass"));
+                sender.sendMessage(getMessage("messages.help.help"));
                 if (sender.hasPermission("battlepass.admin")) {
-                    sender.sendMessage("§e/bp reload §7- Reload the configuration");
-                    sender.sendMessage("§e/bp addpremium <player> §7- Give premium pass to a player");
-                    sender.sendMessage("§e/bp removepremium <player> §7- Remove premium pass from a player");
-                    sender.sendMessage("§e/bp addxp <player> <amount> §7- Add XP to a player");
-                    sender.sendMessage("§e/bp removexp <player> <amount> §7- Remove XP from a player");
+                    sender.sendMessage(getMessage("messages.help.reload"));
+                    sender.sendMessage(getMessage("messages.help.add-premium"));
+                    sender.sendMessage(getMessage("messages.help.remove-premium"));
+                    sender.sendMessage(getMessage("messages.help.add-xp"));
+                    sender.sendMessage(getMessage("messages.help.remove-xp"));
                 }
                 return true;
             } else if (args[0].equalsIgnoreCase("reload") && sender.hasPermission("battlepass.admin")) {
                 reloadConfig();
-                config = getConfig();
-                xpPerLevel = config.getInt("experience.xp-per-level", 200);
+                loadConfigurations();
                 loadRewardsFromConfig();
                 generateDailyMissions();
-                sender.sendMessage("§aBattlePass configuration reloaded!");
+                sender.sendMessage(getPrefix() + getMessage("messages.config-reloaded"));
                 return true;
             } else if (args[0].equalsIgnoreCase("addpremium") && sender.hasPermission("battlepass.admin")) {
                 if (args.length < 2) {
-                    sender.sendMessage("§cUsage: /battlepass addpremium <player>");
+                    sender.sendMessage(getPrefix() + getMessage("messages.usage.add-premium"));
                     return true;
                 }
 
                 Player target = Bukkit.getPlayer(args[1]);
                 if (target == null) {
-                    sender.sendMessage("§cPlayer not found!");
+                    sender.sendMessage(getPrefix() + getMessage("messages.player-not-found"));
                     return true;
                 }
 
@@ -125,20 +168,20 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 data.hasPremium = true;
                 savePlayer(target.getUniqueId());
 
-                sender.sendMessage("§aPremium pass given to " + target.getName() + " for this season!");
-                target.sendMessage("§6§lCONGRATULATIONS! §eYou now have the Premium Battle Pass!");
+                sender.sendMessage(getPrefix() + getMessage("messages.premium.given-sender", "%target%", target.getName()));
+                target.sendMessage(getPrefix() + getMessage("messages.premium.given-target"));
                 target.playSound(target.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
                 return true;
 
             } else if (args[0].equalsIgnoreCase("removepremium") && sender.hasPermission("battlepass.admin")) {
                 if (args.length < 2) {
-                    sender.sendMessage("§cUsage: /battlepass removepremium <player>");
+                    sender.sendMessage(getPrefix() + getMessage("messages.usage.remove-premium"));
                     return true;
                 }
 
                 Player target = Bukkit.getPlayer(args[1]);
                 if (target == null) {
-                    sender.sendMessage("§cPlayer not found!");
+                    sender.sendMessage(getPrefix() + getMessage("messages.player-not-found"));
                     return true;
                 }
 
@@ -146,25 +189,25 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 data.hasPremium = false;
                 savePlayer(target.getUniqueId());
 
-                sender.sendMessage("§cPremium pass removed from " + target.getName() + "!");
-                target.sendMessage("§cYour Premium Battle Pass has been removed!");
+                sender.sendMessage(getPrefix() + getMessage("messages.premium.removed-sender", "%target%", target.getName()));
+                target.sendMessage(getPrefix() + getMessage("messages.premium.removed-target"));
                 return true;
             } else if (args[0].equalsIgnoreCase("addxp") && sender.hasPermission("battlepass.admin")) {
                 if (args.length < 3) {
-                    sender.sendMessage("§cUsage: /battlepass addxp <player> <amount>");
+                    sender.sendMessage(getPrefix() + getMessage("messages.usage.add-xp"));
                     return true;
                 }
 
                 Player target = Bukkit.getPlayer(args[1]);
                 if (target == null) {
-                    sender.sendMessage("§cPlayer not found!");
+                    sender.sendMessage(getPrefix() + getMessage("messages.player-not-found"));
                     return true;
                 }
 
                 try {
                     int amount = Integer.parseInt(args[2]);
                     if (amount <= 0) {
-                        sender.sendMessage("§cAmount must be positive!");
+                        sender.sendMessage(getPrefix() + getMessage("messages.amount-must-be-positive"));
                         return true;
                     }
 
@@ -173,29 +216,29 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     checkLevelUp(target, data);
                     savePlayer(target.getUniqueId());
 
-                    sender.sendMessage("§aAdded " + amount + " XP to " + target.getName() + "'s Battle Pass!");
-                    target.sendMessage("§a§lYou received " + amount + " Battle Pass XP!");
+                    sender.sendMessage(getPrefix() + getMessage("messages.xp.added-sender", "%amount%", String.valueOf(amount), "%target%", target.getName()));
+                    target.sendMessage(getPrefix() + getMessage("messages.xp.added-target", "%amount%", String.valueOf(amount)));
                     return true;
                 } catch (NumberFormatException e) {
-                    sender.sendMessage("§cInvalid amount! Please enter a number.");
+                    sender.sendMessage(getPrefix() + getMessage("messages.invalid-amount"));
                     return true;
                 }
             } else if (args[0].equalsIgnoreCase("removexp") && sender.hasPermission("battlepass.admin")) {
                 if (args.length < 3) {
-                    sender.sendMessage("§cUsage: /battlepass removexp <player> <amount>");
+                    sender.sendMessage(getPrefix() + getMessage("messages.usage.remove-xp"));
                     return true;
                 }
 
                 Player target = Bukkit.getPlayer(args[1]);
                 if (target == null) {
-                    sender.sendMessage("§cPlayer not found!");
+                    sender.sendMessage(getPrefix() + getMessage("messages.player-not-found"));
                     return true;
                 }
 
                 try {
                     int amount = Integer.parseInt(args[2]);
                     if (amount <= 0) {
-                        sender.sendMessage("§cAmount must be positive!");
+                        sender.sendMessage(getPrefix() + getMessage("messages.amount-must-be-positive"));
                         return true;
                     }
 
@@ -213,18 +256,18 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
                     savePlayer(target.getUniqueId());
 
-                    sender.sendMessage("§cRemoved " + amount + " XP from " + target.getName() + "'s Battle Pass!");
-                    target.sendMessage("§c§l" + amount + " Battle Pass XP has been removed!");
+                    sender.sendMessage(getPrefix() + getMessage("messages.xp.removed-sender", "%amount%", String.valueOf(amount), "%target%", target.getName()));
+                    target.sendMessage(getPrefix() + getMessage("messages.xp.removed-target", "%amount%", String.valueOf(amount)));
                     return true;
                 } catch (NumberFormatException e) {
-                    sender.sendMessage("§cInvalid amount! Please enter a number.");
+                    sender.sendMessage(getPrefix() + getMessage("messages.invalid-amount"));
                     return true;
                 }
             }
         }
 
         if (!(sender instanceof Player)) {
-            sender.sendMessage("Only players can use this command!");
+            sender.sendMessage(getMessage("messages.player-only"));
             return true;
         }
 
@@ -341,7 +384,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
     private void resetSeason() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage("§6§l[SEASON RESET] §eThe Battle Pass season has ended! A new season begins now!");
+            player.sendMessage(getPrefix() + getMessage("messages.season.reset"));
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
         }
 
@@ -365,7 +408,10 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         long days = ChronoUnit.DAYS.between(now, seasonEndDate);
         long hours = ChronoUnit.HOURS.between(now, seasonEndDate) % 24;
 
-        return String.format("%dd %dh", days, hours);
+        String dayStr = days == 1 ? getMessage("time.day") : getMessage("time.days");
+        String hourStr = hours == 1 ? getMessage("time.hour") : getMessage("time.hours");
+
+        return getMessage("time.days-hours", "%days%", String.valueOf(days), "%hours%", String.valueOf(hours));
     }
 
     private void checkRewardNotifications() {
@@ -374,7 +420,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             int availableRewards = countAvailableRewards(player, data);
 
             if (availableRewards > data.lastNotification) {
-                player.sendMessage("§6§l[BATTLE PASS] §eYou have §f" + (availableRewards - data.lastNotification) + " §enew rewards to claim!");
+                player.sendMessage(getPrefix() + getMessage("messages.rewards-notification",
+                        "%amount%", String.valueOf(availableRewards - data.lastNotification)));
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
                 data.lastNotification = availableRewards;
             }
@@ -493,98 +540,58 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
     private void generateDailyMissions() {
         dailyMissions.clear();
+
+        ConfigurationSection pools = missionsConfig.getConfigurationSection("mission-pools");
+        if (pools == null) {
+            getLogger().warning("No mission pools found in missions.yml!");
+            return;
+        }
+
         List<MissionTemplate> templates = new ArrayList<>();
 
-        if (config.contains("missions.kill-mobs")) {
-            templates.add(new MissionTemplate("Kill %d Mobs", MissionType.KILL_MOBS,
-                    config.getInt("missions.kill-mobs.min-required", 10),
-                    config.getInt("missions.kill-mobs.max-required", 30),
-                    config.getInt("missions.kill-mobs.min-xp", 100),
-                    config.getInt("missions.kill-mobs.max-xp", 200)));
+        for (String key : pools.getKeys(false)) {
+            ConfigurationSection missionSection = pools.getConfigurationSection(key);
+            if (missionSection == null) continue;
+
+            String type = missionSection.getString("type");
+            String target = missionSection.getString("target");
+            String displayName = missionSection.getString("display-name");
+            int minRequired = missionSection.getInt("min-required");
+            int maxRequired = missionSection.getInt("max-required");
+            int minXP = missionSection.getInt("min-xp");
+            int maxXP = missionSection.getInt("max-xp");
+            int weight = missionSection.getInt("weight", 10);
+
+            for (int i = 0; i < weight; i++) {
+                templates.add(new MissionTemplate(displayName, type, target, minRequired, maxRequired, minXP, maxXP));
+            }
         }
 
-        if (config.contains("missions.break-blocks")) {
-            templates.add(new MissionTemplate("Break %d Blocks", MissionType.BREAK_BLOCKS,
-                    config.getInt("missions.break-blocks.min-required", 50),
-                    config.getInt("missions.break-blocks.max-required", 200),
-                    config.getInt("missions.break-blocks.min-xp", 150),
-                    config.getInt("missions.break-blocks.max-xp", 250)));
-        }
-
-        if (config.contains("missions.kill-players")) {
-            templates.add(new MissionTemplate("Kill %d Players", MissionType.KILL_PLAYERS,
-                    config.getInt("missions.kill-players.min-required", 3),
-                    config.getInt("missions.kill-players.max-required", 10),
-                    config.getInt("missions.kill-players.min-xp", 200),
-                    config.getInt("missions.kill-players.max-xp", 400)));
-        }
-
-        if (config.contains("missions.mine-diamonds")) {
-            templates.add(new MissionTemplate("Mine %d Diamonds", MissionType.MINE_DIAMONDS,
-                    config.getInt("missions.mine-diamonds.min-required", 10),
-                    config.getInt("missions.mine-diamonds.max-required", 30),
-                    config.getInt("missions.mine-diamonds.min-xp", 300),
-                    config.getInt("missions.mine-diamonds.max-xp", 500)));
-        }
-
-        if (config.contains("missions.kill-endermen")) {
-            templates.add(new MissionTemplate("Kill %d Endermen", MissionType.KILL_ENDERMEN,
-                    config.getInt("missions.kill-endermen.min-required", 3),
-                    config.getInt("missions.kill-endermen.max-required", 10),
-                    config.getInt("missions.kill-endermen.min-xp", 250),
-                    config.getInt("missions.kill-endermen.max-xp", 400)));
-        }
-
-        if (config.contains("missions.kill-zombies")) {
-            templates.add(new MissionTemplate("Kill %d Zombies", MissionType.KILL_ZOMBIES,
-                    config.getInt("missions.kill-zombies.min-required", 20),
-                    config.getInt("missions.kill-zombies.max-required", 50),
-                    config.getInt("missions.kill-zombies.min-xp", 150),
-                    config.getInt("missions.kill-zombies.max-xp", 250)));
-        }
-
-        if (config.contains("missions.kill-skeletons")) {
-            templates.add(new MissionTemplate("Kill %d Skeletons", MissionType.KILL_SKELETONS,
-                    config.getInt("missions.kill-skeletons.min-required", 15),
-                    config.getInt("missions.kill-skeletons.max-required", 40),
-                    config.getInt("missions.kill-skeletons.min-xp", 150),
-                    config.getInt("missions.kill-skeletons.max-xp", 250)));
-        }
-
-        if (config.contains("missions.mine-iron")) {
-            templates.add(new MissionTemplate("Mine %d Iron Ore", MissionType.MINE_IRON,
-                    config.getInt("missions.mine-iron.min-required", 30),
-                    config.getInt("missions.mine-iron.max-required", 100),
-                    config.getInt("missions.mine-iron.min-xp", 100),
-                    config.getInt("missions.mine-iron.max-xp", 200)));
-        }
-
-        if (config.contains("missions.mine-gold")) {
-            templates.add(new MissionTemplate("Mine %d Gold Ore", MissionType.MINE_GOLD,
-                    config.getInt("missions.mine-gold.min-required", 20),
-                    config.getInt("missions.mine-gold.max-required", 50),
-                    config.getInt("missions.mine-gold.min-xp", 200),
-                    config.getInt("missions.mine-gold.max-xp", 300)));
-        }
-
-        if (config.contains("missions.kill-creepers")) {
-            templates.add(new MissionTemplate("Kill %d Creepers", MissionType.KILL_CREEPERS,
-                    config.getInt("missions.kill-creepers.min-required", 10),
-                    config.getInt("missions.kill-creepers.max-required", 25),
-                    config.getInt("missions.kill-creepers.min-xp", 200),
-                    config.getInt("missions.kill-creepers.max-xp", 300)));
+        if (templates.isEmpty()) {
+            getLogger().warning("No valid missions found in missions.yml!");
+            return;
         }
 
         Collections.shuffle(templates);
 
-        for (int i = 0; i < 7 && i < templates.size(); i++) {
+        for (int i = 0; i < dailyMissionsCount && i < templates.size(); i++) {
             MissionTemplate template = templates.get(i);
             int required = ThreadLocalRandom.current().nextInt(template.minRequired, template.maxRequired + 1);
             int xpReward = ThreadLocalRandom.current().nextInt(template.minXP, template.maxXP + 1);
-            String name = String.format(template.nameFormat, required);
 
-            dailyMissions.add(new Mission(name, template.type, required, xpReward));
+            String name = template.nameFormat
+                    .replace("<amount>", String.valueOf(required))
+                    .replace("<target>", formatTarget(template.target));
+
+            dailyMissions.add(new Mission(name, template.type, template.target, required, xpReward));
         }
+    }
+
+    private String formatTarget(String target) {
+        if (target.equals("ANY")) {
+            return "";
+        }
+        return target.toLowerCase().replace("_", " ");
     }
 
     private void calculateNextReset() {
@@ -598,7 +605,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             calculateNextReset();
 
             for (Player player : Bukkit.getOnlinePlayers()) {
-                player.sendMessage("§6§lDaily missions have been reset!");
+                player.sendMessage(getPrefix() + getMessage("messages.mission.reset"));
             }
 
             for (PlayerData data : playerCache.values()) {
@@ -612,7 +619,10 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         long hours = ChronoUnit.HOURS.between(now, nextMissionReset);
         long minutes = ChronoUnit.MINUTES.between(now, nextMissionReset) % 60;
 
-        return String.format("%dh %dm", hours, minutes);
+        String hourStr = hours == 1 ? getMessage("time.hour") : getMessage("time.hours");
+        String minuteStr = minutes == 1 ? getMessage("time.minute") : getMessage("time.minutes");
+
+        return getMessage("time.hours-minutes", "%hours%", String.valueOf(hours), "%minutes%", String.valueOf(minutes));
     }
 
     private PlayerData loadPlayer(UUID uuid) {
@@ -730,12 +740,15 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         Player player = event.getPlayer();
         PlayerData data = loadPlayer(player.getUniqueId());
 
+        playTimeStart.put(player.getUniqueId(), System.currentTimeMillis());
+        lastLocations.put(player.getUniqueId(), player.getLocation());
+
         new BukkitRunnable() {
             @Override
             public void run() {
                 int available = countAvailableRewards(player, data);
                 if (available > 0) {
-                    player.sendMessage("§6§l[BATTLE PASS] §eYou have §f" + available + " §erewards available to claim!");
+                    player.sendMessage(getPrefix() + getMessage("messages.rewards-available", "%amount%", String.valueOf(available)));
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
                 }
             }
@@ -744,9 +757,119 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        savePlayer(event.getPlayer().getUniqueId());
-        playerCache.remove(event.getPlayer().getUniqueId());
+        UUID uuid = event.getPlayer().getUniqueId();
+
+        // Update play time on quit
+        if (playTimeStart.containsKey(uuid)) {
+            long playTime = (System.currentTimeMillis() - playTimeStart.get(uuid)) / 60000; // Convert to minutes
+            progressMission(event.getPlayer(), "PLAY_TIME", "ANY", (int) playTime);
+            playTimeStart.remove(uuid);
+        }
+
+        savePlayer(uuid);
+        playerCache.remove(uuid);
         currentPages.remove(event.getPlayer().getEntityId());
+        lastLocations.remove(uuid);
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
+                event.getFrom().getBlockY() == event.getTo().getBlockY() &&
+                event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+
+        if (lastLocations.containsKey(uuid)) {
+            Location last = lastLocations.get(uuid);
+            double distance = last.distance(event.getTo());
+
+            if (distance >= 1) {
+                progressMission(player, "WALK_DISTANCE", "ANY", (int) distance);
+                lastLocations.put(uuid, event.getTo());
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        progressMission(event.getEntity(), "DEATH", "ANY", 1);
+    }
+
+    @EventHandler
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Player) {
+            Player player = (Player) event.getDamager();
+            progressMission(player, "DAMAGE_DEALT", "ANY", (int) event.getDamage());
+        }
+
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            progressMission(player, "DAMAGE_TAKEN", "ANY", (int) event.getDamage());
+        }
+    }
+
+    @EventHandler
+    public void onEntityBreed(EntityBreedEvent event) {
+        if (event.getBreeder() instanceof Player) {
+            Player player = (Player) event.getBreeder();
+            String entityType = event.getEntity().getType().name();
+            progressMission(player, "BREED_ANIMAL", entityType, 1);
+        }
+    }
+
+    @EventHandler
+    public void onEntityTame(EntityTameEvent event) {
+        if (event.getOwner() instanceof Player) {
+            Player player = (Player) event.getOwner();
+            String entityType = event.getEntity().getType().name();
+            progressMission(player, "TAME_ANIMAL", entityType, 1);
+        }
+    }
+
+    @EventHandler
+    public void onVillagerTrade(PlayerInteractEntityEvent event) {
+        if (event.getRightClicked().getType() == EntityType.VILLAGER) {
+            Player player = event.getPlayer();
+            progressMission(player, "TRADE_VILLAGER", "ANY", 1);
+        }
+    }
+
+    @EventHandler
+    public void onEnchantItem(EnchantItemEvent event) {
+        progressMission(event.getEnchanter(), "ENCHANT_ITEM", "ANY", 1);
+    }
+
+    @EventHandler
+    public void onPlayerFish(PlayerFishEvent event) {
+        if (event.getState() == PlayerFishEvent.State.CAUGHT_FISH && event.getCaught() != null) {
+            Player player = event.getPlayer();
+            if (event.getCaught() instanceof org.bukkit.entity.Item) {
+                org.bukkit.entity.Item item = (org.bukkit.entity.Item) event.getCaught();
+                String itemType = item.getItemStack().getType().name();
+                progressMission(player, "FISH_ITEM", itemType, item.getItemStack().getAmount());
+            }
+        }
+    }
+
+    @EventHandler
+    public void onCraftItem(CraftItemEvent event) {
+        if (event.getWhoClicked() instanceof Player) {
+            Player player = (Player) event.getWhoClicked();
+            ItemStack result = event.getRecipe().getResult();
+            String itemType = result.getType().name();
+            progressMission(player, "CRAFT_ITEM", itemType, result.getAmount());
+        }
+    }
+
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Player player = event.getPlayer();
+        String blockType = event.getBlock().getType().name();
+        progressMission(player, "PLACE_BLOCK", blockType, 1);
     }
 
     @EventHandler
@@ -755,25 +878,10 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             Player killer = event.getEntity().getKiller();
 
             if (event.getEntity() instanceof Player) {
-                progressMission(killer, MissionType.KILL_PLAYERS, 1);
+                progressMission(killer, "KILL_PLAYER", "PLAYER", 1);
             } else {
-                progressMission(killer, MissionType.KILL_MOBS, 1);
-
                 String entityType = event.getEntityType().name();
-                switch (entityType) {
-                    case "ENDERMAN":
-                        progressMission(killer, MissionType.KILL_ENDERMEN, 1);
-                        break;
-                    case "ZOMBIE":
-                        progressMission(killer, MissionType.KILL_ZOMBIES, 1);
-                        break;
-                    case "SKELETON":
-                        progressMission(killer, MissionType.KILL_SKELETONS, 1);
-                        break;
-                    case "CREEPER":
-                        progressMission(killer, MissionType.KILL_CREEPERS, 1);
-                        break;
-                }
+                progressMission(killer, "KILL_MOB", entityType, 1);
             }
         }
     }
@@ -781,42 +889,55 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        progressMission(player, MissionType.BREAK_BLOCKS, 1);
+        String blockType = event.getBlock().getType().name();
 
-        Material blockType = event.getBlock().getType();
-        switch (blockType) {
-            case DIAMOND_ORE:
-            case DEEPSLATE_DIAMOND_ORE:
-                progressMission(player, MissionType.MINE_DIAMONDS, 1);
-                break;
-            case IRON_ORE:
-            case DEEPSLATE_IRON_ORE:
-                progressMission(player, MissionType.MINE_IRON, 1);
-                break;
-            case GOLD_ORE:
-            case DEEPSLATE_GOLD_ORE:
-                progressMission(player, MissionType.MINE_GOLD, 1);
-                break;
+        progressMission(player, "BREAK_BLOCK", blockType, 1);
+
+        // For ores, also count as mining if the item drops
+        if (event.isDropItems() && isOre(event.getBlock().getType())) {
+            progressMission(player, "MINE_BLOCK", blockType, 1);
         }
     }
 
-    private void progressMission(Player player, MissionType type, int amount) {
+    private boolean isOre(Material material) {
+        String name = material.name();
+        return name.endsWith("_ORE") || name.equals("ANCIENT_DEBRIS");
+    }
+
+    private void updatePlayTime() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            UUID uuid = player.getUniqueId();
+            if (playTimeStart.containsKey(uuid)) {
+                long playTime = (System.currentTimeMillis() - playTimeStart.get(uuid)) / 60000;
+                if (playTime > 0) {
+                    progressMission(player, "PLAY_TIME", "ANY", (int) playTime);
+                    playTimeStart.put(uuid, System.currentTimeMillis());
+                }
+            }
+        }
+    }
+
+    private void progressMission(Player player, String type, String target, int amount) {
         PlayerData data = loadPlayer(player.getUniqueId());
 
         for (Mission mission : dailyMissions) {
-            if (mission.type == type) {
-                String key = mission.name.toLowerCase().replace(" ", "_");
-                int current = data.missionProgress.getOrDefault(key, 0);
+            if (mission.type.equals(type)) {
+                if (mission.target.equals("ANY") || mission.target.equals(target)) {
+                    String key = mission.name.toLowerCase().replace(" ", "_");
+                    int current = data.missionProgress.getOrDefault(key, 0);
 
-                if (current < mission.required) {
-                    current = Math.min(current + amount, mission.required);
-                    data.missionProgress.put(key, current);
+                    if (current < mission.required) {
+                        current = Math.min(current + amount, mission.required);
+                        data.missionProgress.put(key, current);
 
-                    if (current >= mission.required) {
-                        data.xp += mission.xpReward;
-                        checkLevelUp(player, data);
-                        player.sendMessage("§a§lMission Completed: §f" + mission.name + " §7(+" + mission.xpReward + " XP)");
-                        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                        if (current >= mission.required) {
+                            data.xp += mission.xpReward;
+                            checkLevelUp(player, data);
+                            player.sendMessage(getPrefix() + getMessage("messages.mission.completed",
+                                    "%mission%", mission.name,
+                                    "%reward_xp%", String.valueOf(mission.xpReward)));
+                            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                        }
                     }
                 }
             }
@@ -828,18 +949,19 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             data.xp -= xpPerLevel;
             data.level++;
             data.totalLevels++;
-            player.sendMessage("§6§lLEVEL UP! §fYou are now level §e" + data.level);
+            player.sendMessage(getPrefix() + getMessage("messages.level-up", "%level%", String.valueOf(data.level)));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 
             int available = countAvailableRewards(player, data);
             if (available > 0) {
-                player.sendMessage("§e§lNEW REWARDS! §fYou have new rewards available to claim!");
+                player.sendMessage(getPrefix() + getMessage("messages.new-rewards"));
             }
         }
     }
 
     private void openBattlePassGUI(Player player, int page) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§6§lBattle Pass §7- Page " + page);
+        String title = getMessage("gui.battlepass", "%page%", String.valueOf(page));
+        Inventory gui = Bukkit.createInventory(null, 54, title);
         PlayerData data = loadPlayer(player.getUniqueId());
         boolean hasPremium = data.hasPremium;
 
@@ -847,17 +969,20 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
         ItemStack info = new ItemStack(Material.NETHER_STAR);
         ItemMeta infoMeta = info.getItemMeta();
-        infoMeta.setDisplayName("§6§lYour Progress");
-        infoMeta.setLore(Arrays.asList(
-                "§7Level: §e" + data.level + "§7/§e54",
-                "§7XP: §e" + data.xp + "§7/§e" + xpPerLevel,
-                "",
-                "§7Premium Pass: " + (hasPremium ? "§a§lACTIVE" : "§c§lINACTIVE"),
-                "§7Season Ends: §e" + getTimeUntilSeasonEnd(),
-                "",
-                "§7Complete missions to earn XP",
-                "§7and unlock rewards!"
-        ));
+        infoMeta.setDisplayName(getMessage("items.progress.name"));
+
+        List<String> lore = new ArrayList<>();
+        String premiumStatus = hasPremium ? getMessage("items.premium-status.active") : getMessage("items.premium-status.inactive");
+
+        for (String line : messagesConfig.getStringList("items.progress.lore")) {
+            lore.add(ChatColor.translateAlternateColorCodes('&', line
+                    .replace("%level%", String.valueOf(data.level))
+                    .replace("%xp%", String.valueOf(data.xp))
+                    .replace("%xp_needed%", String.valueOf(xpPerLevel))
+                    .replace("%premium_status%", premiumStatus)
+                    .replace("%season_time%", getTimeUntilSeasonEnd())));
+        }
+        infoMeta.setLore(lore);
         info.setItemMeta(infoMeta);
         gui.setItem(4, info);
 
@@ -890,7 +1015,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
         ItemStack separator = new ItemStack(Material.GRAY_STAINED_GLASS_PANE, 1);
         ItemMeta sepMeta = separator.getItemMeta();
-        sepMeta.setDisplayName(" ");
+        sepMeta.setDisplayName(getMessage("items.separator.name"));
         separator.setItemMeta(sepMeta);
         for (int i = 18; i < 27; i++) {
             gui.setItem(i, separator);
@@ -899,8 +1024,14 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         if (page > 1) {
             ItemStack prevPage = new ItemStack(Material.ARROW);
             ItemMeta prevMeta = prevPage.getItemMeta();
-            prevMeta.setDisplayName("§e§lPrevious Page");
-            prevMeta.setLore(Arrays.asList("§7Click to go to page " + (page - 1)));
+            prevMeta.setDisplayName(getMessage("items.previous-page.name"));
+
+            List<String> prevLore = new ArrayList<>();
+            for (String line : messagesConfig.getStringList("items.previous-page.lore")) {
+                prevLore.add(ChatColor.translateAlternateColorCodes('&', line
+                        .replace("%page%", String.valueOf(page - 1))));
+            }
+            prevMeta.setLore(prevLore);
             prevPage.setItemMeta(prevMeta);
             gui.setItem(45, prevPage);
         }
@@ -908,35 +1039,40 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         if (endLevel < 54) {
             ItemStack nextPage = new ItemStack(Material.ARROW);
             ItemMeta nextMeta = nextPage.getItemMeta();
-            nextMeta.setDisplayName("§e§lNext Page");
-            nextMeta.setLore(Arrays.asList("§7Click to go to page " + (page + 1)));
+            nextMeta.setDisplayName(getMessage("items.next-page.name"));
+
+            List<String> nextLore = new ArrayList<>();
+            for (String line : messagesConfig.getStringList("items.next-page.lore")) {
+                nextLore.add(ChatColor.translateAlternateColorCodes('&', line
+                        .replace("%page%", String.valueOf(page + 1))));
+            }
+            nextMeta.setLore(nextLore);
             nextPage.setItemMeta(nextMeta);
             gui.setItem(53, nextPage);
         }
 
         ItemStack missions = new ItemStack(Material.BOOK);
         ItemMeta missionsMeta = missions.getItemMeta();
-        missionsMeta.setDisplayName("§b§lDaily Missions");
-        missionsMeta.setLore(Arrays.asList(
-                "§7Complete daily missions",
-                "§7to earn bonus XP!",
-                "",
-                "§7Resets in: §e" + getTimeUntilReset(),
-                "",
-                "§e§lCLICK TO VIEW"
-        ));
+        missionsMeta.setDisplayName(getMessage("items.missions-button.name"));
+
+        List<String> missionsLore = new ArrayList<>();
+        for (String line : messagesConfig.getStringList("items.missions-button.lore")) {
+            missionsLore.add(ChatColor.translateAlternateColorCodes('&', line
+                    .replace("%reset_time%", getTimeUntilReset())));
+        }
+        missionsMeta.setLore(missionsLore);
         missions.setItemMeta(missionsMeta);
         gui.setItem(49, missions);
 
         ItemStack leaderboard = new ItemStack(Material.GOLDEN_HELMET);
         ItemMeta leaderMeta = leaderboard.getItemMeta();
-        leaderMeta.setDisplayName("§6§lLeaderboard");
-        leaderMeta.setLore(Arrays.asList(
-                "§7View the top 10 players",
-                "§7with highest battle pass levels!",
-                "",
-                "§e§lCLICK TO VIEW"
-        ));
+        leaderMeta.setDisplayName(getMessage("items.leaderboard-button.name"));
+
+        List<String> leaderLore = new ArrayList<>();
+        for (String line : messagesConfig.getStringList("items.leaderboard-button.lore")) {
+            leaderLore.add(ChatColor.translateAlternateColorCodes('&', line));
+        }
+        leaderMeta.setLore(leaderLore);
         leaderboard.setItemMeta(leaderMeta);
         gui.setItem(48, leaderboard);
 
@@ -944,18 +1080,21 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     }
 
     private void openLeaderboardGUI(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§6§lBattle Pass Leaderboard");
+        String title = getMessage("gui.leaderboard");
+        Inventory gui = Bukkit.createInventory(null, 54, title);
 
-        ItemStack title = new ItemStack(Material.GOLDEN_HELMET);
-        ItemMeta titleMeta = title.getItemMeta();
-        titleMeta.setDisplayName("§6§lTop 10 Players");
-        titleMeta.setLore(Arrays.asList(
-                "§7Season ends in: §e" + getTimeUntilSeasonEnd(),
-                "",
-                "§7Compete for the top spots!"
-        ));
-        title.setItemMeta(titleMeta);
-        gui.setItem(4, title);
+        ItemStack title_item = new ItemStack(Material.GOLDEN_HELMET);
+        ItemMeta titleMeta = title_item.getItemMeta();
+        titleMeta.setDisplayName(getMessage("items.leaderboard-title.name"));
+
+        List<String> titleLore = new ArrayList<>();
+        for (String line : messagesConfig.getStringList("items.leaderboard-title.lore")) {
+            titleLore.add(ChatColor.translateAlternateColorCodes('&', line
+                    .replace("%season_time%", getTimeUntilSeasonEnd())));
+        }
+        titleMeta.setLore(titleLore);
+        title_item.setItemMeta(titleMeta);
+        gui.setItem(4, title_item);
 
         List<PlayerData> topPlayers = getTop10Players();
         int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
@@ -968,27 +1107,40 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             SkullMeta skullMeta = (SkullMeta) skull.getItemMeta();
             skullMeta.setOwningPlayer(Bukkit.getOfflinePlayer(topPlayer.uuid));
 
-            String rank = "§7#" + (i + 1);
-            if (i == 0) rank = "§6§l#1";
-            else if (i == 1) rank = "§7§l#2";
-            else if (i == 2) rank = "§c§l#3";
+            String rank;
+            if (i == 0) rank = getMessage("items.leaderboard-rank.first");
+            else if (i == 1) rank = getMessage("items.leaderboard-rank.second");
+            else if (i == 2) rank = getMessage("items.leaderboard-rank.third");
+            else rank = getMessage("items.leaderboard-rank.other", "%rank%", String.valueOf(i + 1));
 
-            skullMeta.setDisplayName(rank + " §f" + playerName);
-            skullMeta.setLore(Arrays.asList(
-                    "§7Level: §e" + topPlayer.level,
-                    "§7Total Levels: §e" + topPlayer.totalLevels,
-                    "§7XP: §e" + topPlayer.xp,
-                    "",
-                    topPlayer.uuid.equals(player.getUniqueId()) ? "§a§lTHIS IS YOU!" : "§7Keep grinding to beat them!"
-            ));
+            skullMeta.setDisplayName(getMessage("items.leaderboard-player.name", "%rank%", rank, "%player%", playerName));
+
+            String status = topPlayer.uuid.equals(player.getUniqueId()) ?
+                    getMessage("items.leaderboard-status.you") :
+                    getMessage("items.leaderboard-status.other");
+
+            List<String> skullLore = new ArrayList<>();
+            for (String line : messagesConfig.getStringList("items.leaderboard-player.lore")) {
+                skullLore.add(ChatColor.translateAlternateColorCodes('&', line
+                        .replace("%level%", String.valueOf(topPlayer.level))
+                        .replace("%total_levels%", String.valueOf(topPlayer.totalLevels))
+                        .replace("%xp%", String.valueOf(topPlayer.xp))
+                        .replace("%status%", status)));
+            }
+            skullMeta.setLore(skullLore);
             skull.setItemMeta(skullMeta);
             gui.setItem(slots[i], skull);
         }
 
         ItemStack back = new ItemStack(Material.BARRIER);
         ItemMeta backMeta = back.getItemMeta();
-        backMeta.setDisplayName("§c§lBack");
-        backMeta.setLore(Arrays.asList("§7Return to Battle Pass"));
+        backMeta.setDisplayName(getMessage("items.back-button.name"));
+
+        List<String> backLore = new ArrayList<>();
+        for (String line : messagesConfig.getStringList("items.back-button.lore")) {
+            backLore.add(ChatColor.translateAlternateColorCodes('&', line));
+        }
+        backMeta.setLore(backLore);
         back.setItemMeta(backMeta);
         gui.setItem(49, back);
 
@@ -996,19 +1148,20 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     }
 
     private void openMissionsGUI(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§b§lDaily Missions");
+        String title = getMessage("gui.missions");
+        Inventory gui = Bukkit.createInventory(null, 54, title);
         PlayerData data = loadPlayer(player.getUniqueId());
 
         ItemStack timer = new ItemStack(Material.CLOCK);
         ItemMeta timerMeta = timer.getItemMeta();
-        timerMeta.setDisplayName("§e§lTime Until Reset");
-        timerMeta.setLore(Arrays.asList(
-                "§7Missions reset in:",
-                "§f" + getTimeUntilReset(),
-                "",
-                "§7Complete missions before",
-                "§7they reset to earn XP!"
-        ));
+        timerMeta.setDisplayName(getMessage("items.mission-timer.name"));
+
+        List<String> timerLore = new ArrayList<>();
+        for (String line : messagesConfig.getStringList("items.mission-timer.lore")) {
+            timerLore.add(ChatColor.translateAlternateColorCodes('&', line
+                    .replace("%reset_time%", getTimeUntilReset())));
+        }
+        timerMeta.setLore(timerLore);
         timer.setItemMeta(timerMeta);
         gui.setItem(4, timer);
 
@@ -1021,23 +1174,34 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
             ItemStack missionItem = new ItemStack(completed ? Material.LIME_DYE : Material.GRAY_DYE);
             ItemMeta missionMeta = missionItem.getItemMeta();
-            missionMeta.setDisplayName((completed ? "§a§l" : "§e§l") + mission.name);
-            missionMeta.setLore(Arrays.asList(
-                    "§7Progress: §f" + progress + "§7/§f" + mission.required,
-                    "§7Reward: §e" + mission.xpReward + " XP",
-                    "",
-                    "§7Resets in: §e" + getTimeUntilReset(),
-                    "",
-                    completed ? "§a§lCOMPLETED" : "§e§lIN PROGRESS"
-            ));
+
+            String itemName = completed ? "items.mission-completed.name" : "items.mission-in-progress.name";
+            String itemLore = completed ? "items.mission-completed.lore" : "items.mission-in-progress.lore";
+
+            missionMeta.setDisplayName(getMessage(itemName, "%mission%", mission.name));
+
+            List<String> missionLore = new ArrayList<>();
+            for (String line : messagesConfig.getStringList(itemLore)) {
+                missionLore.add(ChatColor.translateAlternateColorCodes('&', line
+                        .replace("%progress%", String.valueOf(progress))
+                        .replace("%required%", String.valueOf(mission.required))
+                        .replace("%reward_xp%", String.valueOf(mission.xpReward))
+                        .replace("%reset_time%", getTimeUntilReset())));
+            }
+            missionMeta.setLore(missionLore);
             missionItem.setItemMeta(missionMeta);
             gui.setItem(slots[i], missionItem);
         }
 
         ItemStack back = new ItemStack(Material.BARRIER);
         ItemMeta backMeta = back.getItemMeta();
-        backMeta.setDisplayName("§c§lBack");
-        backMeta.setLore(Arrays.asList("§7Return to Battle Pass"));
+        backMeta.setDisplayName(getMessage("items.back-button.name"));
+
+        List<String> backLore = new ArrayList<>();
+        for (String line : messagesConfig.getStringList("items.back-button.lore")) {
+            backLore.add(ChatColor.translateAlternateColorCodes('&', line));
+        }
+        backMeta.setLore(backLore);
         back.setItemMeta(backMeta);
         gui.setItem(49, back);
 
@@ -1053,22 +1217,35 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 premiumRewards.stream().filter(r -> r.level == reward.level).collect(Collectors.toList()) :
                 freeRewards.stream().filter(r -> r.level == reward.level).collect(Collectors.toList());
 
+        String rewardType = getMessage(isPremium ? "reward-types.premium" : "reward-types.free");
+
         if (data.level >= reward.level && hasAccess && !claimedSet.contains(reward.level)) {
             item = new ItemStack(Material.CHEST_MINECART, 1);
             meta = item.getItemMeta();
-            meta.setDisplayName("§a§lLevel " + reward.level + " " + (isPremium ? "Premium" : "Free") + " Reward");
+            meta.setDisplayName(getMessage("items.reward-available.name",
+                    "%level%", String.valueOf(reward.level),
+                    "%type%", rewardType));
 
             List<String> lore = new ArrayList<>();
-            lore.add("§7Rewards:");
-            for (Reward r : levelRewards) {
-                lore.add("§f• " + r.displayName);
+            for (String line : messagesConfig.getStringList("items.reward-available.lore-header")) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line));
             }
-            lore.add("");
-            lore.add("§7Required Level: §e" + reward.level);
-            lore.add("");
-            lore.add("§7Season ends in: §c" + getTimeUntilSeasonEnd());
-            lore.add("");
-            lore.add("§a§lCLICK TO CLAIM!");
+
+            for (Reward r : levelRewards) {
+                if (r.command != null) {
+                    lore.add(getMessage("messages.rewards.command-reward", "%reward%", r.displayName));
+                } else {
+                    lore.add(getMessage("messages.rewards.item-reward",
+                            "%amount%", String.valueOf(r.amount),
+                            "%item%", formatMaterial(r.material)));
+                }
+            }
+
+            for (String line : messagesConfig.getStringList("items.reward-available.lore-footer")) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line
+                        .replace("%level%", String.valueOf(reward.level))
+                        .replace("%season_time%", getTimeUntilSeasonEnd())));
+            }
             meta.setLore(lore);
 
         } else if (claimedSet.contains(reward.level)) {
@@ -1084,55 +1261,87 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
             item = new ItemStack(displayMat, displayAmount);
             meta = item.getItemMeta();
-            meta.setDisplayName("§7§lLevel " + reward.level + " " + (isPremium ? "Premium" : "Free") + " Reward");
+            meta.setDisplayName(getMessage("items.reward-claimed.name",
+                    "%level%", String.valueOf(reward.level),
+                    "%type%", rewardType));
 
             List<String> lore = new ArrayList<>();
-            lore.add("§7Rewards:");
-            for (Reward r : levelRewards) {
-                lore.add("§f• " + r.displayName);
+            for (String line : messagesConfig.getStringList("items.reward-claimed.lore-header")) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line));
             }
-            lore.add("");
-            lore.add("§7Required Level: §e" + reward.level);
-            lore.add("");
-            lore.add("§7Season ends in: §c" + getTimeUntilSeasonEnd());
-            lore.add("");
-            lore.add("§7§lALREADY CLAIMED");
+
+            for (Reward r : levelRewards) {
+                if (r.command != null) {
+                    lore.add(getMessage("messages.rewards.command-reward", "%reward%", r.displayName));
+                } else {
+                    lore.add(getMessage("messages.rewards.item-reward",
+                            "%amount%", String.valueOf(r.amount),
+                            "%item%", formatMaterial(r.material)));
+                }
+            }
+
+            for (String line : messagesConfig.getStringList("items.reward-claimed.lore-footer")) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line
+                        .replace("%level%", String.valueOf(reward.level))
+                        .replace("%season_time%", getTimeUntilSeasonEnd())));
+            }
             meta.setLore(lore);
 
         } else if (!hasAccess && isPremium) {
             item = new ItemStack(Material.MINECART, 1);
             meta = item.getItemMeta();
-            meta.setDisplayName("§6§lLevel " + reward.level + " Premium Reward");
+            meta.setDisplayName(getMessage("items.reward-premium-locked.name",
+                    "%level%", String.valueOf(reward.level)));
 
             List<String> lore = new ArrayList<>();
-            lore.add("§7Rewards:");
-            for (Reward r : levelRewards) {
-                lore.add("§f• " + r.displayName);
+            for (String line : messagesConfig.getStringList("items.reward-premium-locked.lore-header")) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line));
             }
-            lore.add("");
-            lore.add("§7Required Level: §e" + reward.level);
-            lore.add("");
-            lore.add("§7Season ends in: §c" + getTimeUntilSeasonEnd());
-            lore.add("");
-            lore.add("§6§lPREMIUM ONLY");
+
+            for (Reward r : levelRewards) {
+                if (r.command != null) {
+                    lore.add(getMessage("messages.rewards.command-reward", "%reward%", r.displayName));
+                } else {
+                    lore.add(getMessage("messages.rewards.item-reward",
+                            "%amount%", String.valueOf(r.amount),
+                            "%item%", formatMaterial(r.material)));
+                }
+            }
+
+            for (String line : messagesConfig.getStringList("items.reward-premium-locked.lore-footer")) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line
+                        .replace("%level%", String.valueOf(reward.level))
+                        .replace("%season_time%", getTimeUntilSeasonEnd())));
+            }
             meta.setLore(lore);
 
         } else {
             item = new ItemStack(Material.MINECART, 1);
             meta = item.getItemMeta();
-            meta.setDisplayName("§c§lLevel " + reward.level + " " + (isPremium ? "Premium" : "Free") + " Reward");
+            meta.setDisplayName(getMessage("items.reward-level-locked.name",
+                    "%level%", String.valueOf(reward.level),
+                    "%type%", rewardType));
 
             List<String> lore = new ArrayList<>();
-            lore.add("§7Rewards:");
-            for (Reward r : levelRewards) {
-                lore.add("§f• " + r.displayName);
+            for (String line : messagesConfig.getStringList("items.reward-level-locked.lore-header")) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line));
             }
-            lore.add("");
-            lore.add("§7Required Level: §e" + reward.level);
-            lore.add("");
-            lore.add("§7Season ends in: §c" + getTimeUntilSeasonEnd());
-            lore.add("");
-            lore.add("§c§lLOCKED (Level " + reward.level + " Required)");
+
+            for (Reward r : levelRewards) {
+                if (r.command != null) {
+                    lore.add(getMessage("messages.rewards.command-reward", "%reward%", r.displayName));
+                } else {
+                    lore.add(getMessage("messages.rewards.item-reward",
+                            "%amount%", String.valueOf(r.amount),
+                            "%item%", formatMaterial(r.material)));
+                }
+            }
+
+            for (String line : messagesConfig.getStringList("items.reward-level-locked.lore-footer")) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line
+                        .replace("%level%", String.valueOf(reward.level))
+                        .replace("%season_time%", getTimeUntilSeasonEnd())));
+            }
             meta.setLore(lore);
         }
 
@@ -1144,7 +1353,12 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     public void onInventoryClick(InventoryClickEvent event) {
         String title = event.getView().getTitle();
 
-        if (title.startsWith("§6§lBattle Pass") && !title.contains("Leaderboard")) {
+        if (title.equals(getMessage("gui.battlepass", "%page%", "1")) ||
+                title.equals(getMessage("gui.battlepass", "%page%", "2")) ||
+                title.equals(getMessage("gui.battlepass", "%page%", "3")) ||
+                title.equals(getMessage("gui.battlepass", "%page%", "4")) ||
+                title.equals(getMessage("gui.battlepass", "%page%", "5")) ||
+                title.equals(getMessage("gui.battlepass", "%page%", "6"))) {
             event.setCancelled(true);
             Player player = (Player) event.getWhoClicked();
             ItemStack clicked = event.getCurrentItem();
@@ -1155,9 +1369,9 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 String displayName = clicked.getItemMeta().getDisplayName();
                 int currentPage = currentPages.getOrDefault(player.getEntityId(), 1);
 
-                if (displayName.contains("Previous")) {
+                if (displayName.contains(ChatColor.stripColor(getMessage("items.previous-page.name")).substring(0, 8))) {
                     openBattlePassGUI(player, currentPage - 1);
-                } else if (displayName.contains("Next")) {
+                } else if (displayName.contains(ChatColor.stripColor(getMessage("items.next-page.name")).substring(0, 8))) {
                     openBattlePassGUI(player, currentPage + 1);
                 }
             } else if (clicked.getType() == Material.BOOK) {
@@ -1185,16 +1399,18 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                             if (data.level >= level && !data.claimedPremiumRewards.contains(level)) {
                                 data.claimedPremiumRewards.add(level);
 
-                                StringBuilder message = new StringBuilder("§6§lPremium Rewards Claimed!");
+                                StringBuilder message = new StringBuilder(getPrefix() + getMessage("messages.rewards.premium-claimed"));
 
                                 for (Reward reward : levelRewards) {
                                     if (reward.command != null) {
                                         String command = reward.command.replace("<player>", player.getName());
                                         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
-                                        message.append("\n§f• ").append(reward.displayName);
+                                        message.append("\n").append(getMessage("messages.rewards.command-reward", "%reward%", reward.displayName));
                                     } else {
                                         player.getInventory().addItem(new ItemStack(reward.material, reward.amount));
-                                        message.append("\n§f• ").append(reward.amount).append("x ").append(formatMaterial(reward.material));
+                                        message.append("\n").append(getMessage("messages.rewards.item-reward",
+                                                "%amount%", String.valueOf(reward.amount),
+                                                "%item%", formatMaterial(reward.material)));
                                     }
                                 }
 
@@ -1202,11 +1418,11 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
                                 openBattlePassGUI(player, currentPage);
                             } else {
-                                player.sendMessage("§cYou cannot claim this reward!");
+                                player.sendMessage(getPrefix() + getMessage("messages.rewards.cannot-claim"));
                             }
                         }
                     } else {
-                        player.sendMessage("§c§lYou need the Premium Pass to claim this reward!");
+                        player.sendMessage(getPrefix() + getMessage("messages.premium.required"));
                         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                     }
                 } else if (slot >= 27 && slot <= 35) {
@@ -1221,16 +1437,18 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                         if (data.level >= level && !data.claimedFreeRewards.contains(level)) {
                             data.claimedFreeRewards.add(level);
 
-                            StringBuilder message = new StringBuilder("§a§lFree Rewards Claimed!");
+                            StringBuilder message = new StringBuilder(getPrefix() + getMessage("messages.rewards.free-claimed"));
 
                             for (Reward reward : levelRewards) {
                                 if (reward.command != null) {
                                     String command = reward.command.replace("<player>", player.getName());
                                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
-                                    message.append("\n§f• ").append(reward.displayName);
+                                    message.append("\n").append(getMessage("messages.rewards.command-reward", "%reward%", reward.displayName));
                                 } else {
                                     player.getInventory().addItem(new ItemStack(reward.material, reward.amount));
-                                    message.append("\n§f• ").append(reward.amount).append("x ").append(formatMaterial(reward.material));
+                                    message.append("\n").append(getMessage("messages.rewards.item-reward",
+                                            "%amount%", String.valueOf(reward.amount),
+                                            "%item%", formatMaterial(reward.material)));
                                 }
                             }
 
@@ -1241,7 +1459,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     }
                 }
             }
-        } else if (title.equals("§6§lBattle Pass Leaderboard")) {
+        } else if (title.equals(getMessage("gui.leaderboard"))) {
             event.setCancelled(true);
 
             if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.BARRIER) {
@@ -1249,7 +1467,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 int page = currentPages.getOrDefault(player.getEntityId(), 1);
                 openBattlePassGUI(player, page);
             }
-        } else if (title.equals("§b§lDaily Missions")) {
+        } else if (title.equals(getMessage("gui.missions"))) {
             event.setCancelled(true);
 
             if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.BARRIER) {
@@ -1282,13 +1500,15 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
     private static class Mission {
         String name;
-        MissionType type;
+        String type;
+        String target;
         int required;
         int xpReward;
 
-        Mission(String name, MissionType type, int required, int xpReward) {
+        Mission(String name, String type, String target, int required, int xpReward) {
             this.name = name;
             this.type = type;
+            this.target = target;
             this.required = required;
             this.xpReward = xpReward;
         }
@@ -1296,15 +1516,17 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
     private static class MissionTemplate {
         String nameFormat;
-        MissionType type;
+        String type;
+        String target;
         int minRequired;
         int maxRequired;
         int minXP;
         int maxXP;
 
-        MissionTemplate(String nameFormat, MissionType type, int minRequired, int maxRequired, int minXP, int maxXP) {
+        MissionTemplate(String nameFormat, String type, String target, int minRequired, int maxRequired, int minXP, int maxXP) {
             this.nameFormat = nameFormat;
             this.type = type;
+            this.target = target;
             this.minRequired = minRequired;
             this.maxRequired = maxRequired;
             this.minXP = minXP;
@@ -1341,10 +1563,5 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         private static String formatMaterialStatic(Material material) {
             return material.name().toLowerCase().replace("_", " ");
         }
-    }
-
-    private enum MissionType {
-        KILL_MOBS, BREAK_BLOCKS, KILL_PLAYERS, MINE_DIAMONDS, KILL_ENDERMEN,
-        KILL_ZOMBIES, KILL_SKELETONS, MINE_IRON, MINE_GOLD, KILL_CREEPERS
     }
 }

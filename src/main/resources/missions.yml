@@ -1,0 +1,545 @@
+# Battle Pass Missions Configuration
+#
+# You can create any type of mission with customizable requirements
+#
+# Mission Types:
+# - KILL_MOB: Kill a specific mob type
+# - BREAK_BLOCK: Break a specific block type
+# - MINE_BLOCK: Mine a specific block type (for ores, only counts if item drops)
+# - PLACE_BLOCK: Place a specific block type
+# - CRAFT_ITEM: Craft a specific item
+# - FISH_ITEM: Fish a specific item
+# - ENCHANT_ITEM: Enchant any item
+# - BREED_ANIMAL: Breed a specific animal type
+# - TAME_ANIMAL: Tame a specific animal type
+# - TRADE_VILLAGER: Trade with villagers
+# - KILL_PLAYER: Kill players
+# - DEATH: Die a certain number of times
+# - DAMAGE_DEALT: Deal damage to entities
+# - DAMAGE_TAKEN: Take damage
+# - WALK_DISTANCE: Walk a certain distance in blocks
+# - PLAY_TIME: Play for a certain amount of minutes
+#
+# Each mission pool will have missions randomly selected from it daily
+# The 'weight' determines how likely a mission is to be selected
+#
+# Available placeholders:
+# <amount> - The required amount for the mission
+# <target> - The target mob/block/item name
+
+# Number of daily missions to generate
+daily-missions-count: 7
+
+# Mission pools - missions will be randomly selected from these
+mission-pools:
+  # Kill mob missions
+  kill-zombies:
+    type: KILL_MOB
+    target: ZOMBIE
+    display-name: "Kill <amount> Zombies"
+    min-required: 10
+    max-required: 30
+    min-xp: 100
+    max-xp: 200
+    weight: 10
+
+  kill-skeletons:
+    type: KILL_MOB
+    target: SKELETON
+    display-name: "Kill <amount> Skeletons"
+    min-required: 10
+    max-required: 25
+    min-xp: 100
+    max-xp: 200
+    weight: 10
+
+  kill-creepers:
+    type: KILL_MOB
+    target: CREEPER
+    display-name: "Kill <amount> Creepers"
+    min-required: 5
+    max-required: 15
+    min-xp: 150
+    max-xp: 250
+    weight: 8
+
+  kill-spiders:
+    type: KILL_MOB
+    target: SPIDER
+    display-name: "Kill <amount> Spiders"
+    min-required: 10
+    max-required: 25
+    min-xp: 100
+    max-xp: 180
+    weight: 9
+
+  kill-endermen:
+    type: KILL_MOB
+    target: ENDERMAN
+    display-name: "Kill <amount> Endermen"
+    min-required: 3
+    max-required: 10
+    min-xp: 200
+    max-xp: 350
+    weight: 6
+
+  kill-blazes:
+    type: KILL_MOB
+    target: BLAZE
+    display-name: "Kill <amount> Blazes"
+    min-required: 5
+    max-required: 15
+    min-xp: 250
+    max-xp: 400
+    weight: 5
+
+  kill-witches:
+    type: KILL_MOB
+    target: WITCH
+    display-name: "Kill <amount> Witches"
+    min-required: 3
+    max-required: 8
+    min-xp: 200
+    max-xp: 300
+    weight: 6
+
+  kill-guardians:
+    type: KILL_MOB
+    target: GUARDIAN
+    display-name: "Kill <amount> Guardians"
+    min-required: 5
+    max-required: 12
+    min-xp: 250
+    max-xp: 400
+    weight: 4
+
+  kill-phantoms:
+    type: KILL_MOB
+    target: PHANTOM
+    display-name: "Kill <amount> Phantoms"
+    min-required: 3
+    max-required: 8
+    min-xp: 200
+    max-xp: 350
+    weight: 5
+
+  kill-pillagers:
+    type: KILL_MOB
+    target: PILLAGER
+    display-name: "Kill <amount> Pillagers"
+    min-required: 5
+    max-required: 15
+    min-xp: 150
+    max-xp: 250
+    weight: 7
+
+  # Mine block missions (ores)
+  mine-diamonds:
+    type: MINE_BLOCK
+    target: DIAMOND_ORE
+    display-name: "Mine <amount> Diamonds"
+    min-required: 3
+    max-required: 10
+    min-xp: 300
+    max-xp: 500
+    weight: 7
+
+  mine-deepslate-diamonds:
+    type: MINE_BLOCK
+    target: DEEPSLATE_DIAMOND_ORE
+    display-name: "Mine <amount> Deepslate Diamond Ore"
+    min-required: 3
+    max-required: 10
+    min-xp: 350
+    max-xp: 550
+    weight: 6
+
+  mine-iron:
+    type: MINE_BLOCK
+    target: IRON_ORE
+    display-name: "Mine <amount> Iron Ore"
+    min-required: 20
+    max-required: 50
+    min-xp: 100
+    max-xp: 200
+    weight: 10
+
+  mine-deepslate-iron:
+    type: MINE_BLOCK
+    target: DEEPSLATE_IRON_ORE
+    display-name: "Mine <amount> Deepslate Iron Ore"
+    min-required: 15
+    max-required: 40
+    min-xp: 120
+    max-xp: 220
+    weight: 9
+
+  mine-gold:
+    type: MINE_BLOCK
+    target: GOLD_ORE
+    display-name: "Mine <amount> Gold Ore"
+    min-required: 10
+    max-required: 30
+    min-xp: 150
+    max-xp: 250
+    weight: 8
+
+  mine-emeralds:
+    type: MINE_BLOCK
+    target: EMERALD_ORE
+    display-name: "Mine <amount> Emerald Ore"
+    min-required: 3
+    max-required: 8
+    min-xp: 400
+    max-xp: 600
+    weight: 4
+
+  mine-lapis:
+    type: MINE_BLOCK
+    target: LAPIS_ORE
+    display-name: "Mine <amount> Lapis Ore"
+    min-required: 10
+    max-required: 25
+    min-xp: 120
+    max-xp: 200
+    weight: 9
+
+  mine-redstone:
+    type: MINE_BLOCK
+    target: REDSTONE_ORE
+    display-name: "Mine <amount> Redstone Ore"
+    min-required: 15
+    max-required: 35
+    min-xp: 100
+    max-xp: 180
+    weight: 9
+
+  mine-coal:
+    type: MINE_BLOCK
+    target: COAL_ORE
+    display-name: "Mine <amount> Coal Ore"
+    min-required: 30
+    max-required: 80
+    min-xp: 80
+    max-xp: 150
+    weight: 10
+
+  mine-ancient-debris:
+    type: MINE_BLOCK
+    target: ANCIENT_DEBRIS
+    display-name: "Mine <amount> Ancient Debris"
+    min-required: 1
+    max-required: 3
+    min-xp: 500
+    max-xp: 800
+    weight: 3
+
+  # Break block missions
+  break-stone:
+    type: BREAK_BLOCK
+    target: STONE
+    display-name: "Break <amount> Stone"
+    min-required: 100
+    max-required: 300
+    min-xp: 100
+    max-xp: 200
+    weight: 10
+
+  break-dirt:
+    type: BREAK_BLOCK
+    target: DIRT
+    display-name: "Break <amount> Dirt"
+    min-required: 50
+    max-required: 150
+    min-xp: 80
+    max-xp: 150
+    weight: 9
+
+  break-logs:
+    type: BREAK_BLOCK
+    target: OAK_LOG
+    display-name: "Break <amount> Oak Logs"
+    min-required: 30
+    max-required: 80
+    min-xp: 100
+    max-xp: 180
+    weight: 10
+
+  break-sand:
+    type: BREAK_BLOCK
+    target: SAND
+    display-name: "Break <amount> Sand"
+    min-required: 40
+    max-required: 100
+    min-xp: 80
+    max-xp: 150
+    weight: 8
+
+  break-gravel:
+    type: BREAK_BLOCK
+    target: GRAVEL
+    display-name: "Break <amount> Gravel"
+    min-required: 40
+    max-required: 100
+    min-xp: 80
+    max-xp: 150
+    weight: 8
+
+  break-netherrack:
+    type: BREAK_BLOCK
+    target: NETHERRACK
+    display-name: "Break <amount> Netherrack"
+    min-required: 100
+    max-required: 250
+    min-xp: 100
+    max-xp: 180
+    weight: 7
+
+  # Place block missions
+  place-stone:
+    type: PLACE_BLOCK
+    target: STONE
+    display-name: "Place <amount> Stone"
+    min-required: 50
+    max-required: 150
+    min-xp: 100
+    max-xp: 200
+    weight: 8
+
+  place-wood:
+    type: PLACE_BLOCK
+    target: OAK_PLANKS
+    display-name: "Place <amount> Oak Planks"
+    min-required: 50
+    max-required: 150
+    min-xp: 80
+    max-xp: 150
+    weight: 9
+
+  place-glass:
+    type: PLACE_BLOCK
+    target: GLASS
+    display-name: "Place <amount> Glass"
+    min-required: 30
+    max-required: 80
+    min-xp: 100
+    max-xp: 180
+    weight: 7
+
+  # Craft item missions
+  craft-diamond-pickaxe:
+    type: CRAFT_ITEM
+    target: DIAMOND_PICKAXE
+    display-name: "Craft <amount> Diamond Pickaxes"
+    min-required: 1
+    max-required: 3
+    min-xp: 200
+    max-xp: 350
+    weight: 6
+
+  craft-golden-apples:
+    type: CRAFT_ITEM
+    target: GOLDEN_APPLE
+    display-name: "Craft <amount> Golden Apples"
+    min-required: 2
+    max-required: 5
+    min-xp: 250
+    max-xp: 400
+    weight: 5
+
+  craft-anvil:
+    type: CRAFT_ITEM
+    target: ANVIL
+    display-name: "Craft <amount> Anvils"
+    min-required: 1
+    max-required: 2
+    min-xp: 300
+    max-xp: 450
+    weight: 5
+
+  craft-ender-chest:
+    type: CRAFT_ITEM
+    target: ENDER_CHEST
+    display-name: "Craft <amount> Ender Chests"
+    min-required: 1
+    max-required: 3
+    min-xp: 350
+    max-xp: 500
+    weight: 4
+
+  # Fish missions
+  fish-cod:
+    type: FISH_ITEM
+    target: COD
+    display-name: "Fish <amount> Cod"
+    min-required: 10
+    max-required: 25
+    min-xp: 100
+    max-xp: 200
+    weight: 8
+
+  fish-salmon:
+    type: FISH_ITEM
+    target: SALMON
+    display-name: "Fish <amount> Salmon"
+    min-required: 8
+    max-required: 20
+    min-xp: 120
+    max-xp: 220
+    weight: 7
+
+  fish-pufferfish:
+    type: FISH_ITEM
+    target: PUFFERFISH
+    display-name: "Fish <amount> Pufferfish"
+    min-required: 3
+    max-required: 8
+    min-xp: 200
+    max-xp: 350
+    weight: 5
+
+  # Enchant missions
+  enchant-items:
+    type: ENCHANT_ITEM
+    target: ANY
+    display-name: "Enchant <amount> Items"
+    min-required: 3
+    max-required: 8
+    min-xp: 200
+    max-xp: 400
+    weight: 6
+
+  # Breed missions
+  breed-cows:
+    type: BREED_ANIMAL
+    target: COW
+    display-name: "Breed <amount> Cows"
+    min-required: 5
+    max-required: 15
+    min-xp: 100
+    max-xp: 200
+    weight: 8
+
+  breed-sheep:
+    type: BREED_ANIMAL
+    target: SHEEP
+    display-name: "Breed <amount> Sheep"
+    min-required: 5
+    max-required: 15
+    min-xp: 100
+    max-xp: 200
+    weight: 8
+
+  breed-pigs:
+    type: BREED_ANIMAL
+    target: PIG
+    display-name: "Breed <amount> Pigs"
+    min-required: 5
+    max-required: 15
+    min-xp: 100
+    max-xp: 200
+    weight: 8
+
+  # Tame missions
+  tame-wolves:
+    type: TAME_ANIMAL
+    target: WOLF
+    display-name: "Tame <amount> Wolves"
+    min-required: 2
+    max-required: 5
+    min-xp: 200
+    max-xp: 350
+    weight: 6
+
+  tame-cats:
+    type: TAME_ANIMAL
+    target: CAT
+    display-name: "Tame <amount> Cats"
+    min-required: 2
+    max-required: 5
+    min-xp: 200
+    max-xp: 350
+    weight: 6
+
+  tame-horses:
+    type: TAME_ANIMAL
+    target: HORSE
+    display-name: "Tame <amount> Horses"
+    min-required: 1
+    max-required: 3
+    min-xp: 250
+    max-xp: 400
+    weight: 5
+
+  # Trade missions
+  trade-villagers:
+    type: TRADE_VILLAGER
+    target: ANY
+    display-name: "Trade with Villagers <amount> Times"
+    min-required: 5
+    max-required: 15
+    min-xp: 150
+    max-xp: 300
+    weight: 7
+
+  # Player missions
+  kill-players:
+    type: KILL_PLAYER
+    target: PLAYER
+    display-name: "Kill <amount> Players"
+    min-required: 3
+    max-required: 10
+    min-xp: 300
+    max-xp: 500
+    weight: 5
+
+  # Other missions
+  die-times:
+    type: DEATH
+    target: ANY
+    display-name: "Die <amount> Times"
+    min-required: 3
+    max-required: 8
+    min-xp: 100
+    max-xp: 200
+    weight: 3
+
+  deal-damage:
+    type: DAMAGE_DEALT
+    target: ANY
+    display-name: "Deal <amount> Damage"
+    min-required: 500
+    max-required: 1500
+    min-xp: 150
+    max-xp: 300
+    weight: 6
+
+  take-damage:
+    type: DAMAGE_TAKEN
+    target: ANY
+    display-name: "Take <amount> Damage"
+    min-required: 100
+    max-required: 300
+    min-xp: 100
+    max-xp: 200
+    weight: 4
+
+  walk-blocks:
+    type: WALK_DISTANCE
+    target: ANY
+    display-name: "Walk <amount> Blocks"
+    min-required: 1000
+    max-required: 3000
+    min-xp: 100
+    max-xp: 200
+    weight: 8
+
+  play-minutes:
+    type: PLAY_TIME
+    target: ANY
+    display-name: "Play for <amount> Minutes"
+    min-required: 30
+    max-required: 90
+    min-xp: 200
+    max-xp: 400
+    weight: 7

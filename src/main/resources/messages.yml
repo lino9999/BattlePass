@@ -1,0 +1,280 @@
+# Battle Pass Messages Configuration
+#
+# Placeholders:
+# %player% - Player name
+# %level% - Current level
+# %xp% - Current XP
+# %xp_needed% - XP needed for next level
+# %total_levels% - Total levels earned
+# %season_time% - Time until season ends
+# %reset_time% - Time until daily missions reset
+# %amount% - Amount (for various contexts)
+# %mission% - Mission name
+# %progress% - Current progress
+# %required% - Required amount
+# %reward_xp% - XP reward amount
+# %target% - Target player name (for admin commands)
+
+# Prefix
+prefix: "&6&l[BATTLE PASS] &e"
+
+# General messages
+messages:
+  # Plugin load/reload
+  plugin-enabled: "&aBattle Pass enabled successfully!"
+  config-reloaded: "&aBattlePass configuration reloaded!"
+
+  # Errors
+  player-only: "&cOnly players can use this command!"
+  no-permission: "&cYou don't have permission to use this command!"
+  player-not-found: "&cPlayer not found!"
+  invalid-amount: "&cInvalid amount! Please enter a number."
+  amount-must-be-positive: "&cAmount must be positive!"
+
+  # Command usage
+  usage:
+    battlepass: "&cUsage: /battlepass"
+    add-premium: "&cUsage: /battlepass addpremium <player>"
+    remove-premium: "&cUsage: /battlepass removepremium <player>"
+    add-xp: "&cUsage: /battlepass addxp <player> <amount>"
+    remove-xp: "&cUsage: /battlepass removexp <player> <amount>"
+
+  # Help menu
+  help:
+    header: "&6&lBattle Pass Commands:"
+    battlepass: "&e/battlepass &7- Open the Battle Pass GUI"
+    help: "&e/bp help &7- Show this help menu"
+    reload: "&e/bp reload &7- Reload the configuration"
+    add-premium: "&e/bp addpremium <player> &7- Give premium pass to a player"
+    remove-premium: "&e/bp removepremium <player> &7- Remove premium pass from a player"
+    add-xp: "&e/bp addxp <player> <amount> &7- Add XP to a player"
+    remove-xp: "&e/bp removexp <player> <amount> &7- Remove XP from a player"
+
+  # Premium pass messages
+  premium:
+    given-sender: "&aPremium pass given to %target% for this season!"
+    given-target: "&6&lCONGRATULATIONS! &eYou now have the Premium Battle Pass!"
+    removed-sender: "&cPremium pass removed from %target%!"
+    removed-target: "&cYour Premium Battle Pass has been removed!"
+    required: "&c&lYou need the Premium Pass to claim this reward!"
+
+  # XP messages
+  xp:
+    added-sender: "&aAdded %amount% XP to %target%'s Battle Pass!"
+    added-target: "&a&lYou received %amount% Battle Pass XP!"
+    removed-sender: "&cRemoved %amount% XP from %target%'s Battle Pass!"
+    removed-target: "&c&l%amount% Battle Pass XP has been removed!"
+
+  # Level up
+  level-up: "&6&lLEVEL UP! &fYou are now level &e%level%"
+  new-rewards: "&e&lNEW REWARDS! &fYou have new rewards available to claim!"
+
+  # Join messages
+  rewards-available: "&eYou have &f%amount% &erewards available to claim!"
+  rewards-notification: "&eYou have &f%amount% &enew rewards to claim!"
+
+  # Mission messages
+  mission:
+    completed: "&a&lMission Completed: &f%mission% &7(+%reward_xp% XP)"
+    reset: "&6&lDaily missions have been reset!"
+
+  # Season messages
+  season:
+    reset: "&6&l[SEASON RESET] &eThe Battle Pass season has ended! A new season begins now!"
+    ends-in: "&7Season ends in: &e%season_time%"
+    achievement: "%player% has completed the entire Battle Pass!"
+    premium-achievement: "%player% has become a LEGEND by completing the Premium Battle Pass!"
+
+  # Reward messages
+  rewards:
+    free-claimed: "&a&lFree Rewards Claimed!"
+    premium-claimed: "&6&lPremium Rewards Claimed!"
+    already-claimed: "&cYou have already claimed this reward!"
+    cannot-claim: "&cYou cannot claim this reward!"
+    locked: "&c&lLOCKED (Level %level% Required)"
+    item-reward: "&f• %amount%x %item%"
+    command-reward: "&f• %reward%"
+
+# GUI titles
+gui:
+  battlepass: "&6&lBattle Pass &7- Page %page%"
+  missions: "&b&lDaily Missions"
+  leaderboard: "&6&lBattle Pass Leaderboard"
+
+# GUI items
+items:
+  # Battle Pass main GUI
+  progress:
+    name: "&6&lYour Progress"
+    lore:
+      - "&7Level: &e%level%&7/&e54"
+      - "&7XP: &e%xp%&7/&e%xp_needed%"
+      - ""
+      - "&7Premium Pass: %premium_status%"
+      - "&7Season Ends: &e%season_time%"
+      - ""
+      - "&7Complete missions to earn XP"
+      - "&7and unlock rewards!"
+
+  premium-status:
+    active: "&a&lACTIVE"
+    inactive: "&c&lINACTIVE"
+
+  separator:
+    name: " "
+
+  previous-page:
+    name: "&e&lPrevious Page"
+    lore:
+      - "&7Click to go to page %page%"
+
+  next-page:
+    name: "&e&lNext Page"
+    lore:
+      - "&7Click to go to page %page%"
+
+  missions-button:
+    name: "&b&lDaily Missions"
+    lore:
+      - "&7Complete daily missions"
+      - "&7to earn bonus XP!"
+      - ""
+      - "&7Resets in: &e%reset_time%"
+      - ""
+      - "&e&lCLICK TO VIEW"
+
+  leaderboard-button:
+    name: "&6&lLeaderboard"
+    lore:
+      - "&7View the top 10 players"
+      - "&7with highest battle pass levels!"
+      - ""
+      - "&e&lCLICK TO VIEW"
+
+  # Reward items
+  reward-available:
+    name: "&a&lLevel %level% %type% Reward"
+    lore-header:
+      - "&7Rewards:"
+    lore-footer:
+      - ""
+      - "&7Required Level: &e%level%"
+      - ""
+      - "&7Season ends in: &c%season_time%"
+      - ""
+      - "&a&lCLICK TO CLAIM!"
+
+  reward-claimed:
+    name: "&7&lLevel %level% %type% Reward"
+    lore-header:
+      - "&7Rewards:"
+    lore-footer:
+      - ""
+      - "&7Required Level: &e%level%"
+      - ""
+      - "&7Season ends in: &c%season_time%"
+      - ""
+      - "&7&lALREADY CLAIMED"
+
+  reward-premium-locked:
+    name: "&6&lLevel %level% Premium Reward"
+    lore-header:
+      - "&7Rewards:"
+    lore-footer:
+      - ""
+      - "&7Required Level: &e%level%"
+      - ""
+      - "&7Season ends in: &c%season_time%"
+      - ""
+      - "&6&lPREMIUM ONLY"
+
+  reward-level-locked:
+    name: "&c&lLevel %level% %type% Reward"
+    lore-header:
+      - "&7Rewards:"
+    lore-footer:
+      - ""
+      - "&7Required Level: &e%level%"
+      - ""
+      - "&7Season ends in: &c%season_time%"
+      - ""
+      - "&c&lLOCKED (Level %level% Required)"
+
+  # Mission GUI items
+  mission-timer:
+    name: "&e&lTime Until Reset"
+    lore:
+      - "&7Missions reset in:"
+      - "&f%reset_time%"
+      - ""
+      - "&7Complete missions before"
+      - "&7they reset to earn XP!"
+
+  mission-completed:
+    name: "&a&l%mission%"
+    lore:
+      - "&7Progress: &f%progress%&7/&f%required%"
+      - "&7Reward: &e%reward_xp% XP"
+      - ""
+      - "&7Resets in: &e%reset_time%"
+      - ""
+      - "&a&lCOMPLETED"
+
+  mission-in-progress:
+    name: "&e&l%mission%"
+    lore:
+      - "&7Progress: &f%progress%&7/&f%required%"
+      - "&7Reward: &e%reward_xp% XP"
+      - ""
+      - "&7Resets in: &e%reset_time%"
+      - ""
+      - "&e&lIN PROGRESS"
+
+  # Leaderboard GUI items
+  leaderboard-title:
+    name: "&6&lTop 10 Players"
+    lore:
+      - "&7Season ends in: &e%season_time%"
+      - ""
+      - "&7Compete for the top spots!"
+
+  leaderboard-player:
+    name: "%rank% &f%player%"
+    lore:
+      - "&7Level: &e%level%"
+      - "&7Total Levels: &e%total_levels%"
+      - "&7XP: &e%xp%"
+      - ""
+      - "%status%"
+
+  leaderboard-rank:
+    first: "&6&l#1"
+    second: "&7&l#2"
+    third: "&c&l#3"
+    other: "&7#%rank%"
+
+  leaderboard-status:
+    you: "&a&lTHIS IS YOU!"
+    other: "&7Keep grinding to beat them!"
+
+  # Back button
+  back-button:
+    name: "&c&lBack"
+    lore:
+      - "&7Return to Battle Pass"
+
+# Time formats
+time:
+  days-hours: "%days%d %hours%h"
+  hours-minutes: "%hours%h %minutes%m"
+  day: "day"
+  days: "days"
+  hour: "hour"
+  hours: "hours"
+  minute: "minute"
+  minutes: "minutes"
+
+# Reward types
+reward-types:
+  free: "Free"
+  premium: "Premium"
