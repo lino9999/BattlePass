@@ -166,7 +166,7 @@ rewards:
       material: IRON_HORSE_ARMOR
       amount: 1
     level-32:
-      material: GOLD_HORSE_ARMOR
+      material: IRON_HORSE_ARMOR
       amount: 1
     level-33:
       material: SADDLE
@@ -366,7 +366,7 @@ rewards:
       material: BEACON
       amount: 2
     level-26:
-      material: ENCHANTMENT_TABLE
+      material: NETHERITE_BOOTS
       amount: 1
     level-27:
       material: ANVIL
