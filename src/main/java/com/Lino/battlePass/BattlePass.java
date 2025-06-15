@@ -916,6 +916,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         new BukkitRunnable() {
             @Override
             public void run() {
+                if (!player.isOnline()) return;
+
                 PlayerData data = playerCache.get(uuid);
                 if (data != null) {
                     int available = countAvailableRewards(player, data);
@@ -956,6 +958,32 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         }.runTaskLater(this, 200L);
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+
+        lastLocations.put(uuid, player.getLocation());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        if (event.isCancelled()) return;
+
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+        Location from = event.getFrom();
+        Location to = event.getTo();
+
+        if (to == null) return;
+
+        if (from.getWorld() == null || to.getWorld() == null ||
+                !from.getWorld().equals(to.getWorld()) ||
+                from.distance(to) > 100) {
+            lastLocations.put(uuid, to);
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
         if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
@@ -969,11 +997,19 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
         Location last = lastLocations.get(uuid);
         if (last != null) {
-            double distance = last.distance(event.getTo());
-            if (distance >= 1) {
-                progressMission(player, "WALK_DISTANCE", "ANY", (int) distance);
-                lastLocations.put(uuid, event.getTo());
+            if (last.getWorld() != null && event.getTo().getWorld() != null &&
+                    last.getWorld().equals(event.getTo().getWorld())) {
+                try {
+                    double distance = last.distance(event.getTo());
+                    if (distance >= 1 && distance < 100) {
+                        progressMission(player, "WALK_DISTANCE", "ANY", (int) distance);
+                    }
+                } catch (IllegalArgumentException e) {
+                }
             }
+            lastLocations.put(uuid, event.getTo());
+        } else {
+            lastLocations.put(uuid, event.getTo());
         }
     }
 
