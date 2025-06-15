@@ -1479,9 +1479,20 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
             gui.setItem(slots[i], missionItem);
         }
 
-        ItemStack back = itemCache.get("back_barrier").clone();
-        gui.setItem(49, back);
+        ItemStack back = getCachedItem("back_barrier", () -> {
+            ItemStack item = new ItemStack(Material.BARRIER);
+            ItemMeta meta = item.getItemMeta();
+            meta.setDisplayName(getMessage("items.back-button.name"));
+            List<String> backLore = new ArrayList<>();
+            for (String line : messagesConfig.getStringList("items.back-button.lore")) {
+                backLore.add(ChatColor.translateAlternateColorCodes('&', line));
+            }
+            meta.setLore(backLore);
+            item.setItemMeta(meta);
+            return item;
+        });
 
+        gui.setItem(49, back);
         player.openInventory(gui);
     }
 
