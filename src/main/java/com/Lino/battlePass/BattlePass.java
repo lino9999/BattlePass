@@ -996,20 +996,27 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         UUID uuid = player.getUniqueId();
 
         Location last = lastLocations.get(uuid);
+        Location toLoc = event.getTo();
+
         if (last != null) {
-            if (last.getWorld() != null && event.getTo().getWorld() != null &&
-                    last.getWorld().equals(event.getTo().getWorld())) {
-                try {
-                    double distance = last.distance(event.getTo());
-                    if (distance >= 1 && distance < 100) {
-                        progressMission(player, "WALK_DISTANCE", "ANY", (int) distance);
-                    }
-                } catch (IllegalArgumentException e) {
-                }
+            // Controlla esplicitamente se i mondi sono diversi
+            if (last.getWorld() == null || toLoc.getWorld() == null ||
+                    !last.getWorld().getName().equals(toLoc.getWorld().getName())) {
+                lastLocations.put(uuid, toLoc);
+                return;
             }
-            lastLocations.put(uuid, event.getTo());
+
+            try {
+                double distance = last.distance(toLoc);
+                if (distance >= 1 && distance < 100) {
+                    progressMission(player, "WALK_DISTANCE", "ANY", (int) distance);
+                }
+            } catch (IllegalArgumentException e) {
+                // Ignora eccezioni legate a mondi diversi (già gestite sopra)
+            }
+            lastLocations.put(uuid, toLoc);
         } else {
-            lastLocations.put(uuid, event.getTo());
+            lastLocations.put(uuid, toLoc);
         }
     }
 
