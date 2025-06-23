@@ -54,7 +54,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     private final Map<UUID, Long> playTimeStart = new ConcurrentHashMap<>();
     private final Map<String, ItemStack> itemCache = new ConcurrentHashMap<>();
 
-    private volatile List<Mission> dailyMissions = new ArrayList<>();
+    private volatile List<Mission> dailyMissions = Collections.synchronizedList(new ArrayList<>());
     private final List<Reward> freeRewards = new ArrayList<>();
     private final List<Reward> premiumRewards = new ArrayList<>();
     private final Map<Integer, List<Reward>> freeRewardsByLevel = new HashMap<>();
@@ -91,13 +91,34 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
         CompletableFuture.runAsync(() -> {
             initDatabase();
-            loadSeasonData();
             prepareDatabaseStatements();
+            loadSeasonData();
+            loadMissionResetTime();  // Load the saved mission reset time
+            loadDailyMissions();     // Load saved daily missions
+
+            // Check if we need to reset missions or no missions exist
+            if (dailyMissions.isEmpty() || nextMissionReset == null || LocalDateTime.now().isAfter(nextMissionReset)) {
+                // Load missions config first
+                ConfigurationSection pools = missionsConfig.getConfigurationSection("mission-pools");
+                if (pools != null) {
+                    generateDailyMissionsInternal(pools);
+
+                    if (nextMissionReset == null || LocalDateTime.now().isAfter(nextMissionReset)) {
+                        calculateNextReset();
+                    }
+
+                    // Save synchronously during startup to ensure missions are saved
+                    saveDailyMissionsSync();
+                    saveMissionResetTimeSync();
+
+                    getLogger().info("Generated new daily missions. Total: " + dailyMissions.size());
+                }
+            } else {
+                getLogger().info("Using existing daily missions. Total: " + dailyMissions.size());
+            }
         }, databaseExecutor).thenRun(() -> {
             Bukkit.getScheduler().runTask(this, () -> {
                 loadRewardsFromConfig();
-                generateDailyMissions();
-                calculateNextReset();
 
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     loadPlayerAsync(player.getUniqueId());
@@ -129,6 +150,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
 
         performBatchSave();
         saveSeasonData();
+        saveMissionResetTime();  // Save the mission reset time on shutdown
+        saveDailyMissions();     // Save the current missions on shutdown
 
         try {
             if (insertPlayerStmt != null) insertPlayerStmt.close();
@@ -254,7 +277,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         loadConfigurations();
         itemCache.clear();
         loadRewardsFromConfig();
-        generateDailyMissions();
+
+        // Don't regenerate missions on reload - just reload the config
         sender.sendMessage(getPrefix() + getMessage("messages.config-reloaded"));
     }
 
@@ -401,7 +425,19 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                         "CREATE TABLE IF NOT EXISTS season_data (" +
                                 "id INTEGER PRIMARY KEY," +
                                 "end_date TEXT," +
-                                "duration INTEGER)"
+                                "duration INTEGER," +
+                                "mission_reset_time TEXT)"  // Add mission reset time column
+                );
+
+                stmt.executeUpdate(
+                        "CREATE TABLE IF NOT EXISTS daily_missions (" +
+                                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                                "name TEXT," +
+                                "type TEXT," +
+                                "target TEXT," +
+                                "required INTEGER," +
+                                "xp_reward INTEGER," +
+                                "date TEXT)"
                 );
 
                 stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_missions_uuid_date ON missions(uuid, date)");
@@ -460,13 +496,173 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         }
     }
 
+    private void loadMissionResetTime() {
+        try (PreparedStatement ps = connection.prepareStatement("SELECT mission_reset_time FROM season_data WHERE id = 1")) {
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                String resetTimeStr = rs.getString("mission_reset_time");
+                if (resetTimeStr != null && !resetTimeStr.isEmpty()) {
+                    nextMissionReset = LocalDateTime.parse(resetTimeStr);
+                }
+            }
+            rs.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadDailyMissions() {
+        String today = LocalDateTime.now().toLocalDate().toString();
+        List<Mission> loadedMissions = new ArrayList<>();
+
+        // First clean up old missions
+        try (PreparedStatement deletePs = connection.prepareStatement(
+                "DELETE FROM daily_missions WHERE date < ?"
+        )) {
+            deletePs.setString(1, today);
+            deletePs.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // Then load today's missions
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT * FROM daily_missions WHERE date = ? ORDER BY id"
+        )) {
+            ps.setString(1, today);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Mission mission = new Mission(
+                        rs.getString("name"),
+                        rs.getString("type"),
+                        rs.getString("target"),
+                        rs.getInt("required"),
+                        rs.getInt("xp_reward")
+                );
+                loadedMissions.add(mission);
+            }
+            rs.close();
+
+            if (!loadedMissions.isEmpty()) {
+                dailyMissions = new ArrayList<>(loadedMissions); // Create new list to ensure thread safety
+                getLogger().info("Loaded " + loadedMissions.size() + " daily missions from database.");
+            } else {
+                getLogger().info("No daily missions found in database for today.");
+            }
+        } catch (SQLException e) {
+            getLogger().severe("Failed to load daily missions from database!");
+            e.printStackTrace();
+        }
+    }
+
+    private void saveDailyMissions() {
+        saveDailyMissionsAsync();
+    }
+
+    private void saveDailyMissionsSync() {
+        if (dailyMissions.isEmpty()) {
+            getLogger().warning("No daily missions to save!");
+            return;
+        }
+
+        String today = LocalDateTime.now().toLocalDate().toString();
+
+        try (PreparedStatement deletePs = connection.prepareStatement(
+                "DELETE FROM daily_missions WHERE date != ?"
+        )) {
+            // Clean up old missions
+            deletePs.setString(1, today);
+            deletePs.executeUpdate();
+
+            // Save current missions
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "INSERT OR REPLACE INTO daily_missions (name, type, target, required, xp_reward, date) " +
+                            "VALUES (?, ?, ?, ?, ?, ?)"
+            )) {
+                for (Mission mission : dailyMissions) {
+                    ps.setString(1, mission.name);
+                    ps.setString(2, mission.type);
+                    ps.setString(3, mission.target);
+                    ps.setInt(4, mission.required);
+                    ps.setInt(5, mission.xpReward);
+                    ps.setString(6, today);
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+                getLogger().info("Saved " + dailyMissions.size() + " daily missions to database.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveDailyMissionsAsync() {
+        if (dailyMissions.isEmpty()) {
+            getLogger().warning("No daily missions to save!");
+            return;
+        }
+
+        String today = LocalDateTime.now().toLocalDate().toString();
+        final List<Mission> missionsToSave = new ArrayList<>(dailyMissions); // Copy to avoid concurrency issues
+
+        CompletableFuture.runAsync(() -> {
+            try (PreparedStatement deletePs = connection.prepareStatement(
+                    "DELETE FROM daily_missions WHERE date != ?"
+            )) {
+                // Clean up old missions
+                deletePs.setString(1, today);
+                deletePs.executeUpdate();
+
+                // Save current missions
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "INSERT OR REPLACE INTO daily_missions (name, type, target, required, xp_reward, date) " +
+                                "VALUES (?, ?, ?, ?, ?, ?)"
+                )) {
+                    for (Mission mission : missionsToSave) {
+                        ps.setString(1, mission.name);
+                        ps.setString(2, mission.type);
+                        ps.setString(3, mission.target);
+                        ps.setInt(4, mission.required);
+                        ps.setInt(5, mission.xpReward);
+                        ps.setString(6, today);
+                        ps.addBatch();
+                    }
+                    ps.executeBatch();
+                    getLogger().info("Saved " + missionsToSave.size() + " daily missions to database.");
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }, databaseExecutor);
+    }
+
+    private void saveMissionResetTime() {
+        CompletableFuture.runAsync(() -> {
+            saveMissionResetTimeSync();
+        }, databaseExecutor);
+    }
+
+    private void saveMissionResetTimeSync() {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "UPDATE season_data SET mission_reset_time = ? WHERE id = 1"
+        )) {
+            ps.setString(1, nextMissionReset != null ? nextMissionReset.toString() : "");
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void saveSeasonData() {
         CompletableFuture.runAsync(() -> {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT OR REPLACE INTO season_data (id, end_date, duration) VALUES (1, ?, ?)"
+                    "INSERT OR REPLACE INTO season_data (id, end_date, duration, mission_reset_time) VALUES (1, ?, ?, ?)"
             )) {
                 ps.setString(1, seasonEndDate.toString());
                 ps.setInt(2, seasonDuration);
+                ps.setString(3, nextMissionReset != null ? nextMissionReset.toString() : "");
                 ps.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -491,6 +687,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                 stmt.executeUpdate("UPDATE players SET xp = 0, level = 1, claimed_free = '', " +
                         "claimed_premium = '', has_premium = 0");
                 stmt.executeUpdate("DELETE FROM missions");
+                stmt.executeUpdate("DELETE FROM daily_missions");  // Clean up old missions
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -499,8 +696,9 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         playerCache.clear();
         pendingSaves.clear();
         seasonEndDate = LocalDateTime.now().plusDays(seasonDuration);
-        saveSeasonData();
         generateDailyMissions();
+        calculateNextReset();
+        saveSeasonData();
     }
 
     private String getTimeUntilSeasonEnd() {
@@ -653,14 +851,16 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     }
 
     private void generateDailyMissions() {
-        List<Mission> newMissions = new ArrayList<>();
         ConfigurationSection pools = missionsConfig.getConfigurationSection("mission-pools");
-
         if (pools == null) {
             getLogger().warning("No mission pools found in missions.yml!");
             return;
         }
+        generateDailyMissionsInternal(pools);
+    }
 
+    private void generateDailyMissionsInternal(ConfigurationSection pools) {
+        List<Mission> newMissions = new ArrayList<>();
         List<MissionTemplate> templates = new ArrayList<>();
 
         for (String key : pools.getKeys(false)) {
@@ -704,7 +904,10 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     required, xpReward));
         }
 
-        dailyMissions = newMissions;
+        dailyMissions = new ArrayList<>(newMissions); // Create new list to ensure thread safety
+        saveDailyMissions();  // Save missions after generating
+
+        getLogger().info("Generated " + newMissions.size() + " new daily missions.");
     }
 
     private String formatTarget(String target) {
@@ -723,6 +926,8 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         if (LocalDateTime.now().isAfter(nextMissionReset)) {
             generateDailyMissions();
             calculateNextReset();
+            saveMissionResetTime();  // Save the new reset time
+            saveDailyMissions();     // Save the generated missions
 
             for (Player player : Bukkit.getOnlinePlayers()) {
                 player.sendMessage(getPrefix() + getMessage("messages.mission.reset"));
@@ -999,7 +1204,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         Location toLoc = event.getTo();
 
         if (last != null) {
-            // Controlla esplicitamente se i mondi sono diversi
+            // Check explicitly if worlds are different
             if (last.getWorld() == null || toLoc.getWorld() == null ||
                     !last.getWorld().getName().equals(toLoc.getWorld().getName())) {
                 lastLocations.put(uuid, toLoc);
@@ -1012,7 +1217,7 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
                     progressMission(player, "WALK_DISTANCE", "ANY", (int) distance);
                 }
             } catch (IllegalArgumentException e) {
-                // Ignora eccezioni legate a mondi diversi (già gestite sopra)
+                // Ignore exceptions related to different worlds (already handled above)
             }
             lastLocations.put(uuid, toLoc);
         } else {
@@ -1145,6 +1350,10 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
     private void progressMission(Player player, String type, String target, int amount) {
         PlayerData data = playerCache.get(player.getUniqueId());
         if (data == null) return;
+
+        if (dailyMissions == null || dailyMissions.isEmpty()) {
+            return; // No missions available
+        }
 
         boolean changed = false;
         List<Mission> currentMissions = new ArrayList<>(dailyMissions);
@@ -1450,7 +1659,12 @@ public class BattlePass extends JavaPlugin implements Listener, CommandExecutor 
         gui.setItem(4, timer);
 
         int[] slots = {19, 20, 21, 22, 23, 24, 25};
-        List<Mission> currentMissions = new ArrayList<>(dailyMissions);
+        List<Mission> currentMissions = dailyMissions != null ? new ArrayList<>(dailyMissions) : new ArrayList<>();
+
+        if (currentMissions.isEmpty()) {
+            getLogger().warning("No daily missions available to display!");
+            // You might want to show a message to the player here
+        }
 
         for (int i = 0; i < currentMissions.size() && i < slots.length; i++) {
             Mission mission = currentMissions.get(i);
