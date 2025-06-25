@@ -36,15 +36,25 @@ public class BattlePass extends JavaPlugin {
             getServer().getScheduler().runTask(this, () -> {
                 rewardManager.loadRewards();
                 missionManager.initialize();
-                playerDataManager.loadOnlinePlayers();
 
-                eventManager = new EventManager(this);
-                getServer().getPluginManager().registerEvents(eventManager, this);
-                getCommand("battlepass").setExecutor(new BattlePassCommand(this));
+                // Wait for mission manager to be fully initialized before loading players
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (missionManager.isInitialized()) {
+                            playerDataManager.loadOnlinePlayers();
 
-                new BattlePassTask(this).runTaskTimer(this, 6000L, 1200L);
+                            eventManager = new EventManager(BattlePass.this);
+                            getServer().getPluginManager().registerEvents(eventManager, BattlePass.this);
+                            getCommand("battlepass").setExecutor(new BattlePassCommand(BattlePass.this));
 
-                getLogger().info(messageManager.getMessage("messages.plugin-enabled"));
+                            new BattlePassTask(BattlePass.this).runTaskTimer(BattlePass.this, 6000L, 1200L);
+
+                            getLogger().info(messageManager.getMessage("messages.plugin-enabled"));
+                            this.cancel();
+                        }
+                    }
+                }.runTaskTimer(this, 0L, 10L); // Check every 0.5 seconds
             });
         });
     }

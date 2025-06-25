@@ -78,8 +78,16 @@ public class DatabaseManager {
                                 "id INTEGER PRIMARY KEY," +
                                 "end_date TEXT," +
                                 "duration INTEGER," +
-                                "mission_reset_time TEXT)"
+                                "mission_reset_time TEXT," +
+                                "current_mission_date TEXT)"
                 );
+
+                // Add current_mission_date column if it doesn't exist (for existing databases)
+                try {
+                    stmt.executeUpdate("ALTER TABLE season_data ADD COLUMN current_mission_date TEXT");
+                } catch (SQLException e) {
+                    // Column already exists, ignore
+                }
 
                 stmt.executeUpdate(
                         "CREATE TABLE IF NOT EXISTS daily_missions (" +
@@ -164,18 +172,26 @@ public class DatabaseManager {
                 }
                 rs.close();
 
-                String today = LocalDateTime.now().toLocalDate().toString();
+                // Load mission progress for the current mission date
+                String missionDate = getCurrentMissionDate();
+                plugin.getLogger().info("Loading mission progress for " + uuid + " for date: " + missionDate);
+
                 PreparedStatement missionPs = connection.prepareStatement(
                         "SELECT * FROM missions WHERE uuid = ? AND date = ?"
                 );
                 missionPs.setString(1, uuid.toString());
-                missionPs.setString(2, today);
+                missionPs.setString(2, missionDate);
                 ResultSet missionRs = missionPs.executeQuery();
 
+                int missionCount = 0;
                 while (missionRs.next()) {
-                    data.missionProgress.put(missionRs.getString("mission"),
-                            missionRs.getInt("progress"));
+                    String missionKey = missionRs.getString("mission");
+                    int progress = missionRs.getInt("progress");
+                    data.missionProgress.put(missionKey, progress);
+                    missionCount++;
+                    plugin.getLogger().info("  - Loaded mission '" + missionKey + "' with progress: " + progress);
                 }
+                plugin.getLogger().info("Loaded " + missionCount + " mission progress entries for " + uuid);
 
                 missionRs.close();
                 missionPs.close();
@@ -203,14 +219,19 @@ public class DatabaseManager {
                 updatePlayerStmt.setString(8, uuid.toString());
                 updatePlayerStmt.executeUpdate();
 
-                String today = LocalDateTime.now().toLocalDate().toString();
+                // Save mission progress with the current mission date
+                String missionDate = getCurrentMissionDate();
+                plugin.getLogger().info("Saving mission progress for " + uuid + " for date: " + missionDate);
+
                 for (Map.Entry<String, Integer> mission : data.missionProgress.entrySet()) {
                     insertMissionStmt.setString(1, uuid.toString());
                     insertMissionStmt.setString(2, mission.getKey());
                     insertMissionStmt.setInt(3, mission.getValue());
-                    insertMissionStmt.setString(4, today);
+                    insertMissionStmt.setString(4, missionDate);
                     insertMissionStmt.executeUpdate();
+                    plugin.getLogger().info("  - Saved mission '" + mission.getKey() + "' with progress: " + mission.getValue());
                 }
+                plugin.getLogger().info("Saved " + data.missionProgress.size() + " mission progress entries for " + uuid);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -242,15 +263,18 @@ public class DatabaseManager {
         }, databaseExecutor);
     }
 
-    public CompletableFuture<Void> saveSeasonData(LocalDateTime endDate, int duration, LocalDateTime missionResetTime) {
+    public CompletableFuture<Void> saveSeasonData(LocalDateTime endDate, int duration, LocalDateTime missionResetTime, String currentMissionDate) {
         return CompletableFuture.runAsync(() -> {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT OR REPLACE INTO season_data (id, end_date, duration, mission_reset_time) VALUES (1, ?, ?, ?)"
+                    "INSERT OR REPLACE INTO season_data (id, end_date, duration, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?)"
             )) {
-                ps.setString(1, endDate.toString());
+                ps.setString(1, endDate != null ? endDate.toString() : LocalDateTime.now().plusDays(duration).toString());
                 ps.setInt(2, duration);
                 ps.setString(3, missionResetTime != null ? missionResetTime.toString() : "");
+                ps.setString(4, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
                 ps.executeUpdate();
+
+                plugin.getLogger().info("Saved season data with mission date: " + currentMissionDate);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -271,6 +295,10 @@ public class DatabaseManager {
                     if (resetTimeStr != null && !resetTimeStr.isEmpty()) {
                         data.put("missionResetTime", LocalDateTime.parse(resetTimeStr));
                     }
+                    String currentMissionDate = rs.getString("current_mission_date");
+                    if (currentMissionDate != null && !currentMissionDate.isEmpty()) {
+                        data.put("currentMissionDate", currentMissionDate);
+                    }
                 }
                 rs.close();
             } catch (SQLException e) {
@@ -281,18 +309,20 @@ public class DatabaseManager {
         }, databaseExecutor);
     }
 
-    public CompletableFuture<Void> saveDailyMissions(List<Mission> missions) {
+    public CompletableFuture<Void> saveDailyMissions(List<Mission> missions, String missionDate) {
         return CompletableFuture.runAsync(() -> {
             if (missions.isEmpty()) return;
 
-            String today = LocalDateTime.now().toLocalDate().toString();
+            try {
+                // First, clean up old missions (keep only current date)
+                try (PreparedStatement deletePs = connection.prepareStatement(
+                        "DELETE FROM daily_missions WHERE date != ?"
+                )) {
+                    deletePs.setString(1, missionDate);
+                    deletePs.executeUpdate();
+                }
 
-            try (PreparedStatement deletePs = connection.prepareStatement(
-                    "DELETE FROM daily_missions WHERE date != ?"
-            )) {
-                deletePs.setString(1, today);
-                deletePs.executeUpdate();
-
+                // Then insert new missions
                 try (PreparedStatement ps = connection.prepareStatement(
                         "INSERT OR REPLACE INTO daily_missions (name, type, target, required, xp_reward, date) " +
                                 "VALUES (?, ?, ?, ?, ?, ?)"
@@ -303,11 +333,13 @@ public class DatabaseManager {
                         ps.setString(3, mission.target);
                         ps.setInt(4, mission.required);
                         ps.setInt(5, mission.xpReward);
-                        ps.setString(6, today);
+                        ps.setString(6, missionDate);
                         ps.addBatch();
                     }
                     ps.executeBatch();
                 }
+
+                plugin.getLogger().info("Saved " + missions.size() + " missions for date: " + missionDate);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -316,22 +348,18 @@ public class DatabaseManager {
 
     public CompletableFuture<List<Mission>> loadDailyMissions() {
         return CompletableFuture.supplyAsync(() -> {
-            String today = LocalDateTime.now().toLocalDate().toString();
             List<Mission> loadedMissions = new ArrayList<>();
 
-            try (PreparedStatement deletePs = connection.prepareStatement(
-                    "DELETE FROM daily_missions WHERE date < ?"
-            )) {
-                deletePs.setString(1, today);
-                deletePs.executeUpdate();
-            } catch (SQLException e) {
-                e.printStackTrace();
+            // Get the current mission date from season data
+            String missionDate = getCurrentMissionDate();
+            if (missionDate == null) {
+                missionDate = LocalDateTime.now().toLocalDate().toString();
             }
 
             try (PreparedStatement ps = connection.prepareStatement(
                     "SELECT * FROM daily_missions WHERE date = ? ORDER BY id"
             )) {
-                ps.setString(1, today);
+                ps.setString(1, missionDate);
                 ResultSet rs = ps.executeQuery();
 
                 while (rs.next()) {
@@ -353,6 +381,22 @@ public class DatabaseManager {
         }, databaseExecutor);
     }
 
+    public String getCurrentMissionDate() {
+        try (PreparedStatement ps = connection.prepareStatement("SELECT current_mission_date FROM season_data WHERE id = 1")) {
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                String date = rs.getString("current_mission_date");
+                rs.close();
+                return date;
+            }
+            rs.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        // Return today's date as fallback
+        return LocalDateTime.now().toLocalDate().toString();
+    }
+
     public CompletableFuture<Void> resetSeason() {
         return CompletableFuture.runAsync(() -> {
             try (Statement stmt = connection.createStatement()) {
@@ -360,6 +404,19 @@ public class DatabaseManager {
                         "claimed_premium = '', has_premium = 0");
                 stmt.executeUpdate("DELETE FROM missions");
                 stmt.executeUpdate("DELETE FROM daily_missions");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }, databaseExecutor);
+    }
+
+    public CompletableFuture<Void> clearOldMissionProgress(String currentDate) {
+        return CompletableFuture.runAsync(() -> {
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "DELETE FROM missions WHERE date < ?"
+            )) {
+                ps.setString(1, currentDate);
+                ps.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();
             }

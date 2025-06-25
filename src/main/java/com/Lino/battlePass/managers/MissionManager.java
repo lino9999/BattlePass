@@ -25,6 +25,7 @@ public class MissionManager {
     private volatile List<Mission> dailyMissions = Collections.synchronizedList(new ArrayList<>());
     private LocalDateTime nextMissionReset;
     private LocalDateTime seasonEndDate;
+    private String currentMissionDate;
 
     public MissionManager(BattlePass plugin, ConfigManager configManager, DatabaseManager databaseManager, PlayerDataManager playerDataManager) {
         this.plugin = plugin;
@@ -34,36 +35,82 @@ public class MissionManager {
     }
 
     public void initialize() {
+        // First load season data, then load missions
         databaseManager.loadSeasonData().thenAccept(data -> {
             if (data.containsKey("endDate")) {
                 seasonEndDate = (LocalDateTime) data.get("endDate");
                 if (data.containsKey("missionResetTime")) {
                     nextMissionReset = (LocalDateTime) data.get("missionResetTime");
                 }
+                if (data.containsKey("currentMissionDate")) {
+                    currentMissionDate = (String) data.get("currentMissionDate");
+                }
 
                 if (LocalDateTime.now().isAfter(seasonEndDate)) {
                     Bukkit.getScheduler().runTask(plugin, this::resetSeason);
+                    return; // Don't load missions if season is being reset
                 }
             } else {
                 seasonEndDate = LocalDateTime.now().plusDays(configManager.getSeasonDuration());
+                currentMissionDate = LocalDateTime.now().toLocalDate().toString();
+                calculateNextReset(); // Calculate reset time for new season
                 saveSeasonData();
             }
-        });
 
+            // Now load missions after season data is loaded
+            loadMissionsAfterSeasonData();
+        });
+    }
+
+    private void loadMissionsAfterSeasonData() {
         databaseManager.loadDailyMissions().thenAccept(missions -> {
-            if (missions.isEmpty() || nextMissionReset == null || LocalDateTime.now().isAfter(nextMissionReset)) {
-                generateDailyMissions();
-                if (nextMissionReset == null || LocalDateTime.now().isAfter(nextMissionReset)) {
-                    calculateNextReset();
+            LocalDateTime now = LocalDateTime.now();
+
+            // If currentMissionDate is still null, set it to today
+            if (currentMissionDate == null) {
+                currentMissionDate = now.toLocalDate().toString();
+                plugin.getLogger().warning("currentMissionDate was null, setting to today: " + currentMissionDate);
+            }
+
+            plugin.getLogger().info("Loading missions for date: " + currentMissionDate);
+
+            // Check if we need to generate new missions
+            boolean needNewMissions = missions.isEmpty() ||
+                    (nextMissionReset != null && now.isAfter(nextMissionReset));
+
+            if (needNewMissions) {
+                // If it's a new day, update the mission date
+                if (nextMissionReset != null && now.isAfter(nextMissionReset)) {
+                    currentMissionDate = now.toLocalDate().toString();
+                    plugin.getLogger().info("New day detected, updating mission date to: " + currentMissionDate);
+                    // Clear old mission progress
+                    databaseManager.clearOldMissionProgress(currentMissionDate);
                 }
+
+                generateDailyMissions();
+                calculateNextReset();
                 saveDailyMissions();
+                saveSeasonData(); // Save the updated reset time and mission date
             } else {
+                // Use existing missions
                 dailyMissions = new ArrayList<>(missions);
+                plugin.getLogger().info("Loaded " + missions.size() + " existing missions for date: " + currentMissionDate);
+
+                // If nextMissionReset is null (shouldn't happen), calculate it
+                if (nextMissionReset == null) {
+                    calculateNextReset();
+                    saveSeasonData();
+                }
             }
         });
     }
 
     private void generateDailyMissions() {
+        // Ensure currentMissionDate is set
+        if (currentMissionDate == null) {
+            currentMissionDate = LocalDateTime.now().toLocalDate().toString();
+        }
+
         ConfigurationSection pools = configManager.getMissionsConfig().getConfigurationSection("mission-pools");
         if (pools == null) {
             plugin.getLogger().warning("No mission pools found in missions.yml!");
@@ -115,6 +162,7 @@ public class MissionManager {
         }
 
         dailyMissions = new ArrayList<>(newMissions);
+        plugin.getLogger().info("Generated " + newMissions.size() + " daily missions for date: " + currentMissionDate);
     }
 
     private String formatTarget(String target) {
@@ -130,24 +178,32 @@ public class MissionManager {
     }
 
     public void checkMissionReset() {
-        if (LocalDateTime.now().isAfter(nextMissionReset)) {
+        if (nextMissionReset != null && LocalDateTime.now().isAfter(nextMissionReset)) {
+            // Update mission date for new day
+            currentMissionDate = LocalDateTime.now().toLocalDate().toString();
+
             generateDailyMissions();
             calculateNextReset();
             saveDailyMissions();
+            saveSeasonData(); // Save the new reset time and mission date
 
             MessageManager messageManager = plugin.getMessageManager();
             for (Player player : Bukkit.getOnlinePlayers()) {
                 player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.reset"));
             }
 
+            // Clear player mission progress for the new day
             for (PlayerData data : playerDataManager.getPlayerCache().values()) {
                 data.missionProgress.clear();
             }
+
+            // Clear old mission progress from database
+            databaseManager.clearOldMissionProgress(currentMissionDate);
         }
     }
 
     public void checkSeasonReset() {
-        if (LocalDateTime.now().isAfter(seasonEndDate)) {
+        if (seasonEndDate != null && LocalDateTime.now().isAfter(seasonEndDate)) {
             resetSeason();
         }
     }
@@ -164,6 +220,7 @@ public class MissionManager {
         playerDataManager.clearCache();
 
         seasonEndDate = LocalDateTime.now().plusDays(configManager.getSeasonDuration());
+        currentMissionDate = LocalDateTime.now().toLocalDate().toString();
         generateDailyMissions();
         calculateNextReset();
         saveSeasonData();
@@ -234,11 +291,14 @@ public class MissionManager {
     }
 
     private void saveSeasonData() {
-        databaseManager.saveSeasonData(seasonEndDate, configManager.getSeasonDuration(), nextMissionReset);
+        databaseManager.saveSeasonData(seasonEndDate, configManager.getSeasonDuration(), nextMissionReset, currentMissionDate);
     }
 
     private void saveDailyMissions() {
-        databaseManager.saveDailyMissions(dailyMissions);
+        if (currentMissionDate == null) {
+            currentMissionDate = LocalDateTime.now().toLocalDate().toString();
+        }
+        databaseManager.saveDailyMissions(dailyMissions, currentMissionDate);
     }
 
     public void shutdown() {
@@ -247,6 +307,10 @@ public class MissionManager {
     }
 
     public String getTimeUntilReset() {
+        if (nextMissionReset == null) {
+            return "Unknown";
+        }
+
         LocalDateTime now = LocalDateTime.now();
         long hours = ChronoUnit.HOURS.between(now, nextMissionReset);
         long minutes = ChronoUnit.MINUTES.between(now, nextMissionReset) % 60;
@@ -260,6 +324,10 @@ public class MissionManager {
     }
 
     public String getTimeUntilSeasonEnd() {
+        if (seasonEndDate == null) {
+            return "Unknown";
+        }
+
         LocalDateTime now = LocalDateTime.now();
         long days = ChronoUnit.DAYS.between(now, seasonEndDate);
         long hours = ChronoUnit.HOURS.between(now, seasonEndDate) % 24;
@@ -274,5 +342,13 @@ public class MissionManager {
 
     public List<Mission> getDailyMissions() {
         return new ArrayList<>(dailyMissions);
+    }
+
+    public String getCurrentMissionDate() {
+        return currentMissionDate;
+    }
+
+    public boolean isInitialized() {
+        return currentMissionDate != null && !dailyMissions.isEmpty();
     }
 }

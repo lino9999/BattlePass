@@ -38,12 +38,15 @@ public class PlayerDataManager {
     public void loadPlayer(UUID uuid) {
         databaseManager.loadPlayerData(uuid).thenAccept(data -> {
             playerCache.put(uuid, data);
+            plugin.getLogger().info("Loaded player data for " + uuid + " with " +
+                    data.missionProgress.size() + " mission progress entries");
         });
     }
 
     public PlayerData getPlayerData(UUID uuid) {
         PlayerData data = playerCache.get(uuid);
         if (data == null) {
+            // Load synchronously if not in cache
             data = databaseManager.loadPlayerData(uuid).join();
             playerCache.put(uuid, data);
         }
@@ -73,16 +76,23 @@ public class PlayerDataManager {
 
         if (toSave.isEmpty()) return;
 
+        // Log saving information
+        plugin.getLogger().info("Batch saving " + toSave.size() + " players");
+
         for (Map.Entry<UUID, PlayerData> entry : toSave.entrySet()) {
             databaseManager.savePlayerData(entry.getKey(), entry.getValue());
         }
     }
 
     public void saveAllPlayers() {
-        for (UUID uuid : playerCache.keySet()) {
-            pendingSaves.put(uuid, 0L);
+        plugin.getLogger().info("Saving all " + playerCache.size() + " cached players");
+
+        // Force save all players immediately
+        for (Map.Entry<UUID, PlayerData> entry : playerCache.entrySet()) {
+            databaseManager.savePlayerData(entry.getKey(), entry.getValue()).join();
         }
-        performBatchSave();
+
+        pendingSaves.clear();
 
         saveScheduler.shutdown();
         try {
@@ -96,6 +106,14 @@ public class PlayerDataManager {
 
     public void removePlayer(UUID uuid) {
         markForSave(uuid);
+
+        // Save immediately when player leaves
+        PlayerData data = playerCache.get(uuid);
+        if (data != null) {
+            plugin.getLogger().info("Saving player data for " + uuid + " on quit");
+            databaseManager.savePlayerData(uuid, data);
+            pendingSaves.remove(uuid);
+        }
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!Bukkit.getOfflinePlayer(uuid).isOnline()) {
