@@ -37,7 +37,7 @@ season:
 # - 1000 XP per level = 53,000 total XP (balanced for 30 days)
 # - 2000 XP per level = 106,000 total XP (hard)
 experience:
-  xp-per-level: 400
+  xp-per-level: 200
 
 # Daily reward configuration
 daily-reward:
