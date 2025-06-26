@@ -38,8 +38,6 @@ public class PlayerDataManager {
     public void loadPlayer(UUID uuid) {
         databaseManager.loadPlayerData(uuid).thenAccept(data -> {
             playerCache.put(uuid, data);
-            plugin.getLogger().info("Loaded player data for " + uuid + " with " +
-                    data.missionProgress.size() + " mission progress entries");
         });
     }
 
@@ -76,17 +74,12 @@ public class PlayerDataManager {
 
         if (toSave.isEmpty()) return;
 
-        // Log saving information
-        plugin.getLogger().info("Batch saving " + toSave.size() + " players");
-
         for (Map.Entry<UUID, PlayerData> entry : toSave.entrySet()) {
             databaseManager.savePlayerData(entry.getKey(), entry.getValue());
         }
     }
 
     public void saveAllPlayers() {
-        plugin.getLogger().info("Saving all " + playerCache.size() + " cached players");
-
         // Force save all players immediately
         for (Map.Entry<UUID, PlayerData> entry : playerCache.entrySet()) {
             databaseManager.savePlayerData(entry.getKey(), entry.getValue()).join();
@@ -110,7 +103,6 @@ public class PlayerDataManager {
         // Save immediately when player leaves
         PlayerData data = playerCache.get(uuid);
         if (data != null) {
-            plugin.getLogger().info("Saving player data for " + uuid + " on quit");
             databaseManager.savePlayerData(uuid, data);
             pendingSaves.remove(uuid);
         }

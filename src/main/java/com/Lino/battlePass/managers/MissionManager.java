@@ -74,10 +74,7 @@ public class MissionManager {
 
             if (currentMissionDate == null) {
                 currentMissionDate = now.toLocalDate().toString();
-                plugin.getLogger().warning("currentMissionDate was null, setting to today: " + currentMissionDate);
             }
-
-            plugin.getLogger().info("Loading missions for date: " + currentMissionDate);
 
             boolean needNewMissions = missions.isEmpty() ||
                     (nextMissionReset != null && now.isAfter(nextMissionReset));
@@ -85,7 +82,6 @@ public class MissionManager {
             if (needNewMissions) {
                 if (nextMissionReset != null && now.isAfter(nextMissionReset)) {
                     currentMissionDate = now.toLocalDate().toString();
-                    plugin.getLogger().info("New day detected, updating mission date to: " + currentMissionDate);
                     databaseManager.clearOldMissionProgress(currentMissionDate);
                 }
 
@@ -95,7 +91,6 @@ public class MissionManager {
                 saveSeasonData();
             } else {
                 dailyMissions = new ArrayList<>(missions);
-                plugin.getLogger().info("Loaded " + missions.size() + " existing missions for date: " + currentMissionDate);
 
                 if (nextMissionReset == null) {
                     calculateNextReset();
@@ -161,7 +156,6 @@ public class MissionManager {
         }
 
         dailyMissions = new ArrayList<>(newMissions);
-        plugin.getLogger().info("Generated " + newMissions.size() + " daily missions for date: " + currentMissionDate);
     }
 
     private String formatTarget(String target) {
@@ -232,7 +226,6 @@ public class MissionManager {
         PlayerData data = playerDataManager.getPlayerData(player.getUniqueId());
         if (data == null || dailyMissions.isEmpty()) return;
 
-
         boolean changed = false;
         List<Mission> currentMissions = new ArrayList<>(dailyMissions);
         MessageManager messageManager = plugin.getMessageManager();
@@ -241,10 +234,7 @@ public class MissionManager {
             if (mission.type.equals(type)) {
                 if (mission.target.equals("ANY") || mission.target.equals(target)) {
                     String key = mission.name.toLowerCase().replace(" ", "_");
-
-                    // CONTROLLO MIGLIORATO: Gestione sicura del get
-                    Integer currentValue = data.missionProgress.get(key);
-                    int current = (currentValue != null) ? currentValue.intValue() : 0;
+                    int current = data.missionProgress.getOrDefault(key, 0);
 
                     if (current < mission.required) {
                         current = Math.min(current + amount, mission.required);
@@ -342,21 +332,25 @@ public class MissionManager {
         String completedMessage = messageManager.getMessage("messages.mission.actionbar-completed",
                 "%mission%", missionName);
 
-        Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
+        int taskId = Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
             private int count = 0;
 
             @Override
             public void run() {
                 if (count >= 15) {
                     sendActionBar(player, "");
-                    playerTasks.remove(key);
-                    Bukkit.getScheduler().cancelTask(playerTasks.get(key));
+                    Integer currentTaskId = playerTasks.remove(key);
+                    if (currentTaskId != null) {
+                        Bukkit.getScheduler().cancelTask(currentTaskId);
+                    }
                     return;
                 }
                 sendActionBar(player, completedMessage);
                 count++;
             }
-        }, 0L, 20L);
+        }, 0L, 20L).getTaskId();
+
+        playerTasks.put(key, taskId);
     }
 
     public void clearPlayerActionbars(UUID uuid) {
@@ -480,6 +474,4 @@ public class MissionManager {
     public boolean isInitialized() {
         return currentMissionDate != null && !dailyMissions.isEmpty();
     }
-
-
 }

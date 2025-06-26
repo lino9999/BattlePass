@@ -178,7 +178,6 @@ public class DatabaseManager {
                 rs.close();
 
                 String missionDate = getCurrentMissionDate();
-                plugin.getLogger().info("Loading mission progress for " + uuid + " for date: " + missionDate);
 
                 PreparedStatement missionPs = connection.prepareStatement(
                         "SELECT * FROM missions WHERE uuid = ? AND date = ?"
@@ -187,15 +186,11 @@ public class DatabaseManager {
                 missionPs.setString(2, missionDate);
                 ResultSet missionRs = missionPs.executeQuery();
 
-                int missionCount = 0;
                 while (missionRs.next()) {
                     String missionKey = missionRs.getString("mission");
                     int progress = missionRs.getInt("progress");
                     data.missionProgress.put(missionKey, progress);
-                    missionCount++;
-                    plugin.getLogger().info("  - Loaded mission '" + missionKey + "' with progress: " + progress);
                 }
-                plugin.getLogger().info("Loaded " + missionCount + " mission progress entries for " + uuid);
 
                 missionRs.close();
                 missionPs.close();
@@ -225,7 +220,6 @@ public class DatabaseManager {
                 updatePlayerStmt.executeUpdate();
 
                 String missionDate = getCurrentMissionDate();
-                plugin.getLogger().info("Saving mission progress for " + uuid + " for date: " + missionDate);
 
                 for (Map.Entry<String, Integer> mission : data.missionProgress.entrySet()) {
                     insertMissionStmt.setString(1, uuid.toString());
@@ -233,9 +227,7 @@ public class DatabaseManager {
                     insertMissionStmt.setInt(3, mission.getValue());
                     insertMissionStmt.setString(4, missionDate);
                     insertMissionStmt.executeUpdate();
-                    plugin.getLogger().info("  - Saved mission '" + mission.getKey() + "' with progress: " + mission.getValue());
                 }
-                plugin.getLogger().info("Saved " + data.missionProgress.size() + " mission progress entries for " + uuid);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -277,8 +269,6 @@ public class DatabaseManager {
                 ps.setString(3, missionResetTime != null ? missionResetTime.toString() : "");
                 ps.setString(4, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
                 ps.executeUpdate();
-
-                plugin.getLogger().info("Saved season data with mission date: " + currentMissionDate);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -340,8 +330,6 @@ public class DatabaseManager {
                     }
                     ps.executeBatch();
                 }
-
-                plugin.getLogger().info("Saved " + missions.size() + " missions for date: " + missionDate);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
