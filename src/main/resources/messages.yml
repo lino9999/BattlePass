@@ -14,6 +14,8 @@
 # %required% - Required amount
 # %reward_xp% - XP reward amount
 # %target% - Target player name (for admin commands)
+# %current% - Current progress
+# %time% - Time remaining
 
 # Prefix
 prefix: "&6&l[BATTLE PASS] &e"
@@ -77,6 +79,8 @@ messages:
   mission:
     completed: "&a&lMission Completed: &f%mission% &7(+%reward_xp% XP)"
     reset: "&6&lDaily missions have been reset!"
+    actionbar-progress: "&e%mission%: &f%current%/%required%"
+    actionbar-completed: "&a&lCOMPLETED: &f%mission%"
 
   # Season messages
   season:
@@ -94,6 +98,11 @@ messages:
     locked: "&c&lLOCKED (Level %level% Required)"
     item-reward: "&f• %amount%x %item%"
     command-reward: "&f• %reward%"
+
+  # Daily reward messages
+  daily-reward:
+    claimed: "&a&lDaily Reward Claimed! &fYou received &e%amount% XP!"
+    already-claimed: "&cYou have already claimed your daily reward! Come back later."
 
 # GUI titles
 gui:
@@ -150,6 +159,24 @@ items:
       - "&7with highest battle pass levels!"
       - ""
       - "&e&lCLICK TO VIEW"
+
+  # Daily Reward item
+  daily-reward:
+    name: "&6&lDaily Reward"
+    lore-available:
+      - "&7Claim your daily XP bonus!"
+      - ""
+      - "&7Reward: &e%xp% XP"
+      - ""
+      - "&a&lCLICK TO CLAIM!"
+    lore-cooldown:
+      - "&7You have already claimed"
+      - "&7your daily reward!"
+      - ""
+      - "&7Reward: &e%xp% XP"
+      - "&7Next claim in: &c%time%"
+      - ""
+      - "&c&lON COOLDOWN"
 
   # Reward items
   reward-available:
@@ -273,6 +300,7 @@ time:
   hours: "hours"
   minute: "minute"
   minutes: "minutes"
+  available-now: "Available now!"
 
 # Reward types
 reward-types:

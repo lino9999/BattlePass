@@ -83,6 +83,7 @@ public class EventManager implements Listener {
             }
         }
 
+        plugin.getMissionManager().clearPlayerActionbars(uuid);
         plugin.getPlayerDataManager().removePlayer(uuid);
         plugin.getGuiManager().getCurrentPages().remove(event.getPlayer().getEntityId());
         lastLocations.remove(uuid);
@@ -311,6 +312,10 @@ public class EventManager implements Listener {
                 plugin.getGuiManager().openLeaderboardGUI(player);
                 break;
 
+            case SUNFLOWER:
+                handleDailyRewardClaim(player, currentPage);
+                break;
+
             case CHEST_MINECART:
                 handleRewardClaim(player, slot, currentPage);
                 break;
@@ -356,6 +361,50 @@ public class EventManager implements Listener {
                     plugin.getGuiManager().openBattlePassGUI(player, currentPage);
                 }
             }
+        }
+    }
+
+    private void handleDailyRewardClaim(Player player, int currentPage) {
+        PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        long now = System.currentTimeMillis();
+        long dayInMillis = 24 * 60 * 60 * 1000;
+
+        if (now - data.lastDailyReward >= dayInMillis) {
+            int xpReward = plugin.getConfigManager().getDailyRewardXP();
+            data.xp += xpReward;
+            data.lastDailyReward = now;
+
+            int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
+            boolean leveled = false;
+
+            while (data.xp >= xpPerLevel && data.level < 54) {
+                data.xp -= xpPerLevel;
+                data.level++;
+                data.totalLevels++;
+                leveled = true;
+
+                player.sendMessage(plugin.getMessageManager().getPrefix() + plugin.getMessageManager().getMessage("messages.level-up",
+                        "%level%", String.valueOf(data.level)));
+                player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+
+                int available = plugin.getRewardManager().countAvailableRewards(player, data);
+                if (available > 0) {
+                    player.sendMessage(plugin.getMessageManager().getPrefix() + plugin.getMessageManager().getMessage("messages.new-rewards"));
+                }
+            }
+
+            plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.daily-reward.claimed",
+                            "%amount%", String.valueOf(xpReward)));
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+
+            plugin.getGuiManager().openBattlePassGUI(player, currentPage);
+        } else {
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.daily-reward.already-claimed"));
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         }
     }
 

@@ -61,8 +61,14 @@ public class DatabaseManager {
                                 "claimed_premium TEXT DEFAULT ''," +
                                 "last_notification INTEGER DEFAULT 0," +
                                 "total_levels INTEGER DEFAULT 0," +
-                                "has_premium INTEGER DEFAULT 0)"
+                                "has_premium INTEGER DEFAULT 0," +
+                                "last_daily_reward INTEGER DEFAULT 0)"
                 );
+
+                try {
+                    stmt.executeUpdate("ALTER TABLE players ADD COLUMN last_daily_reward INTEGER DEFAULT 0");
+                } catch (SQLException e) {
+                }
 
                 stmt.executeUpdate(
                         "CREATE TABLE IF NOT EXISTS missions (" +
@@ -82,11 +88,9 @@ public class DatabaseManager {
                                 "current_mission_date TEXT)"
                 );
 
-                // Add current_mission_date column if it doesn't exist (for existing databases)
                 try {
                     stmt.executeUpdate("ALTER TABLE season_data ADD COLUMN current_mission_date TEXT");
                 } catch (SQLException e) {
-                    // Column already exists, ignore
                 }
 
                 stmt.executeUpdate(
@@ -114,12 +118,12 @@ public class DatabaseManager {
         try {
             insertPlayerStmt = connection.prepareStatement(
                     "INSERT OR IGNORE INTO players (uuid, xp, level, claimed_free, claimed_premium, " +
-                            "last_notification, total_levels, has_premium) VALUES (?, 0, 1, '', '', 0, 0, 0)"
+                            "last_notification, total_levels, has_premium, last_daily_reward) VALUES (?, 0, 1, '', '', 0, 0, 0, 0)"
             );
 
             updatePlayerStmt = connection.prepareStatement(
                     "UPDATE players SET xp = ?, level = ?, claimed_free = ?, claimed_premium = ?, " +
-                            "last_notification = ?, total_levels = ?, has_premium = ? WHERE uuid = ?"
+                            "last_notification = ?, total_levels = ?, has_premium = ?, last_daily_reward = ? WHERE uuid = ?"
             );
 
             selectPlayerStmt = connection.prepareStatement(
@@ -148,6 +152,7 @@ public class DatabaseManager {
                     data.lastNotification = rs.getInt("last_notification");
                     data.totalLevels = rs.getInt("total_levels");
                     data.hasPremium = rs.getInt("has_premium") == 1;
+                    data.lastDailyReward = rs.getLong("last_daily_reward");
 
                     String claimedFree = rs.getString("claimed_free");
                     if (!claimedFree.isEmpty()) {
@@ -172,7 +177,6 @@ public class DatabaseManager {
                 }
                 rs.close();
 
-                // Load mission progress for the current mission date
                 String missionDate = getCurrentMissionDate();
                 plugin.getLogger().info("Loading mission progress for " + uuid + " for date: " + missionDate);
 
@@ -216,10 +220,10 @@ public class DatabaseManager {
                 updatePlayerStmt.setInt(5, data.lastNotification);
                 updatePlayerStmt.setInt(6, data.totalLevels);
                 updatePlayerStmt.setInt(7, data.hasPremium ? 1 : 0);
-                updatePlayerStmt.setString(8, uuid.toString());
+                updatePlayerStmt.setLong(8, data.lastDailyReward);
+                updatePlayerStmt.setString(9, uuid.toString());
                 updatePlayerStmt.executeUpdate();
 
-                // Save mission progress with the current mission date
                 String missionDate = getCurrentMissionDate();
                 plugin.getLogger().info("Saving mission progress for " + uuid + " for date: " + missionDate);
 
@@ -314,7 +318,6 @@ public class DatabaseManager {
             if (missions.isEmpty()) return;
 
             try {
-                // First, clean up old missions (keep only current date)
                 try (PreparedStatement deletePs = connection.prepareStatement(
                         "DELETE FROM daily_missions WHERE date != ?"
                 )) {
@@ -322,7 +325,6 @@ public class DatabaseManager {
                     deletePs.executeUpdate();
                 }
 
-                // Then insert new missions
                 try (PreparedStatement ps = connection.prepareStatement(
                         "INSERT OR REPLACE INTO daily_missions (name, type, target, required, xp_reward, date) " +
                                 "VALUES (?, ?, ?, ?, ?, ?)"
@@ -350,7 +352,6 @@ public class DatabaseManager {
         return CompletableFuture.supplyAsync(() -> {
             List<Mission> loadedMissions = new ArrayList<>();
 
-            // Get the current mission date from season data
             String missionDate = getCurrentMissionDate();
             if (missionDate == null) {
                 missionDate = LocalDateTime.now().toLocalDate().toString();
@@ -393,7 +394,6 @@ public class DatabaseManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        // Return today's date as fallback
         return LocalDateTime.now().toLocalDate().toString();
     }
 
@@ -401,7 +401,7 @@ public class DatabaseManager {
         return CompletableFuture.runAsync(() -> {
             try (Statement stmt = connection.createStatement()) {
                 stmt.executeUpdate("UPDATE players SET xp = 0, level = 1, claimed_free = '', " +
-                        "claimed_premium = '', has_premium = 0");
+                        "claimed_premium = '', has_premium = 0, last_daily_reward = 0");
                 stmt.executeUpdate("DELETE FROM missions");
                 stmt.executeUpdate("DELETE FROM daily_missions");
             } catch (SQLException e) {

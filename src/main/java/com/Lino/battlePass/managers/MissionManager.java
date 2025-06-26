@@ -9,10 +9,15 @@ import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
+// Importazioni per ActionBar
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class MissionManager {
@@ -27,6 +32,9 @@ public class MissionManager {
     private LocalDateTime seasonEndDate;
     private String currentMissionDate;
 
+    private final Map<UUID, Map<String, Long>> lastActionbarUpdate = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<String, Integer>> actionbarTasks = new ConcurrentHashMap<>();
+
     public MissionManager(BattlePass plugin, ConfigManager configManager, DatabaseManager databaseManager, PlayerDataManager playerDataManager) {
         this.plugin = plugin;
         this.configManager = configManager;
@@ -35,7 +43,6 @@ public class MissionManager {
     }
 
     public void initialize() {
-        // First load season data, then load missions
         databaseManager.loadSeasonData().thenAccept(data -> {
             if (data.containsKey("endDate")) {
                 seasonEndDate = (LocalDateTime) data.get("endDate");
@@ -48,16 +55,15 @@ public class MissionManager {
 
                 if (LocalDateTime.now().isAfter(seasonEndDate)) {
                     Bukkit.getScheduler().runTask(plugin, this::resetSeason);
-                    return; // Don't load missions if season is being reset
+                    return;
                 }
             } else {
                 seasonEndDate = LocalDateTime.now().plusDays(configManager.getSeasonDuration());
                 currentMissionDate = LocalDateTime.now().toLocalDate().toString();
-                calculateNextReset(); // Calculate reset time for new season
+                calculateNextReset();
                 saveSeasonData();
             }
 
-            // Now load missions after season data is loaded
             loadMissionsAfterSeasonData();
         });
     }
@@ -66,7 +72,6 @@ public class MissionManager {
         databaseManager.loadDailyMissions().thenAccept(missions -> {
             LocalDateTime now = LocalDateTime.now();
 
-            // If currentMissionDate is still null, set it to today
             if (currentMissionDate == null) {
                 currentMissionDate = now.toLocalDate().toString();
                 plugin.getLogger().warning("currentMissionDate was null, setting to today: " + currentMissionDate);
@@ -74,29 +79,24 @@ public class MissionManager {
 
             plugin.getLogger().info("Loading missions for date: " + currentMissionDate);
 
-            // Check if we need to generate new missions
             boolean needNewMissions = missions.isEmpty() ||
                     (nextMissionReset != null && now.isAfter(nextMissionReset));
 
             if (needNewMissions) {
-                // If it's a new day, update the mission date
                 if (nextMissionReset != null && now.isAfter(nextMissionReset)) {
                     currentMissionDate = now.toLocalDate().toString();
                     plugin.getLogger().info("New day detected, updating mission date to: " + currentMissionDate);
-                    // Clear old mission progress
                     databaseManager.clearOldMissionProgress(currentMissionDate);
                 }
 
                 generateDailyMissions();
                 calculateNextReset();
                 saveDailyMissions();
-                saveSeasonData(); // Save the updated reset time and mission date
+                saveSeasonData();
             } else {
-                // Use existing missions
                 dailyMissions = new ArrayList<>(missions);
                 plugin.getLogger().info("Loaded " + missions.size() + " existing missions for date: " + currentMissionDate);
 
-                // If nextMissionReset is null (shouldn't happen), calculate it
                 if (nextMissionReset == null) {
                     calculateNextReset();
                     saveSeasonData();
@@ -106,7 +106,6 @@ public class MissionManager {
     }
 
     private void generateDailyMissions() {
-        // Ensure currentMissionDate is set
         if (currentMissionDate == null) {
             currentMissionDate = LocalDateTime.now().toLocalDate().toString();
         }
@@ -179,26 +178,26 @@ public class MissionManager {
 
     public void checkMissionReset() {
         if (nextMissionReset != null && LocalDateTime.now().isAfter(nextMissionReset)) {
-            // Update mission date for new day
             currentMissionDate = LocalDateTime.now().toLocalDate().toString();
 
             generateDailyMissions();
             calculateNextReset();
             saveDailyMissions();
-            saveSeasonData(); // Save the new reset time and mission date
+            saveSeasonData();
 
             MessageManager messageManager = plugin.getMessageManager();
             for (Player player : Bukkit.getOnlinePlayers()) {
                 player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.reset"));
             }
 
-            // Clear player mission progress for the new day
             for (PlayerData data : playerDataManager.getPlayerCache().values()) {
                 data.missionProgress.clear();
             }
 
-            // Clear old mission progress from database
             databaseManager.clearOldMissionProgress(currentMissionDate);
+
+            lastActionbarUpdate.clear();
+            actionbarTasks.clear();
         }
     }
 
@@ -224,6 +223,9 @@ public class MissionManager {
         generateDailyMissions();
         calculateNextReset();
         saveSeasonData();
+
+        lastActionbarUpdate.clear();
+        actionbarTasks.clear();
     }
 
     public void progressMission(Player player, String type, String target, int amount) {
@@ -253,6 +255,10 @@ public class MissionManager {
                                     "%mission%", mission.name,
                                     "%reward_xp%", String.valueOf(mission.xpReward)));
                             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+
+                            showCompletedActionbar(player, mission.name);
+                        } else {
+                            showProgressActionbar(player, mission.name, current, mission.required);
                         }
                     }
                 }
@@ -262,6 +268,119 @@ public class MissionManager {
         if (changed) {
             playerDataManager.markForSave(player.getUniqueId());
         }
+    }
+
+    // Metodo helper per inviare action bar compatibile con Spigot/Paper
+    private void sendActionBar(Player player, String message) {
+        try {
+            // Prova prima con l'API di Paper (se disponibile)
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+        } catch (Exception e) {
+            // Fallback: invia come messaggio normale se ActionBar non è supportato
+            player.sendMessage("§7[§6Progress§7] " + message);
+        }
+    }
+
+    private void showProgressActionbar(Player player, String missionName, int current, int required) {
+        UUID uuid = player.getUniqueId();
+
+        if (!lastActionbarUpdate.containsKey(uuid)) {
+            lastActionbarUpdate.put(uuid, new ConcurrentHashMap<>());
+        }
+        if (!actionbarTasks.containsKey(uuid)) {
+            actionbarTasks.put(uuid, new ConcurrentHashMap<>());
+        }
+
+        Map<String, Integer> playerTasks = actionbarTasks.get(uuid);
+        String key = missionName.toLowerCase().replace(" ", "_");
+
+        if (playerTasks.containsKey(key)) {
+            Bukkit.getScheduler().cancelTask(playerTasks.get(key));
+        }
+
+        lastActionbarUpdate.get(uuid).put(key, System.currentTimeMillis());
+
+        MessageManager messageManager = plugin.getMessageManager();
+        String progressMessage = messageManager.getMessage("messages.mission.actionbar-progress",
+                "%current%", String.valueOf(current),
+                "%required%", String.valueOf(required),
+                "%mission%", missionName);
+
+        sendActionBar(player, progressMessage);
+
+        int taskId = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Long lastUpdate = lastActionbarUpdate.getOrDefault(uuid, new HashMap<>()).get(key);
+            if (lastUpdate != null && System.currentTimeMillis() - lastUpdate >= 29500) {
+                sendActionBar(player, "");
+                playerTasks.remove(key);
+                lastActionbarUpdate.get(uuid).remove(key);
+            }
+        }, 600L).getTaskId();
+
+        playerTasks.put(key, taskId);
+    }
+
+    private void showCompletedActionbar(Player player, String missionName) {
+        UUID uuid = player.getUniqueId();
+        String key = missionName.toLowerCase().replace(" ", "_") + "_completed";
+
+        if (!actionbarTasks.containsKey(uuid)) {
+            actionbarTasks.put(uuid, new ConcurrentHashMap<>());
+        }
+
+        Map<String, Integer> playerTasks = actionbarTasks.get(uuid);
+
+        if (playerTasks.containsKey(key)) {
+            Bukkit.getScheduler().cancelTask(playerTasks.get(key));
+        }
+
+        MessageManager messageManager = plugin.getMessageManager();
+        String completedMessage = messageManager.getMessage("messages.mission.actionbar-completed",
+                "%mission%", missionName);
+
+        Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
+            private int count = 0;
+
+            @Override
+            public void run() {
+                if (count >= 15) {
+                    sendActionBar(player, "");
+                    playerTasks.remove(key);
+                    Bukkit.getScheduler().cancelTask(playerTasks.get(key));
+                    return;
+                }
+                sendActionBar(player, completedMessage);
+                count++;
+            }
+        }, 0L, 20L);
+    }
+
+    public void clearPlayerActionbars(UUID uuid) {
+        if (actionbarTasks.containsKey(uuid)) {
+            actionbarTasks.get(uuid).values().forEach(taskId -> Bukkit.getScheduler().cancelTask(taskId));
+            actionbarTasks.remove(uuid);
+        }
+        lastActionbarUpdate.remove(uuid);
+    }
+
+    public String getTimeUntilDailyReward(long lastClaimed) {
+        LocalDateTime lastClaimTime = LocalDateTime.ofEpochSecond(lastClaimed / 1000, 0, java.time.ZoneOffset.UTC);
+        LocalDateTime nextAvailable = lastClaimTime.plusDays(1);
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneOffset.UTC);
+
+        if (now.isAfter(nextAvailable)) {
+            return plugin.getMessageManager().getMessage("time.available-now");
+        }
+
+        long hours = ChronoUnit.HOURS.between(now, nextAvailable);
+        long minutes = ChronoUnit.MINUTES.between(now, nextAvailable) % 60;
+
+        MessageManager messageManager = plugin.getMessageManager();
+        String hourStr = hours == 1 ? messageManager.getMessage("time.hour") : messageManager.getMessage("time.hours");
+        String minuteStr = minutes == 1 ? messageManager.getMessage("time.minute") : messageManager.getMessage("time.minutes");
+
+        return messageManager.getMessage("time.hours-minutes", "%hours%", String.valueOf(hours),
+                "%minutes%", String.valueOf(minutes));
     }
 
     private void checkLevelUp(Player player, PlayerData data) {
@@ -304,6 +423,12 @@ public class MissionManager {
     public void shutdown() {
         saveSeasonData();
         saveDailyMissions();
+
+        actionbarTasks.values().forEach(tasks ->
+                tasks.values().forEach(taskId -> Bukkit.getScheduler().cancelTask(taskId))
+        );
+        actionbarTasks.clear();
+        lastActionbarUpdate.clear();
     }
 
     public String getTimeUntilReset() {

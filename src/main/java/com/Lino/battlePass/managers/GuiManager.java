@@ -147,6 +147,24 @@ public class GuiManager {
         });
 
         gui.setItem(48, leaderboard);
+
+        ItemStack dailyReward = new ItemStack(Material.SUNFLOWER);
+        ItemMeta dailyMeta = dailyReward.getItemMeta();
+        dailyMeta.setDisplayName(messageManager.getMessage("items.daily-reward.name"));
+
+        List<String> dailyLore = new ArrayList<>();
+        boolean canClaim = System.currentTimeMillis() - data.lastDailyReward >= 24 * 60 * 60 * 1000;
+        String timeUntil = missionManager.getTimeUntilDailyReward(data.lastDailyReward);
+
+        for (String line : messageManager.getMessagesConfig().getStringList(canClaim ? "items.daily-reward.lore-available" : "items.daily-reward.lore-cooldown")) {
+            dailyLore.add(ChatColor.translateAlternateColorCodes('&', line
+                    .replace("%xp%", String.valueOf(configManager.getDailyRewardXP()))
+                    .replace("%time%", timeUntil)));
+        }
+        dailyMeta.setLore(dailyLore);
+        dailyReward.setItemMeta(dailyMeta);
+        gui.setItem(50, dailyReward);
+
         player.openInventory(gui);
     }
 

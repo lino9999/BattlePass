@@ -16,6 +16,7 @@ public class ConfigManager {
     private int xpPerLevel = 200;
     private int dailyMissionsCount = 7;
     private int seasonDuration = 30;
+    private int dailyRewardXP = 200;
 
     public ConfigManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -26,6 +27,7 @@ public class ConfigManager {
         config = plugin.getConfig();
         xpPerLevel = config.getInt("experience.xp-per-level", 200);
         seasonDuration = config.getInt("season.duration", 30);
+        dailyRewardXP = config.getInt("daily-reward.xp", 200);
 
         File missionsFile = new File(plugin.getDataFolder(), "missions.yml");
         missionsConfig = YamlConfiguration.loadConfiguration(missionsFile);
@@ -57,5 +59,9 @@ public class ConfigManager {
 
     public int getSeasonDuration() {
         return seasonDuration;
+    }
+
+    public int getDailyRewardXP() {
+        return dailyRewardXP;
     }
 }

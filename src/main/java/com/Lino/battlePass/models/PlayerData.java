@@ -12,6 +12,7 @@ public class PlayerData {
     public int lastNotification = 0;
     public int totalLevels = 0;
     public boolean hasPremium = false;
+    public long lastDailyReward = 0;
     public final Map<String, Integer> missionProgress = new ConcurrentHashMap<>();
     public final Set<Integer> claimedFreeRewards = ConcurrentHashMap.newKeySet();
     public final Set<Integer> claimedPremiumRewards = ConcurrentHashMap.newKeySet();
