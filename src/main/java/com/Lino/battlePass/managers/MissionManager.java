@@ -232,6 +232,7 @@ public class MissionManager {
         PlayerData data = playerDataManager.getPlayerData(player.getUniqueId());
         if (data == null || dailyMissions.isEmpty()) return;
 
+
         boolean changed = false;
         List<Mission> currentMissions = new ArrayList<>(dailyMissions);
         MessageManager messageManager = plugin.getMessageManager();
@@ -240,7 +241,10 @@ public class MissionManager {
             if (mission.type.equals(type)) {
                 if (mission.target.equals("ANY") || mission.target.equals(target)) {
                     String key = mission.name.toLowerCase().replace(" ", "_");
-                    int current = data.missionProgress.getOrDefault(key, 0);
+
+                    // CONTROLLO MIGLIORATO: Gestione sicura del get
+                    Integer currentValue = data.missionProgress.get(key);
+                    int current = (currentValue != null) ? currentValue.intValue() : 0;
 
                     if (current < mission.required) {
                         current = Math.min(current + amount, mission.required);
@@ -476,4 +480,6 @@ public class MissionManager {
     public boolean isInitialized() {
         return currentMissionDate != null && !dailyMissions.isEmpty();
     }
+
+
 }
