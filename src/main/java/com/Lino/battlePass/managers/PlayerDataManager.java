@@ -103,15 +103,27 @@ public class PlayerDataManager {
         // Save immediately when player leaves
         PlayerData data = playerCache.get(uuid);
         if (data != null) {
-            databaseManager.savePlayerData(uuid, data);
-            pendingSaves.remove(uuid);
-        }
+            databaseManager.savePlayerData(uuid, data).thenRun(() -> {
+                pendingSaves.remove(uuid);
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (!Bukkit.getOfflinePlayer(uuid).isOnline()) {
-                playerCache.remove(uuid);
-            }
-        }, 200L);
+                // Remove from cache after save is complete
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    // Double-check player is still offline
+                    if (!Bukkit.getOfflinePlayer(uuid).isOnline()) {
+                        playerCache.remove(uuid);
+                    }
+                }, 100L); // Reduced from 200L to 100L (5 seconds)
+            });
+        }
+    }
+
+    public void cleanupStaleEntries() {
+        playerCache.entrySet().removeIf(entry -> {
+            UUID uuid = entry.getKey();
+            // Remove if player has been offline for more than 10 minutes
+            return !Bukkit.getOfflinePlayer(uuid).isOnline() &&
+                    !pendingSaves.containsKey(uuid);
+        });
     }
 
     public void clearCache() {

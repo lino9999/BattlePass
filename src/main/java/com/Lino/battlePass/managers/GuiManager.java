@@ -28,6 +28,10 @@ public class GuiManager {
 
     private final Map<Integer, Integer> currentPages = new ConcurrentHashMap<>();
     private final Map<String, ItemStack> itemCache = new ConcurrentHashMap<>();
+    private final Map<String, Long> cacheTimestamps = new ConcurrentHashMap<>();
+
+    private static final int MAX_CACHE_SIZE = 100;
+    private static final long CACHE_EXPIRY_TIME = 300000; // 5 minutes
 
     public GuiManager(BattlePass plugin, PlayerDataManager playerDataManager, MissionManager missionManager,
                       RewardManager rewardManager, MessageManager messageManager, ConfigManager configManager) {
@@ -431,7 +435,54 @@ public class GuiManager {
     }
 
     private ItemStack getCachedItem(String key, Supplier<ItemStack> supplier) {
-        return itemCache.computeIfAbsent(key, k -> supplier.get()).clone();
+        cleanExpiredCache();
+
+        ItemStack cached = itemCache.get(key);
+        if (cached != null) {
+            return cached.clone();
+        }
+
+        ItemStack newItem = supplier.get();
+        addToCache(key, newItem);
+        return newItem.clone();
+    }
+
+    private void addToCache(String key, ItemStack item) {
+        // Check cache size
+        if (itemCache.size() >= MAX_CACHE_SIZE) {
+            cleanExpiredCache();
+
+            // If still too large, remove oldest entries
+            if (itemCache.size() >= MAX_CACHE_SIZE) {
+                String oldestKey = cacheTimestamps.entrySet().stream()
+                        .min(Map.Entry.comparingByValue())
+                        .map(Map.Entry::getKey)
+                        .orElse(null);
+
+                if (oldestKey != null) {
+                    itemCache.remove(oldestKey);
+                    cacheTimestamps.remove(oldestKey);
+                }
+            }
+        }
+
+        itemCache.put(key, item);
+        cacheTimestamps.put(key, System.currentTimeMillis());
+    }
+
+    private void cleanExpiredCache() {
+        long currentTime = System.currentTimeMillis();
+        cacheTimestamps.entrySet().removeIf(entry -> {
+            if (currentTime - entry.getValue() > CACHE_EXPIRY_TIME) {
+                itemCache.remove(entry.getKey());
+                return true;
+            }
+            return false;
+        });
+    }
+
+    public void cleanExpiredCachePublic() {
+        cleanExpiredCache();
     }
 
     private String formatMaterial(Material material) {
@@ -440,6 +491,7 @@ public class GuiManager {
 
     public void clearCache() {
         itemCache.clear();
+        cacheTimestamps.clear();
     }
 
     public Map<Integer, Integer> getCurrentPages() {

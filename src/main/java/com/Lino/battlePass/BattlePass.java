@@ -39,8 +39,13 @@ public class BattlePass extends JavaPlugin {
 
                 // Wait for mission manager to be fully initialized before loading players
                 new BukkitRunnable() {
+                    private int attempts = 0;
+                    private static final int MAX_ATTEMPTS = 60; // 30 seconds timeout
+
                     @Override
                     public void run() {
+                        attempts++;
+
                         if (missionManager.isInitialized()) {
                             playerDataManager.loadOnlinePlayers();
 
@@ -51,6 +56,9 @@ public class BattlePass extends JavaPlugin {
                             new BattlePassTask(BattlePass.this).runTaskTimer(BattlePass.this, 6000L, 1200L);
 
                             getLogger().info(messageManager.getMessage("messages.plugin-enabled"));
+                            this.cancel();
+                        } else if (attempts >= MAX_ATTEMPTS) {
+                            getLogger().severe("Failed to initialize MissionManager after 30 seconds!");
                             this.cancel();
                         }
                     }

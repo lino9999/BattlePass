@@ -144,56 +144,53 @@ public class DatabaseManager {
 
             try {
                 selectPlayerStmt.setString(1, uuid.toString());
-                ResultSet rs = selectPlayerStmt.executeQuery();
+                try (ResultSet rs = selectPlayerStmt.executeQuery()) {
+                    if (rs.next()) {
+                        data.xp = rs.getInt("xp");
+                        data.level = rs.getInt("level");
+                        data.lastNotification = rs.getInt("last_notification");
+                        data.totalLevels = rs.getInt("total_levels");
+                        data.hasPremium = rs.getInt("has_premium") == 1;
+                        data.lastDailyReward = rs.getLong("last_daily_reward");
 
-                if (rs.next()) {
-                    data.xp = rs.getInt("xp");
-                    data.level = rs.getInt("level");
-                    data.lastNotification = rs.getInt("last_notification");
-                    data.totalLevels = rs.getInt("total_levels");
-                    data.hasPremium = rs.getInt("has_premium") == 1;
-                    data.lastDailyReward = rs.getLong("last_daily_reward");
-
-                    String claimedFree = rs.getString("claimed_free");
-                    if (!claimedFree.isEmpty()) {
-                        for (String level : claimedFree.split(",")) {
-                            if (!level.isEmpty()) {
-                                data.claimedFreeRewards.add(Integer.parseInt(level));
+                        String claimedFree = rs.getString("claimed_free");
+                        if (!claimedFree.isEmpty()) {
+                            for (String level : claimedFree.split(",")) {
+                                if (!level.isEmpty()) {
+                                    data.claimedFreeRewards.add(Integer.parseInt(level));
+                                }
                             }
                         }
-                    }
 
-                    String claimedPremium = rs.getString("claimed_premium");
-                    if (!claimedPremium.isEmpty()) {
-                        for (String level : claimedPremium.split(",")) {
-                            if (!level.isEmpty()) {
-                                data.claimedPremiumRewards.add(Integer.parseInt(level));
+                        String claimedPremium = rs.getString("claimed_premium");
+                        if (!claimedPremium.isEmpty()) {
+                            for (String level : claimedPremium.split(",")) {
+                                if (!level.isEmpty()) {
+                                    data.claimedPremiumRewards.add(Integer.parseInt(level));
+                                }
                             }
                         }
+                    } else {
+                        insertPlayerStmt.setString(1, uuid.toString());
+                        insertPlayerStmt.executeUpdate();
                     }
-                } else {
-                    insertPlayerStmt.setString(1, uuid.toString());
-                    insertPlayerStmt.executeUpdate();
                 }
-                rs.close();
 
                 String missionDate = getCurrentMissionDate();
 
-                PreparedStatement missionPs = connection.prepareStatement(
-                        "SELECT * FROM missions WHERE uuid = ? AND date = ?"
-                );
-                missionPs.setString(1, uuid.toString());
-                missionPs.setString(2, missionDate);
-                ResultSet missionRs = missionPs.executeQuery();
+                try (PreparedStatement missionPs = connection.prepareStatement(
+                        "SELECT * FROM missions WHERE uuid = ? AND date = ?")) {
+                    missionPs.setString(1, uuid.toString());
+                    missionPs.setString(2, missionDate);
 
-                while (missionRs.next()) {
-                    String missionKey = missionRs.getString("mission");
-                    int progress = missionRs.getInt("progress");
-                    data.missionProgress.put(missionKey, progress);
+                    try (ResultSet missionRs = missionPs.executeQuery()) {
+                        while (missionRs.next()) {
+                            String missionKey = missionRs.getString("mission");
+                            int progress = missionRs.getInt("progress");
+                            data.missionProgress.put(missionKey, progress);
+                        }
+                    }
                 }
-
-                missionRs.close();
-                missionPs.close();
 
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -241,16 +238,15 @@ public class DatabaseManager {
             try (PreparedStatement ps = connection.prepareStatement(
                     "SELECT * FROM players ORDER BY total_levels DESC, level DESC, xp DESC LIMIT 10"
             )) {
-                ResultSet rs = ps.executeQuery();
-
-                while (rs.next()) {
-                    PlayerData data = new PlayerData(UUID.fromString(rs.getString("uuid")));
-                    data.xp = rs.getInt("xp");
-                    data.level = rs.getInt("level");
-                    data.totalLevels = rs.getInt("total_levels");
-                    allPlayers.add(data);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        PlayerData data = new PlayerData(UUID.fromString(rs.getString("uuid")));
+                        data.xp = rs.getInt("xp");
+                        data.level = rs.getInt("level");
+                        data.totalLevels = rs.getInt("total_levels");
+                        allPlayers.add(data);
+                    }
                 }
-                rs.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -280,21 +276,20 @@ public class DatabaseManager {
             Map<String, Object> data = new HashMap<>();
 
             try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM season_data WHERE id = 1")) {
-                ResultSet rs = ps.executeQuery();
-
-                if (rs.next()) {
-                    data.put("endDate", LocalDateTime.parse(rs.getString("end_date")));
-                    data.put("duration", rs.getInt("duration"));
-                    String resetTimeStr = rs.getString("mission_reset_time");
-                    if (resetTimeStr != null && !resetTimeStr.isEmpty()) {
-                        data.put("missionResetTime", LocalDateTime.parse(resetTimeStr));
-                    }
-                    String currentMissionDate = rs.getString("current_mission_date");
-                    if (currentMissionDate != null && !currentMissionDate.isEmpty()) {
-                        data.put("currentMissionDate", currentMissionDate);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        data.put("endDate", LocalDateTime.parse(rs.getString("end_date")));
+                        data.put("duration", rs.getInt("duration"));
+                        String resetTimeStr = rs.getString("mission_reset_time");
+                        if (resetTimeStr != null && !resetTimeStr.isEmpty()) {
+                            data.put("missionResetTime", LocalDateTime.parse(resetTimeStr));
+                        }
+                        String currentMissionDate = rs.getString("current_mission_date");
+                        if (currentMissionDate != null && !currentMissionDate.isEmpty()) {
+                            data.put("currentMissionDate", currentMissionDate);
+                        }
                     }
                 }
-                rs.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -349,19 +344,18 @@ public class DatabaseManager {
                     "SELECT * FROM daily_missions WHERE date = ? ORDER BY id"
             )) {
                 ps.setString(1, missionDate);
-                ResultSet rs = ps.executeQuery();
-
-                while (rs.next()) {
-                    Mission mission = new Mission(
-                            rs.getString("name"),
-                            rs.getString("type"),
-                            rs.getString("target"),
-                            rs.getInt("required"),
-                            rs.getInt("xp_reward")
-                    );
-                    loadedMissions.add(mission);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Mission mission = new Mission(
+                                rs.getString("name"),
+                                rs.getString("type"),
+                                rs.getString("target"),
+                                rs.getInt("required"),
+                                rs.getInt("xp_reward")
+                        );
+                        loadedMissions.add(mission);
+                    }
                 }
-                rs.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -372,13 +366,11 @@ public class DatabaseManager {
 
     public String getCurrentMissionDate() {
         try (PreparedStatement ps = connection.prepareStatement("SELECT current_mission_date FROM season_data WHERE id = 1")) {
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                String date = rs.getString("current_mission_date");
-                rs.close();
-                return date;
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("current_mission_date");
+                }
             }
-            rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }

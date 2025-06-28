@@ -34,6 +34,7 @@ public class MissionManager {
 
     private final Map<UUID, Map<String, Long>> lastActionbarUpdate = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, Integer>> actionbarTasks = new ConcurrentHashMap<>();
+    private final Set<Integer> scheduledTaskIds = ConcurrentHashMap.newKeySet();
 
     public MissionManager(BattlePass plugin, ConfigManager configManager, DatabaseManager databaseManager, PlayerDataManager playerDataManager) {
         this.plugin = plugin;
@@ -289,7 +290,9 @@ public class MissionManager {
         String key = missionName.toLowerCase().replace(" ", "_");
 
         if (playerTasks.containsKey(key)) {
-            Bukkit.getScheduler().cancelTask(playerTasks.get(key));
+            int oldTaskId = playerTasks.get(key);
+            Bukkit.getScheduler().cancelTask(oldTaskId);
+            scheduledTaskIds.remove(oldTaskId);
         }
 
         lastActionbarUpdate.get(uuid).put(key, System.currentTimeMillis());
@@ -302,16 +305,26 @@ public class MissionManager {
 
         sendActionBar(player, progressMessage);
 
-        int taskId = Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            Long lastUpdate = lastActionbarUpdate.getOrDefault(uuid, new HashMap<>()).get(key);
-            if (lastUpdate != null && System.currentTimeMillis() - lastUpdate >= 29500) {
-                sendActionBar(player, "");
-                playerTasks.remove(key);
-                lastActionbarUpdate.get(uuid).remove(key);
+        int taskId = Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
+            @Override
+            public void run() {
+                Long lastUpdate = lastActionbarUpdate.getOrDefault(uuid, new HashMap<>()).get(key);
+                if (lastUpdate != null && System.currentTimeMillis() - lastUpdate >= 29500) {
+                    sendActionBar(player, "");
+                    playerTasks.remove(key);
+                    lastActionbarUpdate.get(uuid).remove(key);
+                    // Task ID will be removed after this method completes
+                }
             }
         }, 600L).getTaskId();
 
         playerTasks.put(key, taskId);
+        scheduledTaskIds.add(taskId);
+
+        // Schedule cleanup of task ID
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            scheduledTaskIds.remove(taskId);
+        }, 601L);
     }
 
     private void showCompletedActionbar(Player player, String missionName) {
@@ -325,7 +338,9 @@ public class MissionManager {
         Map<String, Integer> playerTasks = actionbarTasks.get(uuid);
 
         if (playerTasks.containsKey(key)) {
-            Bukkit.getScheduler().cancelTask(playerTasks.get(key));
+            int oldTaskId = playerTasks.get(key);
+            Bukkit.getScheduler().cancelTask(oldTaskId);
+            scheduledTaskIds.remove(oldTaskId);
         }
 
         MessageManager messageManager = plugin.getMessageManager();
@@ -342,6 +357,7 @@ public class MissionManager {
                     Integer currentTaskId = playerTasks.remove(key);
                     if (currentTaskId != null) {
                         Bukkit.getScheduler().cancelTask(currentTaskId);
+                        scheduledTaskIds.remove(currentTaskId);
                     }
                     return;
                 }
@@ -351,11 +367,15 @@ public class MissionManager {
         }, 0L, 20L).getTaskId();
 
         playerTasks.put(key, taskId);
+        scheduledTaskIds.add(taskId);
     }
 
     public void clearPlayerActionbars(UUID uuid) {
         if (actionbarTasks.containsKey(uuid)) {
-            actionbarTasks.get(uuid).values().forEach(taskId -> Bukkit.getScheduler().cancelTask(taskId));
+            actionbarTasks.get(uuid).values().forEach(taskId -> {
+                Bukkit.getScheduler().cancelTask(taskId);
+                scheduledTaskIds.remove(taskId);
+            });
             actionbarTasks.remove(uuid);
         }
         lastActionbarUpdate.remove(uuid);
@@ -422,6 +442,11 @@ public class MissionManager {
         saveSeasonData();
         saveDailyMissions();
 
+        // Cancel all tracked tasks
+        scheduledTaskIds.forEach(taskId -> Bukkit.getScheduler().cancelTask(taskId));
+        scheduledTaskIds.clear();
+
+        // Cancel all player-specific tasks
         actionbarTasks.values().forEach(tasks ->
                 tasks.values().forEach(taskId -> Bukkit.getScheduler().cancelTask(taskId))
         );

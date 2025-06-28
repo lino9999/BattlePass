@@ -12,6 +12,8 @@ import java.util.UUID;
 public class BattlePassTask extends BukkitRunnable {
 
     private final BattlePass plugin;
+    private long lastCleanupTime = System.currentTimeMillis();
+    private static final long CLEANUP_INTERVAL = 300000; // 5 minuti
 
     public BattlePassTask(BattlePass plugin) {
         this.plugin = plugin;
@@ -23,6 +25,18 @@ public class BattlePassTask extends BukkitRunnable {
         plugin.getMissionManager().checkSeasonReset();
         checkRewardNotifications();
         updatePlayTime();
+
+        // Periodic cleanup every 5 minutes
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastCleanupTime >= CLEANUP_INTERVAL) {
+            performPeriodicCleanup();
+            lastCleanupTime = currentTime;
+        }
+    }
+
+    private void performPeriodicCleanup() {
+        plugin.getPlayerDataManager().cleanupStaleEntries();
+        plugin.getGuiManager().cleanExpiredCachePublic();
     }
 
     private void checkRewardNotifications() {
