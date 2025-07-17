@@ -112,7 +112,7 @@ public class PlayerDataManager {
                     if (!Bukkit.getOfflinePlayer(uuid).isOnline()) {
                         playerCache.remove(uuid);
                     }
-                }, 100L); // Reduced from 200L to 100L (5 seconds)
+                }, 100L);
             });
         }
     }
@@ -120,7 +120,7 @@ public class PlayerDataManager {
     public void cleanupStaleEntries() {
         playerCache.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
-            // Remove if player has been offline for more than 10 minutes
+
             return !Bukkit.getOfflinePlayer(uuid).isOnline() &&
                     !pendingSaves.containsKey(uuid);
         });
