@@ -23,6 +23,8 @@ public class BattlePass extends JavaPlugin {
         saveDefaultConfig();
         saveResource("missions.yml", false);
         saveResource("messages.yml", false);
+        saveResource("BattlePassFREE.yml", false);
+        saveResource("BattlePassPREMIUM.yml", false);
 
         configManager = new ConfigManager(this);
         messageManager = new MessageManager(this);
@@ -37,10 +39,9 @@ public class BattlePass extends JavaPlugin {
                 rewardManager.loadRewards();
                 missionManager.initialize();
 
-                // Wait for mission manager to be fully initialized before loading players
                 new BukkitRunnable() {
                     private int attempts = 0;
-                    private static final int MAX_ATTEMPTS = 60; // 30 seconds timeout
+                    private static final int MAX_ATTEMPTS = 60;
 
                     @Override
                     public void run() {
@@ -62,7 +63,7 @@ public class BattlePass extends JavaPlugin {
                             this.cancel();
                         }
                     }
-                }.runTaskTimer(this, 0L, 10L); // Check every 0.5 seconds
+                }.runTaskTimer(this, 0L, 10L);
             });
         });
     }

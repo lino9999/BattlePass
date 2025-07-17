@@ -33,10 +33,12 @@ public class DatabaseManager {
 
     private void initDatabase() {
         try {
-            File dbFile = new File(plugin.getDataFolder(), "battlepass.db");
-            if (!dbFile.exists()) {
-                plugin.getDataFolder().mkdirs();
+            File databaseDir = new File(plugin.getDataFolder(), "Database");
+            if (!databaseDir.exists()) {
+                databaseDir.mkdirs();
             }
+
+            File dbFile = new File(databaseDir, "battlepass.db");
 
             Properties props = new Properties();
             props.setProperty("journal_mode", "WAL");

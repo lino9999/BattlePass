@@ -33,25 +33,25 @@ public class RewardManager {
         freeRewardsByLevel.clear();
         premiumRewardsByLevel.clear();
 
-        FileConfiguration config = configManager.getConfig();
+        FileConfiguration freeConfig = configManager.getBattlePassFreeConfig();
+        FileConfiguration premiumConfig = configManager.getBattlePassPremiumConfig();
 
         for (int i = 1; i <= 54; i++) {
-            String freePath = "rewards.free.level-" + i;
-            String premiumPath = "rewards.premium.level-" + i;
+            String levelPath = "level-" + i;
 
             List<Reward> freeLevel = new ArrayList<>();
             List<Reward> premiumLevel = new ArrayList<>();
 
-            if (config.contains(freePath)) {
-                if (config.contains(freePath + ".material") || config.contains(freePath + ".command")) {
-                    Reward reward = loadSingleReward(config, freePath, i, true);
+            if (freeConfig.contains(levelPath)) {
+                if (freeConfig.contains(levelPath + ".material") || freeConfig.contains(levelPath + ".command")) {
+                    Reward reward = loadSingleReward(freeConfig, levelPath, i, true);
                     if (reward != null) {
                         freeRewards.add(reward);
                         freeLevel.add(reward);
                     }
-                } else if (config.contains(freePath + ".items")) {
-                    for (String key : config.getConfigurationSection(freePath + ".items").getKeys(false)) {
-                        Reward reward = loadSingleReward(config, freePath + ".items." + key, i, true);
+                } else if (freeConfig.contains(levelPath + ".items")) {
+                    for (String key : freeConfig.getConfigurationSection(levelPath + ".items").getKeys(false)) {
+                        Reward reward = loadSingleReward(freeConfig, levelPath + ".items." + key, i, true);
                         if (reward != null) {
                             freeRewards.add(reward);
                             freeLevel.add(reward);
@@ -60,16 +60,16 @@ public class RewardManager {
                 }
             }
 
-            if (config.contains(premiumPath)) {
-                if (config.contains(premiumPath + ".material") || config.contains(premiumPath + ".command")) {
-                    Reward reward = loadSingleReward(config, premiumPath, i, false);
+            if (premiumConfig.contains(levelPath)) {
+                if (premiumConfig.contains(levelPath + ".material") || premiumConfig.contains(levelPath + ".command")) {
+                    Reward reward = loadSingleReward(premiumConfig, levelPath, i, false);
                     if (reward != null) {
                         premiumRewards.add(reward);
                         premiumLevel.add(reward);
                     }
-                } else if (config.contains(premiumPath + ".items")) {
-                    for (String key : config.getConfigurationSection(premiumPath + ".items").getKeys(false)) {
-                        Reward reward = loadSingleReward(config, premiumPath + ".items." + key, i, false);
+                } else if (premiumConfig.contains(levelPath + ".items")) {
+                    for (String key : premiumConfig.getConfigurationSection(levelPath + ".items").getKeys(false)) {
+                        Reward reward = loadSingleReward(premiumConfig, levelPath + ".items." + key, i, false);
                         if (reward != null) {
                             premiumRewards.add(reward);
                             premiumLevel.add(reward);

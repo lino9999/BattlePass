@@ -5,6 +5,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 
 public class ConfigManager {
 
@@ -12,6 +13,8 @@ public class ConfigManager {
     private FileConfiguration config;
     private FileConfiguration missionsConfig;
     private FileConfiguration messagesConfig;
+    private FileConfiguration battlePassFreeConfig;
+    private FileConfiguration battlePassPremiumConfig;
 
     private int xpPerLevel = 200;
     private int dailyMissionsCount = 7;
@@ -35,6 +38,18 @@ public class ConfigManager {
 
         File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
         messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
+
+        File battlePassFreeFile = new File(plugin.getDataFolder(), "BattlePassFREE.yml");
+        if (!battlePassFreeFile.exists()) {
+            plugin.saveResource("BattlePassFREE.yml", false);
+        }
+        battlePassFreeConfig = YamlConfiguration.loadConfiguration(battlePassFreeFile);
+
+        File battlePassPremiumFile = new File(plugin.getDataFolder(), "BattlePassPREMIUM.yml");
+        if (!battlePassPremiumFile.exists()) {
+            plugin.saveResource("BattlePassPREMIUM.yml", false);
+        }
+        battlePassPremiumConfig = YamlConfiguration.loadConfiguration(battlePassPremiumFile);
     }
 
     public FileConfiguration getConfig() {
@@ -47,6 +62,14 @@ public class ConfigManager {
 
     public FileConfiguration getMessagesConfig() {
         return messagesConfig;
+    }
+
+    public FileConfiguration getBattlePassFreeConfig() {
+        return battlePassFreeConfig;
+    }
+
+    public FileConfiguration getBattlePassPremiumConfig() {
+        return battlePassPremiumConfig;
     }
 
     public int getXpPerLevel() {
