@@ -1,0 +1,243 @@
+# Battle Pass Premium Rewards Configuration
+#
+# Single item reward:
+#   level-X:
+#     material: DIAMOND
+#     amount: 5
+#
+# Command reward:
+#   level-X:
+#     command: "eco give <player> 1000"
+#     display: "$1000"
+#
+# Multiple rewards in one level:
+#   level-X:
+#     items:
+#       reward1:
+#         material: DIAMOND
+#         amount: 5
+#       reward2:
+#         command: "kit vip <player>"
+#         display: "VIP Kit"
+#
+# <player> will be replaced with the player's name
+
+level-1:
+  items:
+    diamonds:
+      material: DIAMOND
+      amount: 8
+    money:
+      command: "eco give <player> 5000"
+      display: "$5000"
+    kit:
+      command: "kit premium <player>"
+      display: "Premium Kit"
+level-2:
+  material: NETHERITE_INGOT
+  amount: 1
+level-3:
+  material: GOLDEN_APPLE
+  amount: 4
+level-4:
+  material: ENCHANTED_GOLDEN_APPLE
+  amount: 1
+level-5:
+  items:
+    beacon:
+      material: BEACON
+      amount: 1
+    money:
+      command: "eco give <player> 15000"
+      display: "$15,000"
+level-6:
+  material: ELYTRA
+  amount: 1
+level-7:
+  material: NETHER_STAR
+  amount: 2
+level-8:
+  material: DRAGON_HEAD
+  amount: 1
+level-9:
+  material: HEART_OF_THE_SEA
+  amount: 1
+level-10:
+  items:
+    totem:
+      material: TOTEM_OF_UNDYING
+      amount: 2
+    money:
+      command: "eco give <player> 25000"
+      display: "$25,000"
+    fly:
+      command: "lp user <player> permission set essentials.fly true"
+      display: "Fly Permission"
+    announce:
+      command: "say <player> has reached Battle Pass Level 10!"
+      display: "Server Announcement"
+level-11:
+  material: TRIDENT
+  amount: 1
+level-12:
+  material: DIAMOND_HELMET
+  amount: 1
+level-13:
+  material: DIAMOND_CHESTPLATE
+  amount: 1
+level-14:
+  material: DIAMOND_LEGGINGS
+  amount: 1
+level-15:
+  material: DIAMOND_BOOTS
+  amount: 1
+level-16:
+  material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+  amount: 1
+level-17:
+  material: DIAMOND_HORSE_ARMOR
+  amount: 1
+level-18:
+  material: ENCHANTED_BOOK
+  amount: 3
+level-19:
+  material: EXPERIENCE_BOTTLE
+  amount: 64
+level-20:
+  items:
+    dragonegg:
+      material: DRAGON_EGG
+      amount: 1
+    money:
+      command: "eco give <player> 50000"
+      display: "$50,000"
+    rank:
+      command: "lp user <player> parent add vip"
+      display: "VIP Rank"
+    crate:
+      command: "crate give <player> legendary 3"
+      display: "3x Legendary Crates"
+level-21:
+  material: NETHERITE_HELMET
+  amount: 1
+level-22:
+  material: NETHERITE_CHESTPLATE
+  amount: 1
+level-23:
+  material: NETHERITE_LEGGINGS
+  amount: 1
+level-24:
+  material: NETHERITE_BOOTS
+  amount: 1
+level-25:
+  material: BEACON
+  amount: 2
+level-26:
+  material: NETHERITE_BOOTS
+  amount: 1
+level-27:
+  material: ANVIL
+  amount: 3
+level-28:
+  material: BREWING_STAND
+  amount: 3
+level-29:
+  material: ENDER_CHEST
+  amount: 2
+level-30:
+  material: SHULKER_BOX
+  amount: 1
+level-31:
+  material: CONDUIT
+  amount: 1
+level-32:
+  material: MUSIC_DISC_PIGSTEP
+  amount: 1
+level-33:
+  material: MUSIC_DISC_OTHERSIDE
+  amount: 1
+level-34:
+  material: CREEPER_HEAD
+  amount: 1
+level-35:
+  material: ZOMBIE_HEAD
+  amount: 1
+level-36:
+  material: SKELETON_SKULL
+  amount: 1
+level-37:
+  material: WITHER_SKELETON_SKULL
+  amount: 3
+level-38:
+  material: NETHERITE_INGOT
+  amount: 3
+level-39:
+  material: NETHERITE_BLOCK
+  amount: 1
+level-40:
+  items:
+    elytra:
+      material: ELYTRA
+      amount: 2
+    money:
+      command: "eco give <player> 75000"
+      display: "$75,000"
+    effect:
+      command: "effect give <player> minecraft:regeneration 7200 2"
+      display: "Regeneration II (2 hours)"
+level-41:
+  material: DRAGON_BREATH
+  amount: 16
+level-42:
+  material: END_CRYSTAL
+  amount: 4
+level-43:
+  material: CHORUS_FRUIT
+  amount: 32
+level-44:
+  material: TOTEM_OF_UNDYING
+  amount: 3
+level-45:
+  material: NETHER_STAR
+  amount: 4
+level-46:
+  material: ENCHANTED_GOLDEN_APPLE
+  amount: 3
+level-47:
+  material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+  amount: 3
+level-48:
+  material: NETHERITE_SWORD
+  amount: 1
+level-49:
+  material: AMETHYST_BLOCK
+  amount: 8
+level-50:
+  material: DRAGON_EGG
+  amount: 2
+level-51:
+  material: ECHO_SHARD
+  amount: 8
+level-52:
+  material: SPYGLASS
+  amount: 1
+level-53:
+  material: RECOVERY_COMPASS
+  amount: 1
+level-54:
+  items:
+    dragonegg:
+      material: DRAGON_EGG
+      amount: 3
+    money:
+      command: "eco give <player> 100000"
+      display: "$100,000"
+    rank:
+      command: "lp user <player> parent add legend"
+      display: "Legend Rank"
+    title:
+      command: "lp user <player> meta addprefix 100 \"&5[Legend] \""
+      display: "Legend Title"
+    announce:
+      command: "say <player> has become a LEGEND by completing the Premium Battle Pass!"
+      display: "Legendary Achievement"

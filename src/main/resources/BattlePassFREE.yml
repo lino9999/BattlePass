@@ -1,0 +1,234 @@
+# Battle Pass Free Rewards Configuration
+#
+# Single item reward:
+#   level-X:
+#     material: DIAMOND
+#     amount: 5
+#
+# Command reward:
+#   level-X:
+#     command: "eco give <player> 1000"
+#     display: "$1000"
+#
+# Multiple rewards in one level:
+#   level-X:
+#     items:
+#       reward1:
+#         material: DIAMOND
+#         amount: 5
+#       reward2:
+#         command: "kit vip <player>"
+#         display: "VIP Kit"
+#
+# <player> will be replaced with the player's name
+
+level-1:
+  material: IRON_INGOT
+  amount: 16
+level-2:
+  material: GOLD_INGOT
+  amount: 8
+level-3:
+  material: COAL
+  amount: 32
+level-4:
+  material: REDSTONE
+  amount: 16
+level-5:
+  items:
+    item1:
+      material: LAPIS_LAZULI
+      amount: 16
+    item2:
+      material: EXPERIENCE_BOTTLE
+      amount: 8
+    money:
+      command: "eco give <player> 1000"
+      display: "$1000"
+level-6:
+  material: EMERALD
+  amount: 4
+level-7:
+  material: DIAMOND
+  amount: 2
+level-8:
+  material: IRON_BLOCK
+  amount: 2
+level-9:
+  material: GOLD_BLOCK
+  amount: 1
+level-10:
+  command: "eco give <player> 5000"
+  display: "$5000 Money"
+level-11:
+  material: ENDER_PEARL
+  amount: 8
+level-12:
+  material: BLAZE_ROD
+  amount: 4
+level-13:
+  material: GHAST_TEAR
+  amount: 2
+level-14:
+  material: MAGMA_CREAM
+  amount: 8
+level-15:
+  items:
+    bottles:
+      material: EXPERIENCE_BOTTLE
+      amount: 16
+    money:
+      command: "eco give <player> 2500"
+      display: "$2500"
+level-16:
+  material: QUARTZ
+  amount: 32
+level-17:
+  material: GLOWSTONE
+  amount: 16
+level-18:
+  material: PRISMARINE_SHARD
+  amount: 16
+level-19:
+  material: PRISMARINE_CRYSTALS
+  amount: 8
+level-20:
+  items:
+    diamonds:
+      material: DIAMOND
+      amount: 4
+    money:
+      command: "eco give <player> 10000"
+      display: "$10,000"
+    permission:
+      command: "lp user <player> permission set kit.vip true"
+      display: "VIP Kit Access"
+level-21:
+  material: SLIME_BALL
+  amount: 16
+level-22:
+  material: GUNPOWDER
+  amount: 16
+level-23:
+  material: STRING
+  amount: 32
+level-24:
+  material: SPIDER_EYE
+  amount: 8
+level-25:
+  material: SHULKER_SHELL
+  amount: 1
+level-26:
+  material: PHANTOM_MEMBRANE
+  amount: 4
+level-27:
+  material: NAUTILUS_SHELL
+  amount: 2
+level-28:
+  material: RABBIT_FOOT
+  amount: 4
+level-29:
+  material: TURTLE_SCUTE
+  amount: 2
+level-30:
+  items:
+    enchantedbook:
+      material: ENCHANTED_BOOK
+      amount: 1
+    money:
+      command: "eco give <player> 7500"
+      display: "$7,500"
+    xp:
+      command: "xp give <player> 100L"
+      display: "100 XP Levels"
+level-31:
+  material: IRON_HORSE_ARMOR
+  amount: 1
+level-32:
+  material: IRON_HORSE_ARMOR
+  amount: 1
+level-33:
+  material: SADDLE
+  amount: 1
+level-34:
+  material: NAME_TAG
+  amount: 2
+level-35:
+  material: GOLDEN_CARROT
+  amount: 8
+level-36:
+  material: GLISTERING_MELON_SLICE
+  amount: 8
+level-37:
+  material: FERMENTED_SPIDER_EYE
+  amount: 4
+level-38:
+  material: BLAZE_POWDER
+  amount: 8
+level-39:
+  material: ENDER_EYE
+  amount: 2
+level-40:
+  items:
+    diamond:
+      material: DIAMOND_BLOCK
+      amount: 1
+    money:
+      command: "eco give <player> 20000"
+      display: "$20,000"
+    effect:
+      command: "effect give <player> minecraft:speed 3600 2"
+      display: "Speed II (1 hour)"
+level-41:
+  material: EMERALD_BLOCK
+  amount: 1
+level-42:
+  material: ANCIENT_DEBRIS
+  amount: 1
+level-43:
+  material: NETHERITE_SCRAP
+  amount: 1
+level-44:
+  material: CRYING_OBSIDIAN
+  amount: 8
+level-45:
+  material: RESPAWN_ANCHOR
+  amount: 1
+level-46:
+  material: LODESTONE
+  amount: 1
+level-47:
+  material: HONEYCOMB
+  amount: 16
+level-48:
+  material: HONEY_BLOCK
+  amount: 4
+level-49:
+  material: SHULKER_SHELL
+  amount: 2
+level-50:
+  material: TOTEM_OF_UNDYING
+  amount: 1
+level-51:
+  material: COPPER_BLOCK
+  amount: 16
+level-52:
+  material: AMETHYST_SHARD
+  amount: 32
+level-53:
+  material: ECHO_SHARD
+  amount: 4
+level-54:
+  items:
+    star:
+      material: NETHER_STAR
+      amount: 1
+    money:
+      command: "eco give <player> 30000"
+      display: "$30,000"
+    title:
+      command: "lp user <player> meta addprefix 100 \"&6[Battle Master] \""
+      display: "Battle Master Title"
+    announce:
+      command: "say <player> has completed the entire Battle Pass!"
+      display: "Server-wide Recognition"
