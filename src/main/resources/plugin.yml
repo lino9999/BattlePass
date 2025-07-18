@@ -1,5 +1,5 @@
 name: BattlePass
-version: '3.8'
+version: '4.0'
 main: com.Lino.battlePass.BattlePass
 api-version: '1.21'
 author: Lino
@@ -7,7 +7,7 @@ author: Lino
 commands:
   battlepass:
     description: Open the BattlePass GUI or manage battle pass system
-    usage: /battlepass [help|reload|addpremium|removepremium|addxp|removexp] [player] [amount]
+    usage: /battlepass [help|reload|addpremium|removepremium|addxp|removexp|addcoins|removecoins] [player] [amount]
     aliases: [bp, pass]
     permission: battlepass.use
     permission-message: You don't have permission to use this command!

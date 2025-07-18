@@ -44,6 +44,8 @@ messages:
     remove-premium: "&cUsage: /battlepass removepremium <player>"
     add-xp: "&cUsage: /battlepass addxp <player> <amount>"
     remove-xp: "&cUsage: /battlepass removexp <player> <amount>"
+    add-coins: "&cUsage: /battlepass addcoins <player> <amount>"
+    remove-coins: "&cUsage: /battlepass removecoins <player> <amount>"
 
   # Help menu
   help:
@@ -55,6 +57,8 @@ messages:
     remove-premium: "&e/bp removepremium <player> &7- Remove premium pass from a player"
     add-xp: "&e/bp addxp <player> <amount> &7- Add XP to a player"
     remove-xp: "&e/bp removexp <player> <amount> &7- Remove XP from a player"
+    add-coins: "&e/bp addcoins <player> <amount> &7- Add Battle Coins to a player"
+    remove-coins: "&e/bp removecoins <player> <amount> &7- Remove Battle Coins from a player"
 
   # Premium pass messages
   premium:
@@ -114,6 +118,11 @@ messages:
     distribution-player: "&e#%rank% &f%player% &7received &6%amount% Battle Coins"
     received: "&a&lYou received %amount% Battle Coins!"
     balance: "&eYour Battle Coins: &6%amount%"
+    added-sender: "&aAdded %amount% Battle Coins to %target%!"
+    added-target: "&a&lYou received %amount% Battle Coins!"
+    removed-sender: "&cRemoved %amount% Battle Coins from %target%!"
+    removed-target: "&c&l%amount% Battle Coins have been removed!"
+    insufficient-remove: "&c%target% only has %current% Battle Coins!"
 
   # Shop messages
   shop:
