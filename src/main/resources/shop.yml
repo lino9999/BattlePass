@@ -1,0 +1,251 @@
+shop-items:
+  special-kit:
+    slot: 10
+    material: DIAMOND_CHESTPLATE
+    display-name: "&b&lWarrior Kit"
+    lore:
+      - "&7A special kit for true warriors!"
+      - ""
+      - "&7Contains:"
+      - "&f• Diamond Armor Set"
+      - "&f• Enchanted Sword"
+      - "&f• 16x Golden Apples"
+      - ""
+      - "&7Price: &e50 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 50
+    commands:
+      - "kit warrior <player>"
+
+  exclusive-title:
+    slot: 11
+    material: NAME_TAG
+    display-name: "&d&lExclusive Title"
+    lore:
+      - "&7Show off your dedication with"
+      - "&7an exclusive chat title!"
+      - ""
+      - "&7Title: &d[Elite]"
+      - ""
+      - "&7Price: &e100 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 100
+    commands:
+      - "lp user <player> meta addprefix 50 \"&d[Elite] \""
+
+  mystery-crate:
+    slot: 12
+    material: ENDER_CHEST
+    display-name: "&5&lMystery Crate Key"
+    lore:
+      - "&7Open a mystery crate for"
+      - "&7a chance at rare rewards!"
+      - ""
+      - "&7Possible rewards:"
+      - "&f• Netherite Items"
+      - "&f• Rare Enchanted Books"
+      - "&f• Special Effects"
+      - ""
+      - "&7Price: &e30 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 30
+    commands:
+      - "crate give <player> mystery 1"
+
+  fly-time:
+    slot: 13
+    material: FEATHER
+    display-name: "&f&lFly Time (1 Hour)"
+    lore:
+      - "&7Soar through the skies for"
+      - "&7one hour of flight time!"
+      - ""
+      - "&7Duration: &f1 Hour"
+      - ""
+      - "&7Price: &e25 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 25
+    commands:
+      - "tempfly give <player> 1h"
+
+  special-beacon:
+    slot: 14
+    material: BEACON
+    display-name: "&6&lElite Beacon"
+    lore:
+      - "&7A pre-configured beacon with"
+      - "&7maximum range and all effects!"
+      - ""
+      - "&7Effects:"
+      - "&f• Speed II"
+      - "&f• Haste II"
+      - "&f• Resistance II"
+      - "&f• Jump Boost II"
+      - "&f• Strength II"
+      - ""
+      - "&7Price: &e75 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 75
+    items:
+      - material: BEACON
+        amount: 1
+      - material: IRON_BLOCK
+        amount: 164
+
+  custom-pet:
+    slot: 15
+    material: WOLF_SPAWN_EGG
+    display-name: "&c&lCustom Pet"
+    lore:
+      - "&7Get a special pet with"
+      - "&7enhanced abilities!"
+      - ""
+      - "&7Features:"
+      - "&f• Custom Name"
+      - "&f• Enhanced Health"
+      - "&f• Special Particles"
+      - ""
+      - "&7Price: &e60 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 60
+    commands:
+      - "pets give <player> wolf"
+
+  xp-boost:
+    slot: 19
+    material: EXPERIENCE_BOTTLE
+    display-name: "&a&lXP Boost (2x)"
+    lore:
+      - "&7Double your Battle Pass XP"
+      - "&7gains for 24 hours!"
+      - ""
+      - "&7Duration: &f24 Hours"
+      - "&7Multiplier: &f2x"
+      - ""
+      - "&7Price: &e40 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 40
+    commands:
+      - "battlepass boost <player> 2 24"
+
+  rare-spawner:
+    slot: 20
+    material: SPAWNER
+    display-name: "&5&lRare Spawner Box"
+    lore:
+      - "&7Contains one random"
+      - "&7rare mob spawner!"
+      - ""
+      - "&7Possible spawners:"
+      - "&f• Blaze"
+      - "&f• Enderman"
+      - "&f• Witch"
+      - "&f• Guardian"
+      - ""
+      - "&7Price: &e80 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 80
+    commands:
+      - "spawnerbox give <player> rare 1"
+
+  world-edit-access:
+    slot: 21
+    material: WOODEN_AXE
+    display-name: "&e&lWorldEdit Access (7 Days)"
+    lore:
+      - "&7Get temporary access to"
+      - "&7WorldEdit commands!"
+      - ""
+      - "&7Duration: &f7 Days"
+      - ""
+      - "&7Price: &e45 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 45
+    commands:
+      - "lp user <player> permission settemp worldedit.* true 7d"
+
+  special-shulker:
+    slot: 22
+    material: SHULKER_BOX
+    display-name: "&d&lEnchanted Shulker Box"
+    lore:
+      - "&7A shulker box that keeps"
+      - "&7items on death!"
+      - ""
+      - "&7Special Features:"
+      - "&f• Soulbound"
+      - "&f• 27 Slots"
+      - "&f• Custom Name"
+      - ""
+      - "&7Price: &e90 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 90
+    commands:
+      - "soulbound give <player> shulker_box 1"
+
+  coins-bundle:
+    slot: 23
+    material: GOLD_INGOT
+    display-name: "&6&lMoney Bundle"
+    lore:
+      - "&7Convert your Battle Coins"
+      - "&7into server money!"
+      - ""
+      - "&7You will receive:"
+      - "&f• $25,000"
+      - ""
+      - "&7Price: &e20 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 20
+    commands:
+      - "eco give <player> 25000"
+
+  special-elytra:
+    slot: 24
+    material: ELYTRA
+    display-name: "&b&lInfinite Elytra"
+    lore:
+      - "&7An elytra that never"
+      - "&7loses durability!"
+      - ""
+      - "&7Features:"
+      - "&f• Unbreaking X"
+      - "&f• Mending"
+      - "&f• Custom Texture"
+      - ""
+      - "&7Price: &e150 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 150
+    commands:
+      - "give <player> unbreakable_elytra 1"
+
+  reset-missions:
+    slot: 25
+    material: CLOCK
+    display-name: "&e&lReset Daily Missions"
+    lore:
+      - "&7Get a fresh set of daily"
+      - "&7missions immediately!"
+      - ""
+      - "&7Note:"
+      - "&f• One-time use"
+      - "&f• New missions generated"
+      - ""
+      - "&7Price: &e35 Battle Coins"
+      - ""
+      - "&e&lCLICK TO PURCHASE"
+    price: 35
+    commands:
+      - "battlepass resetmissions <player>"
