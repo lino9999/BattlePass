@@ -18,3 +18,19 @@ experience:
 # Daily reward configuration
 daily-reward:
   xp: 200
+
+# Battle Coins distribution configuration
+# Coins distributed to top 10 players every 24 hours
+# Format: position = coins amount
+battle-coins:
+  distribution:
+    1: 10
+    2: 9
+    3: 8
+    4: 7
+    5: 6
+    6: 5
+    7: 4
+    8: 3
+    9: 2
+    10: 1

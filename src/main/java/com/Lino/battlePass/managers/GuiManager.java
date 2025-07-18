@@ -4,6 +4,8 @@ import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.models.Reward;
+import com.Lino.battlePass.models.ShopItem;
+import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -31,7 +33,7 @@ public class GuiManager {
     private final Map<String, Long> cacheTimestamps = new ConcurrentHashMap<>();
 
     private static final int MAX_CACHE_SIZE = 100;
-    private static final long CACHE_EXPIRY_TIME = 300000; // 5 minutes
+    private static final long CACHE_EXPIRY_TIME = 300000;
 
     public GuiManager(BattlePass plugin, PlayerDataManager playerDataManager, MissionManager missionManager,
                       RewardManager rewardManager, MessageManager messageManager, ConfigManager configManager) {
@@ -141,16 +143,35 @@ public class GuiManager {
             ItemStack item = new ItemStack(Material.GOLDEN_HELMET);
             ItemMeta meta = item.getItemMeta();
             meta.setDisplayName(messageManager.getMessage("items.leaderboard-button.name"));
-            List<String> lboardLore = new ArrayList<>();
-            for (String line : messageManager.getMessagesConfig().getStringList("items.leaderboard-button.lore")) {
-                lboardLore.add(ChatColor.translateAlternateColorCodes('&', line));
-            }
-            meta.setLore(lboardLore);
             item.setItemMeta(meta);
             return item;
         });
 
+        ItemMeta leaderboardMeta = leaderboard.getItemMeta();
+        List<String> lboardLore = new ArrayList<>();
+        String coinsTime = plugin.getCoinsDistributionTask() != null ?
+                plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
+
+        for (String line : messageManager.getMessagesConfig().getStringList("items.leaderboard-button.lore")) {
+            lboardLore.add(ChatColor.translateAlternateColorCodes('&', line
+                    .replace("%coins_time%", coinsTime)));
+        }
+        leaderboardMeta.setLore(lboardLore);
+        leaderboard.setItemMeta(leaderboardMeta);
         gui.setItem(48, leaderboard);
+
+        ItemStack shop = new ItemStack(Material.GOLD_INGOT);
+        ItemMeta shopMeta = shop.getItemMeta();
+        shopMeta.setDisplayName(messageManager.getMessage("items.shop-button.name"));
+
+        List<String> shopLore = new ArrayList<>();
+        for (String line : messageManager.getMessagesConfig().getStringList("items.shop-button.lore")) {
+            shopLore.add(ChatColor.translateAlternateColorCodes('&', line
+                    .replace("%coins%", String.valueOf(data.battleCoins))));
+        }
+        shopMeta.setLore(shopLore);
+        shop.setItemMeta(shopMeta);
+        gui.setItem(47, shop);
 
         ItemStack dailyReward = new ItemStack(Material.SUNFLOWER);
         ItemMeta dailyMeta = dailyReward.getItemMeta();
@@ -186,9 +207,13 @@ public class GuiManager {
 
         ItemMeta titleMeta = titleItem.getItemMeta();
         List<String> titleLore = new ArrayList<>();
+        String coinsTime = plugin.getCoinsDistributionTask() != null ?
+                plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
+
         for (String line : messageManager.getMessagesConfig().getStringList("items.leaderboard-title.lore")) {
             titleLore.add(ChatColor.translateAlternateColorCodes('&', line
-                    .replace("%season_time%", missionManager.getTimeUntilSeasonEnd())));
+                    .replace("%season_time%", missionManager.getTimeUntilSeasonEnd())
+                    .replace("%coins_time%", coinsTime)));
         }
         titleMeta.setLore(titleLore);
         titleItem.setItemMeta(titleMeta);
@@ -225,6 +250,7 @@ public class GuiManager {
                                 .replace("%level%", String.valueOf(topPlayer.level))
                                 .replace("%total_levels%", String.valueOf(topPlayer.totalLevels))
                                 .replace("%xp%", String.valueOf(topPlayer.xp))
+                                .replace("%coins%", String.valueOf(topPlayer.battleCoins))
                                 .replace("%status%", status)));
                     }
                     skullMeta.setLore(skullLore);
@@ -237,6 +263,72 @@ public class GuiManager {
                 }
             });
         });
+
+        ItemStack coinsInfo = new ItemStack(Material.GOLD_BLOCK);
+        ItemMeta coinsInfoMeta = coinsInfo.getItemMeta();
+        coinsInfoMeta.setDisplayName(messageManager.getMessage("items.coins-info.name"));
+
+        List<String> coinsInfoLore = new ArrayList<>();
+        String nextDistTime = plugin.getCoinsDistributionTask() != null ?
+                plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
+
+        for (String line : messageManager.getMessagesConfig().getStringList("items.coins-info.lore")) {
+            coinsInfoLore.add(ChatColor.translateAlternateColorCodes('&', line
+                    .replace("%time%", nextDistTime)));
+        }
+        coinsInfoMeta.setLore(coinsInfoLore);
+        coinsInfo.setItemMeta(coinsInfoMeta);
+        gui.setItem(40, coinsInfo);
+
+        ItemStack back = getCachedItem("back_barrier", () -> {
+            ItemStack item = new ItemStack(Material.BARRIER);
+            ItemMeta meta = item.getItemMeta();
+            meta.setDisplayName(messageManager.getMessage("items.back-button.name"));
+            List<String> backLore = new ArrayList<>();
+            for (String line : messageManager.getMessagesConfig().getStringList("items.back-button.lore")) {
+                backLore.add(ChatColor.translateAlternateColorCodes('&', line));
+            }
+            meta.setLore(backLore);
+            item.setItemMeta(meta);
+            return item;
+        });
+
+        gui.setItem(49, back);
+        player.openInventory(gui);
+    }
+
+    public void openShopGUI(Player player) {
+        String title = messageManager.getMessage("gui.shop");
+        Inventory gui = Bukkit.createInventory(null, 54, title);
+        PlayerData data = playerDataManager.getPlayerData(player.getUniqueId());
+
+        ItemStack balance = new ItemStack(Material.GOLD_INGOT);
+        ItemMeta balanceMeta = balance.getItemMeta();
+        balanceMeta.setDisplayName(messageManager.getMessage("items.shop-balance.name"));
+
+        List<String> balanceLore = new ArrayList<>();
+        for (String line : messageManager.getMessagesConfig().getStringList("items.shop-balance.lore")) {
+            balanceLore.add(ChatColor.translateAlternateColorCodes('&', line
+                    .replace("%coins%", String.valueOf(data.battleCoins))));
+        }
+        balanceMeta.setLore(balanceLore);
+        balance.setItemMeta(balanceMeta);
+        gui.setItem(4, balance);
+
+        ShopManager shopManager = plugin.getShopManager();
+        for (ShopItem item : shopManager.getShopItems().values()) {
+            ItemStack shopItem = new ItemStack(item.material);
+            ItemMeta shopMeta = shopItem.getItemMeta();
+            shopMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', item.displayName));
+
+            List<String> lore = new ArrayList<>();
+            for (String line : item.lore) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line));
+            }
+            shopMeta.setLore(lore);
+            shopItem.setItemMeta(shopMeta);
+            gui.setItem(item.slot, shopItem);
+        }
 
         ItemStack back = getCachedItem("back_barrier", () -> {
             ItemStack item = new ItemStack(Material.BARRIER);
@@ -448,11 +540,9 @@ public class GuiManager {
     }
 
     private void addToCache(String key, ItemStack item) {
-        // Check cache size
         if (itemCache.size() >= MAX_CACHE_SIZE) {
             cleanExpiredCache();
 
-            // If still too large, remove oldest entries
             if (itemCache.size() >= MAX_CACHE_SIZE) {
                 String oldestKey = cacheTimestamps.entrySet().stream()
                         .min(Map.Entry.comparingByValue())

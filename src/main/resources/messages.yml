@@ -16,6 +16,10 @@
 # %target% - Target player name (for admin commands)
 # %current% - Current progress
 # %time% - Time remaining
+# %coins% - Battle Coins amount
+# %rank% - Player rank
+# %price% - Item price
+# %item% - Item name
 
 # Prefix
 prefix: "&6&l[BATTLE PASS] &e"
@@ -104,11 +108,25 @@ messages:
     claimed: "&a&lDaily Reward Claimed! &fYou received &e%amount% XP!"
     already-claimed: "&cYou have already claimed your daily reward! Come back later."
 
+  # Battle Coins messages
+  coins:
+    distribution-announcement: "&6&l[BATTLE COINS] &eTop 10 players are receiving their daily Battle Coins!"
+    distribution-player: "&e#%rank% &f%player% &7received &6%amount% Battle Coins"
+    received: "&a&lYou received %amount% Battle Coins!"
+    balance: "&eYour Battle Coins: &6%amount%"
+
+  # Shop messages
+  shop:
+    insufficient-coins: "&cInsufficient Battle Coins! You need %required% but only have %current%!"
+    purchase-success: "&a&lPurchase Successful! &fYou bought %item% for &6%price% Battle Coins"
+    shop-title: "&6&lBattle Pass Shop"
+
 # GUI titles
 gui:
   battlepass: "&6&lBattle Pass &7- Page %page%"
   missions: "&b&lDaily Missions"
   leaderboard: "&6&lBattle Pass Leaderboard"
+  shop: "&6&lBattle Pass Shop"
 
 # GUI items
 items:
@@ -158,7 +176,19 @@ items:
       - "&7View the top 10 players"
       - "&7with highest battle pass levels!"
       - ""
+      - "&7Next Coins Drop: &e%coins_time%"
+      - ""
       - "&e&lCLICK TO VIEW"
+
+  shop-button:
+    name: "&6&lBattle Pass Shop"
+    lore:
+      - "&7Spend your Battle Coins on"
+      - "&7exclusive rewards and items!"
+      - ""
+      - "&7Your Coins: &6%coins%"
+      - ""
+      - "&e&lCLICK TO OPEN"
 
   # Daily Reward item
   daily-reward:
@@ -262,6 +292,7 @@ items:
     name: "&6&lTop 10 Players"
     lore:
       - "&7Season ends in: &e%season_time%"
+      - "&7Next coins drop: &e%coins_time%"
       - ""
       - "&7Compete for the top spots!"
 
@@ -271,6 +302,7 @@ items:
       - "&7Level: &e%level%"
       - "&7Total Levels: &e%total_levels%"
       - "&7XP: &e%xp%"
+      - "&7Battle Coins: &6%coins%"
       - ""
       - "%status%"
 
@@ -284,11 +316,40 @@ items:
     you: "&a&lTHIS IS YOU!"
     other: "&7Keep grinding to beat them!"
 
+  # Coins info item
+  coins-info:
+    name: "&6&lBattle Coins Info"
+    lore:
+      - "&7Battle Coins are special currency"
+      - "&7awarded to top players daily!"
+      - ""
+      - "&e&lHow to earn:"
+      - "&7• Be in the top 10 leaderboard"
+      - "&7• #1 gets 10 coins"
+      - "&7• #2 gets 9 coins"
+      - "&7• ... and so on"
+      - ""
+      - "&e&lWhat they're for:"
+      - "&7• Purchase exclusive items"
+      - "&7• Get special perks"
+      - "&7• Show off your dedication!"
+      - ""
+      - "&7Next distribution: &e%time%"
+
   # Back button
   back-button:
     name: "&c&lBack"
     lore:
       - "&7Return to Battle Pass"
+
+  # Shop items
+  shop-balance:
+    name: "&6&lYour Balance"
+    lore:
+      - "&7Battle Coins: &6%coins%"
+      - ""
+      - "&7Earn more by staying"
+      - "&7in the top 10!"
 
 # Time formats
 time:

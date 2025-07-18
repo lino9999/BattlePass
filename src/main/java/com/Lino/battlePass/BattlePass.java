@@ -5,7 +5,10 @@ import com.Lino.battlePass.managers.*;
 import com.Lino.battlePass.commands.BattlePassCommand;
 import com.Lino.battlePass.listeners.EventManager;
 import com.Lino.battlePass.tasks.BattlePassTask;
+import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.time.LocalDateTime;
 
 public class BattlePass extends JavaPlugin {
 
@@ -17,6 +20,8 @@ public class BattlePass extends JavaPlugin {
     private GuiManager guiManager;
     private MessageManager messageManager;
     private EventManager eventManager;
+    private ShopManager shopManager;
+    private CoinsDistributionTask coinsDistributionTask;
 
     @Override
     public void onEnable() {
@@ -25,6 +30,7 @@ public class BattlePass extends JavaPlugin {
         saveResource("messages.yml", false);
         saveResource("BattlePassFREE.yml", false);
         saveResource("BattlePassPREMIUM.yml", false);
+        saveResource("shop.yml", false);
 
         configManager = new ConfigManager(this);
         messageManager = new MessageManager(this);
@@ -32,6 +38,7 @@ public class BattlePass extends JavaPlugin {
         playerDataManager = new PlayerDataManager(this, databaseManager);
         rewardManager = new RewardManager(this, configManager);
         missionManager = new MissionManager(this, configManager, databaseManager, playerDataManager);
+        shopManager = new ShopManager(this);
         guiManager = new GuiManager(this, playerDataManager, missionManager, rewardManager, messageManager, configManager);
 
         databaseManager.initialize().thenRun(() -> {
@@ -56,6 +63,14 @@ public class BattlePass extends JavaPlugin {
 
                             new BattlePassTask(BattlePass.this).runTaskTimer(BattlePass.this, 6000L, 1200L);
 
+                            databaseManager.loadCoinsDistributionTime().thenAccept(nextDist -> {
+                                coinsDistributionTask = new CoinsDistributionTask(BattlePass.this);
+                                if (nextDist != null) {
+                                    coinsDistributionTask.setNextDistribution(nextDist);
+                                }
+                                coinsDistributionTask.runTaskTimer(BattlePass.this, 200L, 1200L);
+                            });
+
                             getLogger().info(messageManager.getMessage("messages.plugin-enabled"));
                             this.cancel();
                         } else if (attempts >= MAX_ATTEMPTS) {
@@ -70,6 +85,9 @@ public class BattlePass extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (coinsDistributionTask != null) {
+            coinsDistributionTask.cancel();
+        }
         if (playerDataManager != null) {
             playerDataManager.saveAllPlayers();
         }
@@ -86,6 +104,7 @@ public class BattlePass extends JavaPlugin {
         configManager.reload();
         messageManager.reload();
         rewardManager.loadRewards();
+        shopManager.reload();
         guiManager.clearCache();
     }
 
@@ -119,5 +138,13 @@ public class BattlePass extends JavaPlugin {
 
     public EventManager getEventManager() {
         return eventManager;
+    }
+
+    public ShopManager getShopManager() {
+        return shopManager;
+    }
+
+    public CoinsDistributionTask getCoinsDistributionTask() {
+        return coinsDistributionTask;
     }
 }

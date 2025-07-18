@@ -267,7 +267,8 @@ public class EventManager implements Listener {
         }
 
         if (!isBattlePassGUI && !title.equals(plugin.getMessageManager().getMessage("gui.leaderboard")) &&
-                !title.equals(plugin.getMessageManager().getMessage("gui.missions"))) {
+                !title.equals(plugin.getMessageManager().getMessage("gui.missions")) &&
+                !title.equals(plugin.getMessageManager().getMessage("gui.shop"))) {
             return;
         }
 
@@ -288,6 +289,8 @@ public class EventManager implements Listener {
                 int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
                 plugin.getGuiManager().openBattlePassGUI(player, page);
             }
+        } else if (title.equals(plugin.getMessageManager().getMessage("gui.shop"))) {
+            handleShopClick(player, clicked, event.getSlot());
         }
     }
 
@@ -312,6 +315,10 @@ public class EventManager implements Listener {
                 plugin.getGuiManager().openLeaderboardGUI(player);
                 break;
 
+            case GOLD_INGOT:
+                plugin.getGuiManager().openShopGUI(player);
+                break;
+
             case SUNFLOWER:
                 handleDailyRewardClaim(player, currentPage);
                 break;
@@ -320,6 +327,18 @@ public class EventManager implements Listener {
                 handleRewardClaim(player, slot, currentPage);
                 break;
         }
+    }
+
+    private void handleShopClick(Player player, ItemStack clicked, int slot) {
+        if (clicked.getType() == Material.BARRIER) {
+            int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
+            plugin.getGuiManager().openBattlePassGUI(player, page);
+            return;
+        }
+
+        if (slot == 4) return;
+
+        plugin.getShopManager().purchaseItem(player, slot);
     }
 
     private void handleRewardClaim(Player player, int slot, int currentPage) {

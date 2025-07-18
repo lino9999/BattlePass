@@ -6,6 +6,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ConfigManager {
 
@@ -20,6 +22,7 @@ public class ConfigManager {
     private int dailyMissionsCount = 7;
     private int seasonDuration = 30;
     private int dailyRewardXP = 200;
+    private List<Integer> coinsDistribution = new ArrayList<>();
 
     public ConfigManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -31,6 +34,11 @@ public class ConfigManager {
         xpPerLevel = config.getInt("experience.xp-per-level", 200);
         seasonDuration = config.getInt("season.duration", 30);
         dailyRewardXP = config.getInt("daily-reward.xp", 200);
+
+        coinsDistribution.clear();
+        for (int i = 1; i <= 10; i++) {
+            coinsDistribution.add(config.getInt("battle-coins.distribution." + i, 11 - i));
+        }
 
         File missionsFile = new File(plugin.getDataFolder(), "missions.yml");
         missionsConfig = YamlConfiguration.loadConfiguration(missionsFile);
@@ -86,5 +94,9 @@ public class ConfigManager {
 
     public int getDailyRewardXP() {
         return dailyRewardXP;
+    }
+
+    public List<Integer> getCoinsDistribution() {
+        return coinsDistribution;
     }
 }
