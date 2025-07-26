@@ -25,6 +25,10 @@ public class CoinsDistributionTask extends BukkitRunnable {
 
     @Override
     public void run() {
+        if (!plugin.getConfigManager().isShopEnabled()) {
+            return;
+        }
+
         if (LocalDateTime.now().isAfter(nextDistribution)) {
             distributeCoins();
             calculateNextDistribution();

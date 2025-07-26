@@ -23,6 +23,7 @@ public class ConfigManager {
     private int seasonDuration = 30;
     private int dailyRewardXP = 200;
     private List<Integer> coinsDistribution = new ArrayList<>();
+    private boolean shopEnabled = true;
 
     public ConfigManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -34,6 +35,7 @@ public class ConfigManager {
         xpPerLevel = config.getInt("experience.xp-per-level", 200);
         seasonDuration = config.getInt("season.duration", 30);
         dailyRewardXP = config.getInt("daily-reward.xp", 200);
+        shopEnabled = config.getBoolean("shop.enabled", true);
 
         coinsDistribution.clear();
         for (int i = 1; i <= 10; i++) {
@@ -98,5 +100,9 @@ public class ConfigManager {
 
     public List<Integer> getCoinsDistribution() {
         return coinsDistribution;
+    }
+
+    public boolean isShopEnabled() {
+        return shopEnabled;
     }
 }

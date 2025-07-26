@@ -1,5 +1,6 @@
 package com.Lino.battlePass;
 
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import com.Lino.battlePass.managers.*;
 import com.Lino.battlePass.commands.BattlePassCommand;
@@ -8,6 +9,10 @@ import com.Lino.battlePass.tasks.BattlePassTask;
 import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.time.LocalDateTime;
 
 public class BattlePass extends JavaPlugin {
@@ -22,6 +27,10 @@ public class BattlePass extends JavaPlugin {
     private EventManager eventManager;
     private ShopManager shopManager;
     private CoinsDistributionTask coinsDistributionTask;
+
+    private boolean updateAvailable = false;
+    private String latestVersion = "";
+    private static final String SPIGOT_RESOURCE_ID = "125992";
 
     @Override
     public void onEnable() {
@@ -71,6 +80,8 @@ public class BattlePass extends JavaPlugin {
                                 coinsDistributionTask.runTaskTimer(BattlePass.this, 200L, 1200L);
                             });
 
+                            checkForUpdates();
+
                             getLogger().info(messageManager.getMessage("messages.plugin-enabled"));
                             this.cancel();
                         } else if (attempts >= MAX_ATTEMPTS) {
@@ -99,6 +110,58 @@ public class BattlePass extends JavaPlugin {
         }
     }
 
+    private void checkForUpdates() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                try {
+                    URL url = new URL("https://api.spigotmc.org/legacy/update.php?resource=" + SPIGOT_RESOURCE_ID);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(5000);
+                    connection.setReadTimeout(5000);
+                    connection.setRequestProperty("User-Agent", "BattlePass-UpdateChecker");
+
+                    if (connection.getResponseCode() == 200) {
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                        String version = reader.readLine();
+                        reader.close();
+
+                        if (version != null && !version.trim().isEmpty()) {
+                            String currentVersion = getDescription().getVersion();
+
+                            if (!version.equals(currentVersion)) {
+                                updateAvailable = true;
+                                latestVersion = version;
+
+                                Bukkit.getScheduler().runTask(BattlePass.this, () -> {
+                                    getLogger().warning("=====================================");
+                                    getLogger().warning("  A new version is available!");
+                                    getLogger().warning("  Current version: " + currentVersion);
+                                    getLogger().warning("  Latest version: " + version);
+                                    getLogger().warning("  Download at: https://www.spigotmc.org/resources/" + SPIGOT_RESOURCE_ID);
+                                    getLogger().warning("=====================================");
+                                });
+                            } else {
+                                Bukkit.getScheduler().runTask(BattlePass.this, () -> {
+                                    getLogger().info("You are running the latest version!");
+                                });
+                            }
+                        }
+                    } else {
+                        getLogger().info("Could not check for updates: Response code " + connection.getResponseCode());
+                    }
+
+                    connection.disconnect();
+                } catch (Exception e) {
+                    Bukkit.getScheduler().runTask(BattlePass.this, () -> {
+                        getLogger().info("Could not check for updates: " + e.getMessage());
+                    });
+                }
+            }
+        }.runTaskAsynchronously(this);
+    }
+
     public void reload() {
         reloadConfig();
         configManager.reload();
@@ -106,6 +169,14 @@ public class BattlePass extends JavaPlugin {
         rewardManager.loadRewards();
         shopManager.reload();
         guiManager.clearCache();
+    }
+
+    public boolean isUpdateAvailable() {
+        return updateAvailable;
+    }
+
+    public String getLatestVersion() {
+        return latestVersion;
     }
 
     public DatabaseManager getDatabaseManager() {

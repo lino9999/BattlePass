@@ -160,18 +160,20 @@ public class GuiManager {
         leaderboard.setItemMeta(leaderboardMeta);
         gui.setItem(48, leaderboard);
 
-        ItemStack shop = new ItemStack(Material.GOLD_INGOT);
-        ItemMeta shopMeta = shop.getItemMeta();
-        shopMeta.setDisplayName(messageManager.getMessage("items.shop-button.name"));
+        if (configManager.isShopEnabled()) {
+            ItemStack shop = new ItemStack(Material.GOLD_INGOT);
+            ItemMeta shopMeta = shop.getItemMeta();
+            shopMeta.setDisplayName(messageManager.getMessage("items.shop-button.name"));
 
-        List<String> shopLore = new ArrayList<>();
-        for (String line : messageManager.getMessagesConfig().getStringList("items.shop-button.lore")) {
-            shopLore.add(ChatColor.translateAlternateColorCodes('&', line
-                    .replace("%coins%", String.valueOf(data.battleCoins))));
+            List<String> shopLore = new ArrayList<>();
+            for (String line : messageManager.getMessagesConfig().getStringList("items.shop-button.lore")) {
+                shopLore.add(ChatColor.translateAlternateColorCodes('&', line
+                        .replace("%coins%", String.valueOf(data.battleCoins))));
+            }
+            shopMeta.setLore(shopLore);
+            shop.setItemMeta(shopMeta);
+            gui.setItem(47, shop);
         }
-        shopMeta.setLore(shopLore);
-        shop.setItemMeta(shopMeta);
-        gui.setItem(47, shop);
 
         ItemStack dailyReward = new ItemStack(Material.SUNFLOWER);
         ItemMeta dailyMeta = dailyReward.getItemMeta();
@@ -264,21 +266,23 @@ public class GuiManager {
             });
         });
 
-        ItemStack coinsInfo = new ItemStack(Material.GOLD_BLOCK);
-        ItemMeta coinsInfoMeta = coinsInfo.getItemMeta();
-        coinsInfoMeta.setDisplayName(messageManager.getMessage("items.coins-info.name"));
+        if (configManager.isShopEnabled()) {
+            ItemStack coinsInfo = new ItemStack(Material.GOLD_BLOCK);
+            ItemMeta coinsInfoMeta = coinsInfo.getItemMeta();
+            coinsInfoMeta.setDisplayName(messageManager.getMessage("items.coins-info.name"));
 
-        List<String> coinsInfoLore = new ArrayList<>();
-        String nextDistTime = plugin.getCoinsDistributionTask() != null ?
-                plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
+            List<String> coinsInfoLore = new ArrayList<>();
+            String nextDistTime = plugin.getCoinsDistributionTask() != null ?
+                    plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
 
-        for (String line : messageManager.getMessagesConfig().getStringList("items.coins-info.lore")) {
-            coinsInfoLore.add(ChatColor.translateAlternateColorCodes('&', line
-                    .replace("%time%", nextDistTime)));
+            for (String line : messageManager.getMessagesConfig().getStringList("items.coins-info.lore")) {
+                coinsInfoLore.add(ChatColor.translateAlternateColorCodes('&', line
+                        .replace("%time%", nextDistTime)));
+            }
+            coinsInfoMeta.setLore(coinsInfoLore);
+            coinsInfo.setItemMeta(coinsInfoMeta);
+            gui.setItem(40, coinsInfo);
         }
-        coinsInfoMeta.setLore(coinsInfoLore);
-        coinsInfo.setItemMeta(coinsInfoMeta);
-        gui.setItem(40, coinsInfo);
 
         ItemStack back = getCachedItem("back_barrier", () -> {
             ItemStack item = new ItemStack(Material.BARRIER);
