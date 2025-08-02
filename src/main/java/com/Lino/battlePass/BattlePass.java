@@ -115,7 +115,7 @@ public class BattlePass extends JavaPlugin {
             @Override
             public void run() {
                 try {
-                    URL url = new URL("https://api.spigotmc.org/legacy/update.php?resource=" + SPIGOT_RESOURCE_ID);
+                    URL url = new URL("https://api.spigotmc.org/legacy/update.php?resource=125992");
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("GET");
                     connection.setConnectTimeout(5000);

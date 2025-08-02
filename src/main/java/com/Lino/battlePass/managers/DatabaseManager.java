@@ -424,8 +424,19 @@ public class DatabaseManager {
     public CompletableFuture<Void> resetSeason() {
         return CompletableFuture.runAsync(() -> {
             try (Statement stmt = connection.createStatement()) {
-                stmt.executeUpdate("UPDATE players SET xp = 0, level = 1, claimed_free = '', " +
-                        "claimed_premium = '', has_premium = 0, last_daily_reward = 0, battle_coins = 0");
+                // Check if coins should be reset based on config
+                boolean resetCoins = plugin.getConfigManager().isResetCoinsOnSeasonEnd();
+
+                if (resetCoins) {
+                    // Reset everything including coins
+                    stmt.executeUpdate("UPDATE players SET xp = 0, level = 1, claimed_free = '', " +
+                            "claimed_premium = '', has_premium = 0, last_daily_reward = 0, battle_coins = 0");
+                } else {
+                    // Reset everything except coins
+                    stmt.executeUpdate("UPDATE players SET xp = 0, level = 1, claimed_free = '', " +
+                            "claimed_premium = '', has_premium = 0, last_daily_reward = 0");
+                }
+
                 stmt.executeUpdate("DELETE FROM missions");
                 stmt.executeUpdate("DELETE FROM daily_missions");
             } catch (SQLException e) {
