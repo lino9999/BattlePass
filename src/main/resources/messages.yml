@@ -45,19 +45,19 @@ messages:
     removed-target: "<gradient:#FF6B6B:#FF0000>- %amount% XP</gradient>"
 
   level-up: "<gradient:#FFD93D:#FF6B6B>⬆ LEVEL UP!</gradient> <gradient:#4ECDC4:#45B7D1>You are now level %level%</gradient>"
-  new-rewards: "<gradient:#00FF88:#45B7D1>🎁 NEW REWARDS!</gradient> &fYou have new rewards available to claim!"
+  new-rewards: "<gradient:#00FF88:#45B7D1>NEW REWARDS!</gradient> &fYou have new rewards available to claim!"
 
   rewards-available: "<gradient:#4ECDC4:#45B7D1>Welcome back!</gradient> &fYou have <gradient:#FFD93D:#FF6B6B>%amount% rewards</gradient> available!"
-  rewards-notification: "<gradient:#00FF88:#45B7D1>🎁</gradient> You have <gradient:#FFD93D:#FF6B6B>%amount% new rewards</gradient> to claim!"
+  rewards-notification: "You have <gradient:#FFD93D:#FF6B6B>%amount% new rewards</gradient> to claim!"
 
   mission:
-    completed: "<gradient:#00FF88:#45B7D1>✓ MISSION COMPLETED:</gradient> &f%mission% <gradient:#FFD93D:#FF6B6B>(+%reward_xp% XP)</gradient>"
+    completed: "<gradient:#00FF88:#45B7D1>✓ MISSION COMPLETED:</gradient> &a%mission% <gradient:#FFD93D:#FF6B6B>(+%reward_xp% XP)</gradient>"
     reset: "<gradient:#FF6B6B:#4ECDC4>⟳ Daily missions have been reset!</gradient>"
-    actionbar-progress: "<gradient:#FFE66D:#FF6B6B>%mission%:</gradient> &f%current%/%required%"
-    actionbar-completed: "<gradient:#00FF88:#45B7D1>✓ COMPLETED:</gradient> &f%mission%"
+    actionbar-progress: "&c%mission%: &7%current%&f/&8%required%"
+    actionbar-completed: "<gradient:#00FF88:#45B7D1>✓ COMPLETED:</gradient> &a&l%mission%"
 
   season:
-    reset: "<gradient:#FF0000:#FFD93D>🏁 SEASON RESET</gradient>\n<gradient:#4ECDC4:#45B7D1>The Battle Pass season has ended! A new season begins now!</gradient>"
+    reset: "<gradient:#FF0000:#FFD93D>SEASON RESET</gradient>\n<gradient:#4ECDC4:#45B7D1>The Battle Pass season has ended! A new season begins now!</gradient>"
     ends-in: "&7Season ends in: <gradient:#FFD93D:#FF6B6B>%season_time%</gradient>"
     achievement: "<gradient:#FFD93D:#FF6B6B>%player%</gradient> has completed the entire Battle Pass!"
     premium-achievement: "<gradient:#FFD93D:#FF6B6B>%player%</gradient> has become a <gradient:#FF00FF:#00FFFF>LEGEND</gradient> by completing the Premium Battle Pass!"
@@ -67,7 +67,7 @@ messages:
     premium-claimed: "<gradient:#FFD93D:#FF6B6B>★ Premium Rewards Claimed!</gradient>"
     already-claimed: "<gradient:#FF6B6B:#FF0000>✗ You have already claimed this reward!</gradient>"
     cannot-claim: "<gradient:#FF6B6B:#FF0000>✗ You cannot claim this reward!</gradient>"
-    locked: "<gradient:#FF0000:#FF6B6B>🔒 LOCKED</gradient> &7(Level %level% Required)"
+    locked: "<gradient:#FF0000:#FF6B6B>LOCKED</gradient> &7(Level %level% Required)"
     item-reward: "&7• &f%amount%x <gradient:#4ECDC4:#45B7D1>%item%</gradient>"
     command-reward: "&7• <gradient:#FFD93D:#FF6B6B>%reward%</gradient>"
 
@@ -76,7 +76,7 @@ messages:
     already-claimed: "<gradient:#FF6B6B:#FF0000>✗ You have already claimed your daily reward!</gradient>"
 
   coins:
-    distribution-announcement: "<gradient:#FFD93D:#FF6B6B>💰 BATTLE COINS</gradient> <gradient:#4ECDC4:#45B7D1>Top 10 players are receiving their daily Battle Coins!</gradient>"
+    distribution-announcement: "<gradient:#FFD93D:#FF6B6B>BATTLE COINS</gradient> <gradient:#4ECDC4:#45B7D1>Top 10 players are receiving their daily Battle Coins!</gradient>"
     distribution-player: "<gradient:#FFD93D:#FF6B6B>#%rank%</gradient> <gradient:#4ECDC4:#45B7D1>%player%</gradient> &7received <gradient:#FFD93D:#FF6B6B>%amount% Battle Coins</gradient>"
     received: "<gradient:#00FF88:#45B7D1>+ %amount% Battle Coins!</gradient>"
     balance: "&7Your Battle Coins: <gradient:#FFD93D:#FF6B6B>%amount%</gradient>"
@@ -87,9 +87,9 @@ messages:
     insufficient-remove: "<gradient:#FF6B6B:#FF0000>✗</gradient> %target% only has %current% Battle Coins!"
 
   shop:
-    insufficient-coins: "<gradient:#FF6B6B:#FF0000>✗ Insufficient Battle Coins!</gradient> &7Need: <gradient:#FFD93D:#FF6B6B>%required%</gradient> &7Have: <gradient:#4ECDC4:#45B7D1>%current%</gradient>"
+    insufficient-coins: "<gradient:#FF6B6B:#FF0000>✗ Insufficient Battle Coins!</gradient> &7Need: <gradient:#4ECDC4:#45B7D1>%required%</gradient> &7Have: <gradient:#4ECDC4:#45B7D1>%current%</gradient>"
     purchase-success: "<gradient:#00FF88:#45B7D1>✓ Purchase Successful!</gradient> &fBought <gradient:#FFD93D:#FF6B6B>%item%</gradient> for <gradient:#FFD93D:#FF6B6B>%price% Battle Coins</gradient>"
-    shop-title: "<gradient:#FFD93D:#FF6B6B>💰 Battle Pass Shop</gradient>"
+    shop-title: "<gradient:#FFD93D:#FF6B6B>Battle Pass Shop</gradient>"
 
 gui:
   battlepass: "<gradient:#FF6B6B:#4ECDC4>⚡ BATTLE PASS</gradient> &8- &7Page %page%"
