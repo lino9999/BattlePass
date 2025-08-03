@@ -2,6 +2,7 @@ package com.Lino.battlePass.listeners;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.PlayerData;
+import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -17,6 +18,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.NamespacedKey;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,8 +31,13 @@ public class EventManager implements Listener {
     private final Map<UUID, Long> playTimeStart = new ConcurrentHashMap<>();
     private final Set<Material> oreTypes = EnumSet.noneOf(Material.class);
 
+    private final NamespacedKey navigationKey;
+    private final NamespacedKey actionKey;
+
     public EventManager(BattlePass plugin) {
         this.plugin = plugin;
+        this.navigationKey = new NamespacedKey(plugin, "navigation");
+        this.actionKey = new NamespacedKey(plugin, "action");
         initializeOreTypes();
     }
 
@@ -297,16 +305,20 @@ public class EventManager implements Listener {
     private void handleBattlePassClick(Player player, ItemStack clicked, int slot) {
         int currentPage = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
 
-        switch (clicked.getType()) {
-            case ARROW:
-                String displayName = clicked.getItemMeta().getDisplayName();
-                if (displayName.contains(ChatColor.stripColor(plugin.getMessageManager().getMessage("items.previous-page.name")).substring(0, Math.min(8, ChatColor.stripColor(plugin.getMessageManager().getMessage("items.previous-page.name")).length())))) {
+        if (clicked.getType() == Material.ARROW && clicked.hasItemMeta()) {
+            var meta = clicked.getItemMeta();
+            if (meta.getPersistentDataContainer().has(navigationKey, PersistentDataType.STRING)) {
+                String action = meta.getPersistentDataContainer().get(navigationKey, PersistentDataType.STRING);
+                if ("previous".equals(action) && currentPage > 1) {
                     plugin.getGuiManager().openBattlePassGUI(player, currentPage - 1);
-                } else if (displayName.contains(ChatColor.stripColor(plugin.getMessageManager().getMessage("items.next-page.name")).substring(0, Math.min(8, ChatColor.stripColor(plugin.getMessageManager().getMessage("items.next-page.name")).length())))) {
+                } else if ("next".equals(action) && currentPage < 6) {
                     plugin.getGuiManager().openBattlePassGUI(player, currentPage + 1);
                 }
-                break;
+                return;
+            }
+        }
 
+        switch (clicked.getType()) {
             case BOOK:
                 plugin.getGuiManager().openMissionsGUI(player);
                 break;
@@ -429,5 +441,13 @@ public class EventManager implements Listener {
 
     public Map<UUID, Long> getPlayTimeStart() {
         return playTimeStart;
+    }
+
+    public NamespacedKey getNavigationKey() {
+        return navigationKey;
+    }
+
+    public NamespacedKey getActionKey() {
+        return actionKey;
     }
 }

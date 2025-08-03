@@ -1,6 +1,7 @@
 package com.Lino.battlePass.managers;
 
 import com.Lino.battlePass.BattlePass;
+import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -31,11 +32,13 @@ public class MessageManager {
             }
         }
 
-        return ChatColor.translateAlternateColorCodes('&', message);
+        // Use the new gradient parser instead of just ChatColor
+        return GradientColorParser.parse(message);
     }
 
     public String getPrefix() {
-        return ChatColor.translateAlternateColorCodes('&',
+        // Use the gradient parser for the prefix as well
+        return GradientColorParser.parse(
                 messagesConfig.getString("prefix", "&6&l[BATTLE PASS] &e"));
     }
 

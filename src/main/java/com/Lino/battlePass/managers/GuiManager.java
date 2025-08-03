@@ -6,6 +6,7 @@ import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.models.Reward;
 import com.Lino.battlePass.models.ShopItem;
 import com.Lino.battlePass.tasks.CoinsDistributionTask;
+import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -67,12 +68,14 @@ public class GuiManager {
                 messageManager.getMessage("items.premium-status.inactive");
 
         for (String line : messageManager.getMessagesConfig().getStringList("items.progress.lore")) {
-            lore.add(ChatColor.translateAlternateColorCodes('&', line
+            // First replace variables, THEN parse colors
+            String processedLine = line
                     .replace("%level%", String.valueOf(data.level))
                     .replace("%xp%", String.valueOf(data.xp))
                     .replace("%xp_needed%", String.valueOf(configManager.getXpPerLevel()))
                     .replace("%premium_status%", premiumStatus)
-                    .replace("%season_time%", missionManager.getTimeUntilSeasonEnd())));
+                    .replace("%season_time%", missionManager.getTimeUntilSeasonEnd());
+            lore.add(GradientColorParser.parse(processedLine));
         }
         infoMeta.setLore(lore);
         info.setItemMeta(infoMeta);
@@ -132,8 +135,8 @@ public class GuiManager {
         ItemMeta missionsMeta = missions.getItemMeta();
         List<String> missionsLore = new ArrayList<>();
         for (String line : messageManager.getMessagesConfig().getStringList("items.missions-button.lore")) {
-            missionsLore.add(ChatColor.translateAlternateColorCodes('&', line
-                    .replace("%reset_time%", missionManager.getTimeUntilReset())));
+            String processedLine = line.replace("%reset_time%", missionManager.getTimeUntilReset());
+            missionsLore.add(GradientColorParser.parse(processedLine));
         }
         missionsMeta.setLore(missionsLore);
         missions.setItemMeta(missionsMeta);
@@ -153,8 +156,8 @@ public class GuiManager {
                 plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
 
         for (String line : messageManager.getMessagesConfig().getStringList("items.leaderboard-button.lore")) {
-            lboardLore.add(ChatColor.translateAlternateColorCodes('&', line
-                    .replace("%coins_time%", coinsTime)));
+            String processedLine = line.replace("%coins_time%", coinsTime);
+            lboardLore.add(GradientColorParser.parse(processedLine));
         }
         leaderboardMeta.setLore(lboardLore);
         leaderboard.setItemMeta(leaderboardMeta);
@@ -167,8 +170,8 @@ public class GuiManager {
 
             List<String> shopLore = new ArrayList<>();
             for (String line : messageManager.getMessagesConfig().getStringList("items.shop-button.lore")) {
-                shopLore.add(ChatColor.translateAlternateColorCodes('&', line
-                        .replace("%coins%", String.valueOf(data.battleCoins))));
+                String processedLine = line.replace("%coins%", String.valueOf(data.battleCoins));
+                shopLore.add(GradientColorParser.parse(processedLine));
             }
             shopMeta.setLore(shopLore);
             shop.setItemMeta(shopMeta);
@@ -184,9 +187,10 @@ public class GuiManager {
         String timeUntil = missionManager.getTimeUntilDailyReward(data.lastDailyReward);
 
         for (String line : messageManager.getMessagesConfig().getStringList(canClaim ? "items.daily-reward.lore-available" : "items.daily-reward.lore-cooldown")) {
-            dailyLore.add(ChatColor.translateAlternateColorCodes('&', line
+            String processedLine = line
                     .replace("%xp%", String.valueOf(configManager.getDailyRewardXP()))
-                    .replace("%time%", timeUntil)));
+                    .replace("%time%", timeUntil);
+            dailyLore.add(GradientColorParser.parse(processedLine));
         }
         dailyMeta.setLore(dailyLore);
         dailyReward.setItemMeta(dailyMeta);
@@ -213,9 +217,10 @@ public class GuiManager {
                 plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
 
         for (String line : messageManager.getMessagesConfig().getStringList("items.leaderboard-title.lore")) {
-            titleLore.add(ChatColor.translateAlternateColorCodes('&', line
+            String processedLine = line
                     .replace("%season_time%", missionManager.getTimeUntilSeasonEnd())
-                    .replace("%coins_time%", coinsTime)));
+                    .replace("%coins_time%", coinsTime);
+            titleLore.add(GradientColorParser.parse(processedLine));
         }
         titleMeta.setLore(titleLore);
         titleItem.setItemMeta(titleMeta);
@@ -248,12 +253,13 @@ public class GuiManager {
 
                     List<String> skullLore = new ArrayList<>();
                     for (String line : messageManager.getMessagesConfig().getStringList("items.leaderboard-player.lore")) {
-                        skullLore.add(ChatColor.translateAlternateColorCodes('&', line
+                        String processedLine = line
                                 .replace("%level%", String.valueOf(topPlayer.level))
                                 .replace("%total_levels%", String.valueOf(topPlayer.totalLevels))
                                 .replace("%xp%", String.valueOf(topPlayer.xp))
                                 .replace("%coins%", String.valueOf(topPlayer.battleCoins))
-                                .replace("%status%", status)));
+                                .replace("%status%", status);
+                        skullLore.add(GradientColorParser.parse(processedLine));
                     }
                     skullMeta.setLore(skullLore);
                     skull.setItemMeta(skullMeta);
@@ -276,7 +282,7 @@ public class GuiManager {
                     plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
 
             for (String line : messageManager.getMessagesConfig().getStringList("items.coins-info.lore")) {
-                coinsInfoLore.add(ChatColor.translateAlternateColorCodes('&', line
+                coinsInfoLore.add(GradientColorParser.parse(line
                         .replace("%time%", nextDistTime)));
             }
             coinsInfoMeta.setLore(coinsInfoLore);
@@ -290,7 +296,7 @@ public class GuiManager {
             meta.setDisplayName(messageManager.getMessage("items.back-button.name"));
             List<String> backLore = new ArrayList<>();
             for (String line : messageManager.getMessagesConfig().getStringList("items.back-button.lore")) {
-                backLore.add(ChatColor.translateAlternateColorCodes('&', line));
+                backLore.add(GradientColorParser.parse(line));
             }
             meta.setLore(backLore);
             item.setItemMeta(meta);
@@ -312,7 +318,7 @@ public class GuiManager {
 
         List<String> balanceLore = new ArrayList<>();
         for (String line : messageManager.getMessagesConfig().getStringList("items.shop-balance.lore")) {
-            balanceLore.add(ChatColor.translateAlternateColorCodes('&', line
+            balanceLore.add(GradientColorParser.parse(line
                     .replace("%coins%", String.valueOf(data.battleCoins))));
         }
         balanceMeta.setLore(balanceLore);
@@ -323,11 +329,11 @@ public class GuiManager {
         for (ShopItem item : shopManager.getShopItems().values()) {
             ItemStack shopItem = new ItemStack(item.material);
             ItemMeta shopMeta = shopItem.getItemMeta();
-            shopMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', item.displayName));
+            shopMeta.setDisplayName(GradientColorParser.parse(item.displayName));
 
             List<String> lore = new ArrayList<>();
             for (String line : item.lore) {
-                lore.add(ChatColor.translateAlternateColorCodes('&', line));
+                lore.add(GradientColorParser.parse(line));
             }
             shopMeta.setLore(lore);
             shopItem.setItemMeta(shopMeta);
@@ -340,7 +346,7 @@ public class GuiManager {
             meta.setDisplayName(messageManager.getMessage("items.back-button.name"));
             List<String> backLore = new ArrayList<>();
             for (String line : messageManager.getMessagesConfig().getStringList("items.back-button.lore")) {
-                backLore.add(ChatColor.translateAlternateColorCodes('&', line));
+                backLore.add(GradientColorParser.parse(line));
             }
             meta.setLore(backLore);
             item.setItemMeta(meta);
@@ -367,7 +373,7 @@ public class GuiManager {
         ItemMeta timerMeta = timer.getItemMeta();
         List<String> timerLore = new ArrayList<>();
         for (String line : messageManager.getMessagesConfig().getStringList("items.mission-timer.lore")) {
-            timerLore.add(ChatColor.translateAlternateColorCodes('&', line
+            timerLore.add(GradientColorParser.parse(line
                     .replace("%reset_time%", missionManager.getTimeUntilReset())));
         }
         timerMeta.setLore(timerLore);
@@ -393,7 +399,7 @@ public class GuiManager {
 
             List<String> missionLore = new ArrayList<>();
             for (String line : messageManager.getMessagesConfig().getStringList(itemLore)) {
-                missionLore.add(ChatColor.translateAlternateColorCodes('&', line
+                missionLore.add(GradientColorParser.parse(line
                         .replace("%progress%", String.valueOf(progress))
                         .replace("%required%", String.valueOf(mission.required))
                         .replace("%reward_xp%", String.valueOf(mission.xpReward))
@@ -410,7 +416,7 @@ public class GuiManager {
             meta.setDisplayName(messageManager.getMessage("items.back-button.name"));
             List<String> backLore = new ArrayList<>();
             for (String line : messageManager.getMessagesConfig().getStringList("items.back-button.lore")) {
-                backLore.add(ChatColor.translateAlternateColorCodes('&', line));
+                backLore.add(GradientColorParser.parse(line));
             }
             meta.setLore(backLore);
             item.setItemMeta(meta);
@@ -482,7 +488,7 @@ public class GuiManager {
         List<String> lore = new ArrayList<>();
 
         for (String line : messageManager.getMessagesConfig().getStringList(configPath + ".lore-header")) {
-            lore.add(ChatColor.translateAlternateColorCodes('&', line));
+            lore.add(GradientColorParser.parse(line));
         }
 
         for (Reward r : rewards) {
@@ -496,9 +502,11 @@ public class GuiManager {
         }
 
         for (String line : messageManager.getMessagesConfig().getStringList(configPath + ".lore-footer")) {
-            lore.add(ChatColor.translateAlternateColorCodes('&', line
+            // Replace variables BEFORE parsing gradients
+            String processedLine = line
                     .replace("%level%", String.valueOf(rewards.get(0).level))
-                    .replace("%season_time%", missionManager.getTimeUntilSeasonEnd())));
+                    .replace("%season_time%", missionManager.getTimeUntilSeasonEnd());
+            lore.add(GradientColorParser.parse(processedLine));
         }
 
         return lore;
@@ -512,18 +520,28 @@ public class GuiManager {
             meta.setDisplayName(messageManager.getMessage("items.next-page.name"));
             List<String> lore = new ArrayList<>();
             for (String line : messageManager.getMessagesConfig().getStringList("items.next-page.lore")) {
-                lore.add(ChatColor.translateAlternateColorCodes('&', line
-                        .replace("%page%", String.valueOf(targetPage))));
+                String processedLine = line.replace("%page%", String.valueOf(targetPage));
+                lore.add(GradientColorParser.parse(processedLine));
             }
             meta.setLore(lore);
+            meta.getPersistentDataContainer().set(
+                    plugin.getEventManager().getNavigationKey(),
+                    org.bukkit.persistence.PersistentDataType.STRING,
+                    "next"
+            );
         } else {
             meta.setDisplayName(messageManager.getMessage("items.previous-page.name"));
             List<String> lore = new ArrayList<>();
             for (String line : messageManager.getMessagesConfig().getStringList("items.previous-page.lore")) {
-                lore.add(ChatColor.translateAlternateColorCodes('&', line
-                        .replace("%page%", String.valueOf(targetPage))));
+                String processedLine = line.replace("%page%", String.valueOf(targetPage));
+                lore.add(GradientColorParser.parse(processedLine));
             }
             meta.setLore(lore);
+            meta.getPersistentDataContainer().set(
+                    plugin.getEventManager().getNavigationKey(),
+                    org.bukkit.persistence.PersistentDataType.STRING,
+                    "previous"
+            );
         }
 
         item.setItemMeta(meta);
