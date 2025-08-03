@@ -26,7 +26,7 @@ level-1:
   material: IRON_INGOT
   amount: 16
 level-2:
-  material: GOLD_INGOT
+  material: IRON_INGOT
   amount: 8
 level-3:
   material: COAL
