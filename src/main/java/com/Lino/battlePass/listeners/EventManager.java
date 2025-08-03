@@ -2,7 +2,6 @@ package com.Lino.battlePass.listeners;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.PlayerData;
-import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -32,12 +31,10 @@ public class EventManager implements Listener {
     private final Set<Material> oreTypes = EnumSet.noneOf(Material.class);
 
     private final NamespacedKey navigationKey;
-    private final NamespacedKey actionKey;
 
     public EventManager(BattlePass plugin) {
         this.plugin = plugin;
         this.navigationKey = new NamespacedKey(plugin, "navigation");
-        this.actionKey = new NamespacedKey(plugin, "action");
         initializeOreTypes();
     }
 
@@ -335,7 +332,7 @@ public class EventManager implements Listener {
                 handleDailyRewardClaim(player, currentPage);
                 break;
 
-            case CHEST_MINECART:
+            case CHEST:
                 handleRewardClaim(player, slot, currentPage);
                 break;
         }
@@ -445,9 +442,5 @@ public class EventManager implements Listener {
 
     public NamespacedKey getNavigationKey() {
         return navigationKey;
-    }
-
-    public NamespacedKey getActionKey() {
-        return actionKey;
     }
 }

@@ -12,6 +12,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.time.LocalDateTime;
 
@@ -115,7 +116,8 @@ public class BattlePass extends JavaPlugin {
             @Override
             public void run() {
                 try {
-                    URL url = new URL("https://api.spigotmc.org/legacy/update.php?resource=125992");
+                    URI uri = new URI("https://api.spigotmc.org/legacy/update.php?resource=125992");
+                    URL url = uri.toURL();
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("GET");
                     connection.setConnectTimeout(5000);
