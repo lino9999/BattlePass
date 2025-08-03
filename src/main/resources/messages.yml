@@ -93,9 +93,9 @@ messages:
 
 gui:
   battlepass: "<gradient:#FF6B6B:#4ECDC4>⚡ BATTLE PASS</gradient> &8- &7Page %page%"
-  missions: "<gradient:#4ECDC4:#45B7D1>📋 Daily Missions</gradient>"
-  leaderboard: "<gradient:#FFD93D:#FF6B6B>🏆 Battle Pass Leaderboard</gradient>"
-  shop: "<gradient:#FFD93D:#FF6B6B>💰 Battle Pass Shop</gradient>"
+  missions: "<gradient:#4ECDC4:#45B7D1>Daily Missions</gradient>"
+  leaderboard: "<gradient:#FFD93D:#FF6B6B>Battle Pass Leaderboard</gradient>"
+  shop: "<gradient:#FFD93D:#FF6B6B>Battle Pass Shop</gradient>"
 
 items:
   progress:
@@ -129,7 +129,7 @@ items:
       - "&7Click to go to page %page%"
 
   missions-button:
-    name: "<gradient:#4ECDC4:#45B7D1>📋 Daily Missions</gradient>"
+    name: "<gradient:#4ECDC4:#45B7D1>Daily Missions</gradient>"
     lore:
       - "&7"
       - "&7Complete daily missions"
@@ -140,7 +140,7 @@ items:
       - "<gradient:#4ECDC4:#45B7D1>▶ CLICK TO VIEW</gradient>"
 
   leaderboard-button:
-    name: "<gradient:#FFD93D:#FF6B6B>🏆 Leaderboard</gradient>"
+    name: "<gradient:#FFD93D:#FF6B6B>Leaderboard</gradient>"
     lore:
       - "&7"
       - "&7View the top 10 players"
@@ -151,7 +151,7 @@ items:
       - "<gradient:#FFD93D:#FF6B6B>▶ CLICK TO VIEW</gradient>"
 
   shop-button:
-    name: "<gradient:#FFD93D:#FF6B6B>💰 Battle Pass Shop</gradient>"
+    name: "<gradient:#FFD93D:#FF6B6B>Battle Pass Shop</gradient>"
     lore:
       - "&7"
       - "&7Spend your Battle Coins on"
@@ -181,7 +181,7 @@ items:
       - "<gradient:#FF6B6B:#FF0000>⏰ ON COOLDOWN</gradient>"
 
   reward-available:
-    name: "<gradient:#00FF88:#45B7D1>✓ Level %level% %type% Reward</gradient>"
+    name: "<gradient:#00FF88:#45B7D1>✓ Level %level% Reward</gradient>"
     lore-header:
       - "&7"
       - "<gradient:#4ECDC4:#45B7D1>▼ Rewards ▼</gradient>"
@@ -192,7 +192,7 @@ items:
       - "<gradient:#00FF88:#45B7D1>▶ CLICK TO CLAIM!</gradient>"
 
   reward-claimed:
-    name: "&8Level %level% %type% Reward"
+    name: "&8Level %level% Reward"
     lore-header:
       - "&7"
       - "&8▼ Rewards ▼"
@@ -203,7 +203,7 @@ items:
       - "&8✓ ALREADY CLAIMED"
 
   reward-premium-locked:
-    name: "<gradient:#FFD93D:#FF6B6B>🔒 Level %level% Premium Reward</gradient>"
+    name: "<gradient:#FFD93D:#FF6B6B>Level %level% Premium Reward</gradient>"
     lore-header:
       - "&7"
       - "<gradient:#FFD93D:#FF6B6B>▼ Rewards ▼</gradient>"
@@ -214,7 +214,7 @@ items:
       - "<gradient:#FFD93D:#FF6B6B>⭐ PREMIUM ONLY</gradient>"
 
   reward-level-locked:
-    name: "<gradient:#FF6B6B:#FF0000>🔒 Level %level% %type% Reward</gradient>"
+    name: "<gradient:#FF6B6B:#FF0000>Level %level% Reward</gradient>"
     lore-header:
       - "&7"
       - "&8▼ Rewards ▼"
@@ -222,7 +222,7 @@ items:
       - "&7"
       - "&8▸ &7Required Level: <gradient:#FF6B6B:#FF0000>%level%</gradient>"
       - "&7"
-      - "<gradient:#FF6B6B:#FF0000>🔒 LOCKED</gradient>"
+      - "<gradient:#FF6B6B:#FF0000>LOCKED</gradient>"
 
   mission-timer:
     name: "<gradient:#4ECDC4:#45B7D1>⏰ Time Until Reset</gradient>"
@@ -257,7 +257,7 @@ items:
       - "<gradient:#FFE66D:#FF6B6B>⚡ IN PROGRESS</gradient>"
 
   leaderboard-title:
-    name: "<gradient:#FFD93D:#FF6B6B>🏆 Top 10 Players</gradient>"
+    name: "<gradient:#FFD93D:#FF6B6B>Top 10 Players</gradient>"
     lore:
       - "&7"
       - "&8▸ &7Season ends: <gradient:#FFD93D:#FF6B6B>%season_time%</gradient>"
@@ -278,9 +278,9 @@ items:
       - "%status%"
 
   leaderboard-rank:
-    first: "<gradient:#FFD700:#FFA500>🥇 #1</gradient>"
-    second: "<gradient:#C0C0C0:#808080>🥈 #2</gradient>"
-    third: "<gradient:#CD7F32:#8B4513>🥉 #3</gradient>"
+    first: "<gradient:#FFD700:#FFA500>#1</gradient>"
+    second: "<gradient:#C0C0C0:#808080>#2</gradient>"
+    third: "<gradient:#CD7F32:#8B4513>#3</gradient>"
     other: "&7#%rank%"
 
   leaderboard-status:
@@ -288,7 +288,7 @@ items:
     other: "&7Keep grinding to beat them!"
 
   coins-info:
-    name: "<gradient:#FFD93D:#FF6B6B>💰 Battle Coins Info</gradient>"
+    name: "<gradient:#FFD93D:#FF6B6B>Battle Coins Info</gradient>"
     lore:
       - "&7"
       - "&7Battle Coins are special currency"
@@ -313,7 +313,7 @@ items:
       - "&7Return to Battle Pass"
 
   shop-balance:
-    name: "<gradient:#FFD93D:#FF6B6B>💰 Your Balance</gradient>"
+    name: "<gradient:#FFD93D:#FF6B6B>Your Balance</gradient>"
     lore:
       - "&7"
       - "&8▸ &7Battle Coins: <gradient:#FFD93D:#FF6B6B>%coins%</gradient>"
