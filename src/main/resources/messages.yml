@@ -69,6 +69,7 @@ messages:
     cannot-claim: "<gradient:#FF6B6B:#FF0000>✗ You cannot claim this reward!</gradient>"
     locked: "<gradient:#FF0000:#FF6B6B>LOCKED</gradient> &7(Level %level% Required)"
     item-reward: "&7• &f%amount%x <gradient:#4ECDC4:#45B7D1>%item%</gradient>"
+    item-reward-dropped: "&7• &f%amount%x <gradient:#4ECDC4:#45B7D1>%item%</gradient> <gradient:#FFD93D:#FF6B6B>(Dropped on ground)</gradient>"
     command-reward: "&7• <gradient:#FFD93D:#FF6B6B>%reward%</gradient>"
 
   daily-reward:

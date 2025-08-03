@@ -123,10 +123,22 @@ public class RewardManager {
                 message.append("\n").append(messageManager.getMessage("messages.rewards.command-reward",
                         "%reward%", reward.displayName));
             } else {
-                player.getInventory().addItem(new ItemStack(reward.material, reward.amount));
-                message.append("\n").append(messageManager.getMessage("messages.rewards.item-reward",
-                        "%amount%", String.valueOf(reward.amount),
-                        "%item%", formatMaterial(reward.material)));
+                ItemStack item = new ItemStack(reward.material, reward.amount);
+                HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(item);
+
+                // Drop items that don't fit in inventory
+                if (!leftover.isEmpty()) {
+                    for (ItemStack drop : leftover.values()) {
+                        player.getWorld().dropItemNaturally(player.getLocation(), drop);
+                    }
+                    message.append("\n").append(messageManager.getMessage("messages.rewards.item-reward-dropped",
+                            "%amount%", String.valueOf(reward.amount),
+                            "%item%", formatMaterial(reward.material)));
+                } else {
+                    message.append("\n").append(messageManager.getMessage("messages.rewards.item-reward",
+                            "%amount%", String.valueOf(reward.amount),
+                            "%item%", formatMaterial(reward.material)));
+                }
             }
         }
 
