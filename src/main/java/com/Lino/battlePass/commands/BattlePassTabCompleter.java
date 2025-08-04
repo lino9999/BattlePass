@@ -21,6 +21,7 @@ public class BattlePassTabCompleter implements TabCompleter {
 
             if (sender.hasPermission("battlepass.admin")) {
                 completions.add("reload");
+                completions.add("reset");
                 completions.add("addpremium");
                 completions.add("removepremium");
                 completions.add("addxp");
@@ -28,16 +29,20 @@ public class BattlePassTabCompleter implements TabCompleter {
                 completions.add("addcoins");
                 completions.add("removecoins");
             }
-        } else if (args.length == 2 && sender.hasPermission("battlepass.admin")) {
-            String subCommand = args[0].toLowerCase();
+        } else if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("reset") && sender.hasPermission("battlepass.admin")) {
+                completions.add("season");
+            } else if (sender.hasPermission("battlepass.admin")) {
+                String subCommand = args[0].toLowerCase();
 
-            if (subCommand.equals("addpremium") || subCommand.equals("removepremium") ||
-                    subCommand.equals("addxp") || subCommand.equals("removexp") ||
-                    subCommand.equals("addcoins") || subCommand.equals("removecoins")) {
+                if (subCommand.equals("addpremium") || subCommand.equals("removepremium") ||
+                        subCommand.equals("addxp") || subCommand.equals("removexp") ||
+                        subCommand.equals("addcoins") || subCommand.equals("removecoins")) {
 
-                return Bukkit.getOnlinePlayers().stream()
-                        .map(Player::getName)
-                        .collect(Collectors.toList());
+                    return Bukkit.getOnlinePlayers().stream()
+                            .map(Player::getName)
+                            .collect(Collectors.toList());
+                }
             }
         } else if (args.length == 3 && sender.hasPermission("battlepass.admin")) {
             String subCommand = args[0].toLowerCase();

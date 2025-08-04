@@ -4,12 +4,12 @@ import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.MissionTemplate;
 import com.Lino.battlePass.models.PlayerData;
+import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
-// Importazioni per ActionBar
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 
@@ -223,6 +223,45 @@ public class MissionManager {
         actionbarTasks.clear();
     }
 
+    public void forceResetSeason() {
+        MessageManager messageManager = plugin.getMessageManager();
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.season.forced-reset"));
+            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
+        }
+
+        playerDataManager.saveAllPlayers();
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            databaseManager.resetSeason().thenRun(() -> {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    playerDataManager.clearCache();
+
+                    seasonEndDate = LocalDateTime.now().plusDays(configManager.getSeasonDuration());
+                    currentMissionDate = LocalDateTime.now().toLocalDate().toString();
+                    generateDailyMissions();
+                    calculateNextReset();
+                    saveSeasonData();
+                    saveDailyMissions();
+
+                    lastActionbarUpdate.clear();
+                    actionbarTasks.clear();
+
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        playerDataManager.loadPlayer(player.getUniqueId());
+                    }
+
+                    if (plugin.getCoinsDistributionTask() != null) {
+                        plugin.getCoinsDistributionTask().cancel();
+                        CoinsDistributionTask newTask = new CoinsDistributionTask(plugin);
+                        newTask.runTaskTimer(plugin, 200L, 1200L);
+                    }
+                });
+            });
+        }, 20L);
+    }
+
     public void progressMission(Player player, String type, String target, int amount) {
         PlayerData data = playerDataManager.getPlayerData(player.getUniqueId());
         if (data == null || dailyMissions.isEmpty()) return;
@@ -265,13 +304,10 @@ public class MissionManager {
         }
     }
 
-    // Metodo helper per inviare action bar compatibile con Spigot/Paper
     private void sendActionBar(Player player, String message) {
         try {
-            // Prova prima con l'API di Paper (se disponibile)
             player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
         } catch (Exception e) {
-            // Fallback: invia come messaggio normale se ActionBar non è supportato
             player.sendMessage("§7[§6Progress§7] " + message);
         }
     }
@@ -313,7 +349,6 @@ public class MissionManager {
                     sendActionBar(player, "");
                     playerTasks.remove(key);
                     lastActionbarUpdate.get(uuid).remove(key);
-                    // Task ID will be removed after this method completes
                 }
             }
         }, 600L).getTaskId();
@@ -321,7 +356,6 @@ public class MissionManager {
         playerTasks.put(key, taskId);
         scheduledTaskIds.add(taskId);
 
-        // Schedule cleanup of task ID
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             scheduledTaskIds.remove(taskId);
         }, 601L);
@@ -442,11 +476,9 @@ public class MissionManager {
         saveSeasonData();
         saveDailyMissions();
 
-        // Cancel all tracked tasks
         scheduledTaskIds.forEach(taskId -> Bukkit.getScheduler().cancelTask(taskId));
         scheduledTaskIds.clear();
 
-        // Cancel all player-specific tasks
         actionbarTasks.values().forEach(tasks ->
                 tasks.values().forEach(taskId -> Bukkit.getScheduler().cancelTask(taskId))
         );
@@ -498,5 +530,4 @@ public class MissionManager {
 
     public boolean isInitialized() {
         return currentMissionDate != null && !dailyMissions.isEmpty();
-    }
-}
+    }}

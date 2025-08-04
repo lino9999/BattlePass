@@ -24,6 +24,7 @@ messages:
     battlepass: "<gradient:#4ECDC4:#45B7D1>/battlepass</gradient> &7- Open the Battle Pass GUI"
     help: "<gradient:#4ECDC4:#45B7D1>/bp help</gradient> &7- Show this help menu"
     reload: "<gradient:#4ECDC4:#45B7D1>/bp reload</gradient> &7- Reload the configuration"
+    reset-season: "<gradient:#4ECDC4:#45B7D1>/bp reset season</gradient> &7- Force reset the season"
     add-premium: "<gradient:#4ECDC4:#45B7D1>/bp addpremium <player></gradient> &7- Give premium pass"
     remove-premium: "<gradient:#4ECDC4:#45B7D1>/bp removepremium <player></gradient> &7- Remove premium pass"
     add-xp: "<gradient:#4ECDC4:#45B7D1>/bp addxp <player> <amount></gradient> &7- Add XP to a player"
@@ -58,6 +59,10 @@ messages:
 
   season:
     reset: "<gradient:#FF0000:#FFD93D>SEASON RESET</gradient>\n<gradient:#4ECDC4:#45B7D1>The Battle Pass season has ended! A new season begins now!</gradient>"
+    forced-reset: "<gradient:#FF0000:#FFD93D>FORCED SEASON RESET</gradient>\n<gradient:#4ECDC4:#45B7D1>An administrator has reset the Battle Pass season!</gradient>"
+    reset-warning: "<gradient:#FFD93D:#FF6B6B>⚠ WARNING:</gradient> &fThe season will be reset in 2 seconds. All player progress will be lost!"
+    reset-complete: "<gradient:#00FF88:#00D4FF>✓ Season has been successfully reset!</gradient>"
+    reset-admin: "<gradient:#FF0000:#FFD93D>SEASON RESET</gradient>\n<gradient:#4ECDC4:#45B7D1>%admin% has forcefully reset the Battle Pass season!</gradient>"
     ends-in: "&7Season ends in: <gradient:#FFD93D:#FF6B6B>%season_time%</gradient>"
     achievement: "<gradient:#FFD93D:#FF6B6B>%player%</gradient> has completed the entire Battle Pass!"
     premium-achievement: "<gradient:#FFD93D:#FF6B6B>%player%</gradient> has become a <gradient:#FF00FF:#00FFFF>LEGEND</gradient> by completing the Premium Battle Pass!"

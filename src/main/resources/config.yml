@@ -4,7 +4,7 @@
 season:
   duration: 30
   # Whether to reset battle coins when season ends
-  reset-coins-on-season-end: true
+  reset-coins-on-season-end: false
 
 # Experience configuration
 # xp-per-level: Fixed XP required to advance to next level

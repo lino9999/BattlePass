@@ -222,4 +222,8 @@ public class BattlePass extends JavaPlugin {
     public CoinsDistributionTask getCoinsDistributionTask() {
         return coinsDistributionTask;
     }
+
+    public void setCoinsDistributionTask(CoinsDistributionTask task) {
+        this.coinsDistributionTask = task;
+    }
 }
