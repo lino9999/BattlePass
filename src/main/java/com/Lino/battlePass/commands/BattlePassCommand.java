@@ -2,6 +2,7 @@ package com.Lino.battlePass.commands;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.PlayerData;
+import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
@@ -101,6 +102,14 @@ public class BattlePassCommand implements CommandExecutor {
 
     private void reloadPlugin(CommandSender sender) {
         plugin.reload();
+
+        if (plugin.getCoinsDistributionTask() != null) {
+            plugin.getCoinsDistributionTask().cancel();
+            CoinsDistributionTask newTask = new CoinsDistributionTask(plugin);
+            plugin.setCoinsDistributionTask(newTask);
+            newTask.runTaskTimer(plugin, 200L, 1200L);
+        }
+
         sender.sendMessage(plugin.getMessageManager().getPrefix() +
                 plugin.getMessageManager().getMessage("messages.config-reloaded"));
     }

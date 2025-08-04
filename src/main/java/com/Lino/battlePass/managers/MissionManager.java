@@ -168,7 +168,8 @@ public class MissionManager {
 
     private void calculateNextReset() {
         LocalDateTime now = LocalDateTime.now();
-        nextMissionReset = now.toLocalDate().plusDays(1).atTime(LocalTime.MIDNIGHT);
+        int hoursInterval = configManager.getMissionResetHours();
+        nextMissionReset = now.plusHours(hoursInterval);
     }
 
     public void checkMissionReset() {

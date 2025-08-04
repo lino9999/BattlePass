@@ -21,6 +21,11 @@ experience:
 daily-reward:
   xp: 200
 
+# Missions configuration
+# reset-hours: How often missions reset (in hours)
+missions:
+  reset-hours: 24
+
 # Battle Coins distribution configuration
 # Coins distributed to top 10 players at specified intervals
 # distribution-hours: How often coins are distributed (in hours)

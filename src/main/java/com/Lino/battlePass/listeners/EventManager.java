@@ -29,6 +29,7 @@ public class EventManager implements Listener {
     private final Map<UUID, Location> lastLocations = new ConcurrentHashMap<>();
     private final Map<UUID, Long> playTimeStart = new ConcurrentHashMap<>();
     private final Set<Material> oreTypes = EnumSet.noneOf(Material.class);
+    private final Map<UUID, Map<Location, Long>> recentlyPlacedBlocks = new ConcurrentHashMap<>();
 
     private final NamespacedKey navigationKey;
 
@@ -54,6 +55,7 @@ public class EventManager implements Listener {
 
         playTimeStart.put(uuid, System.currentTimeMillis());
         lastLocations.put(uuid, player.getLocation());
+        recentlyPlacedBlocks.put(uuid, new HashMap<>());
 
         plugin.getPlayerDataManager().loadPlayer(uuid);
 
@@ -92,6 +94,7 @@ public class EventManager implements Listener {
         plugin.getPlayerDataManager().removePlayer(uuid);
         plugin.getGuiManager().getCurrentPages().remove(event.getPlayer().getEntityId());
         lastLocations.remove(uuid);
+        recentlyPlacedBlocks.remove(uuid);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -240,7 +243,27 @@ public class EventManager implements Listener {
     public void onBlockPlace(BlockPlaceEvent event) {
         Player player = event.getPlayer();
         String blockType = event.getBlock().getType().name();
-        plugin.getMissionManager().progressMission(player, "PLACE_BLOCK", blockType, 1);
+        Location blockLoc = event.getBlock().getLocation();
+        UUID uuid = player.getUniqueId();
+
+        Map<Location, Long> playerPlacedBlocks = recentlyPlacedBlocks.get(uuid);
+        if (playerPlacedBlocks == null) {
+            playerPlacedBlocks = new HashMap<>();
+            recentlyPlacedBlocks.put(uuid, playerPlacedBlocks);
+        }
+
+        Long lastPlaced = playerPlacedBlocks.get(blockLoc);
+        long currentTime = System.currentTimeMillis();
+
+        if (lastPlaced == null || currentTime - lastPlaced > 100) {
+            plugin.getMissionManager().progressMission(player, "PLACE_BLOCK", blockType, 1);
+            playerPlacedBlocks.put(blockLoc, currentTime);
+
+            final Map<Location, Long> finalPlayerPlacedBlocks = playerPlacedBlocks;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                finalPlayerPlacedBlocks.remove(blockLoc);
+            }, 20L);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
