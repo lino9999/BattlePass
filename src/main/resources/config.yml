@@ -4,7 +4,7 @@
 season:
   duration: 30
   # Whether to reset battle coins when season ends
-  reset-coins-on-season-end: false
+  reset-coins-on-season-end: true
 
 # Experience configuration
 # xp-per-level: Fixed XP required to advance to next level
@@ -22,9 +22,11 @@ daily-reward:
   xp: 200
 
 # Battle Coins distribution configuration
-# Coins distributed to top 10 players every 24 hours
+# Coins distributed to top 10 players at specified intervals
+# distribution-hours: How often coins are distributed (in hours)
 # Format: position = coins amount
 battle-coins:
+  distribution-hours: 24
   distribution:
     1: 10
     2: 9

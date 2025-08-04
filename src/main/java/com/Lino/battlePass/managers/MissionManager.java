@@ -262,6 +262,31 @@ public class MissionManager {
         }, 20L);
     }
 
+    public void forceResetMissions() {
+        MessageManager messageManager = plugin.getMessageManager();
+
+        currentMissionDate = LocalDateTime.now().toLocalDate().toString();
+
+        generateDailyMissions();
+        calculateNextReset();
+        saveDailyMissions();
+        saveSeasonData();
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.forced-reset"));
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+        }
+
+        for (PlayerData data : playerDataManager.getPlayerCache().values()) {
+            data.missionProgress.clear();
+        }
+
+        databaseManager.clearOldMissionProgress(currentMissionDate);
+
+        lastActionbarUpdate.clear();
+        actionbarTasks.clear();
+    }
+
     public void progressMission(Player player, String type, String target, int amount) {
         PlayerData data = playerDataManager.getPlayerData(player.getUniqueId());
         if (data == null || dailyMissions.isEmpty()) return;

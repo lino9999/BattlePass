@@ -25,6 +25,7 @@ public class ConfigManager {
     private List<Integer> coinsDistribution = new ArrayList<>();
     private boolean shopEnabled = true;
     private boolean resetCoinsOnSeasonEnd = true;
+    private int coinsDistributionHours = 24;
 
     public ConfigManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -38,6 +39,7 @@ public class ConfigManager {
         dailyRewardXP = config.getInt("daily-reward.xp", 200);
         shopEnabled = config.getBoolean("shop.enabled", true);
         resetCoinsOnSeasonEnd = config.getBoolean("season.reset-coins-on-season-end", true);
+        coinsDistributionHours = config.getInt("battle-coins.distribution-hours", 24);
 
         coinsDistribution.clear();
         for (int i = 1; i <= 10; i++) {
@@ -110,5 +112,9 @@ public class ConfigManager {
 
     public boolean isResetCoinsOnSeasonEnd() {
         return resetCoinsOnSeasonEnd;
+    }
+
+    public int getCoinsDistributionHours() {
+        return coinsDistributionHours;
     }
 }

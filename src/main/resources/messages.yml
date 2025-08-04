@@ -25,6 +25,7 @@ messages:
     help: "<gradient:#4ECDC4:#45B7D1>/bp help</gradient> &7- Show this help menu"
     reload: "<gradient:#4ECDC4:#45B7D1>/bp reload</gradient> &7- Reload the configuration"
     reset-season: "<gradient:#4ECDC4:#45B7D1>/bp reset season</gradient> &7- Force reset the season"
+    reset-missions: "<gradient:#4ECDC4:#45B7D1>/bp reset missions</gradient> &7- Force reset daily missions"
     add-premium: "<gradient:#4ECDC4:#45B7D1>/bp addpremium <player></gradient> &7- Give premium pass"
     remove-premium: "<gradient:#4ECDC4:#45B7D1>/bp removepremium <player></gradient> &7- Remove premium pass"
     add-xp: "<gradient:#4ECDC4:#45B7D1>/bp addxp <player> <amount></gradient> &7- Add XP to a player"
@@ -54,6 +55,9 @@ messages:
   mission:
     completed: "<gradient:#00FF88:#45B7D1>✓ MISSION COMPLETED:</gradient> &a%mission% <gradient:#FFD93D:#FF6B6B>(+%reward_xp% XP)</gradient>"
     reset: "<gradient:#FF6B6B:#4ECDC4>⟳ Daily missions have been reset!</gradient>"
+    forced-reset: "<gradient:#FF6B6B:#4ECDC4>⟳ An administrator has reset the daily missions!</gradient>"
+    reset-complete: "<gradient:#00FF88:#00D4FF>✓ Missions have been successfully reset!</gradient>"
+    reset-admin: "<gradient:#FF6B6B:#4ECDC4>⟳ %admin% has forcefully reset the daily missions!</gradient>"
     actionbar-progress: "&c%mission%: &7%current%&f/&8%required%"
     actionbar-completed: "<gradient:#00FF88:#45B7D1>✓ COMPLETED:</gradient> &a&l%mission%"
 

@@ -32,6 +32,8 @@ public class BattlePassTabCompleter implements TabCompleter {
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("reset") && sender.hasPermission("battlepass.admin")) {
                 completions.add("season");
+                completions.add("mission");
+                completions.add("missions");
             } else if (sender.hasPermission("battlepass.admin")) {
                 String subCommand = args[0].toLowerCase();
 

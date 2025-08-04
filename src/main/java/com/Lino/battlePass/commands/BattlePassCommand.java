@@ -43,8 +43,12 @@ public class BattlePassCommand implements CommandExecutor {
                 return true;
 
             case "reset":
-                if (args.length > 1 && args[1].equalsIgnoreCase("season")) {
-                    return handleResetSeason(sender);
+                if (args.length > 1) {
+                    if (args[1].equalsIgnoreCase("season")) {
+                        return handleResetSeason(sender);
+                    } else if (args[1].equalsIgnoreCase("mission") || args[1].equalsIgnoreCase("missions")) {
+                        return handleResetMissions(sender);
+                    }
                 }
                 if (sender instanceof Player) {
                     plugin.getGuiManager().openBattlePassGUI((Player) sender, 1);
@@ -85,6 +89,7 @@ public class BattlePassCommand implements CommandExecutor {
         if (sender.hasPermission("battlepass.admin")) {
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.reload"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.reset-season"));
+            sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.reset-missions"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.add-premium"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.remove-premium"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.add-xp"));
@@ -123,6 +128,28 @@ public class BattlePassCommand implements CommandExecutor {
                 }
             }
         }, 40L);
+
+        return true;
+    }
+
+    private boolean handleResetMissions(CommandSender sender) {
+        if (!sender.hasPermission("battlepass.admin")) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.no-permission"));
+            return true;
+        }
+
+        plugin.getMissionManager().forceResetMissions();
+        sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                plugin.getMessageManager().getMessage("messages.mission.reset-complete"));
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!player.equals(sender)) {
+                player.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.mission.reset-admin",
+                                "%admin%", sender.getName()));
+            }
+        }
 
         return true;
     }

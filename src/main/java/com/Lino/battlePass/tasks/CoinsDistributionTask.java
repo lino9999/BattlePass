@@ -84,7 +84,8 @@ public class CoinsDistributionTask extends BukkitRunnable {
 
     private void calculateNextDistribution() {
         LocalDateTime now = LocalDateTime.now();
-        nextDistribution = now.toLocalDate().plusDays(1).atTime(LocalTime.MIDNIGHT);
+        int hoursInterval = plugin.getConfigManager().getCoinsDistributionHours();
+        nextDistribution = now.plusHours(hoursInterval);
     }
 
     public void resetDistributionTime() {
