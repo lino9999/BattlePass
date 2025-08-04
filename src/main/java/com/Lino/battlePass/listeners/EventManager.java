@@ -209,7 +209,7 @@ public class EventManager implements Listener {
             if (event.getCaught() instanceof org.bukkit.entity.Item) {
                 org.bukkit.entity.Item item = (org.bukkit.entity.Item) event.getCaught();
                 String itemType = item.getItemStack().getType().name();
-                plugin.getMissionManager().progressMission(player, "FISH_ITEM", itemType, item.getItemStack().getAmount());
+                plugin.getMissionManager().progressMission(player, "FISH_ITEM", itemType, 1);
             }
         }
     }
@@ -220,7 +220,19 @@ public class EventManager implements Listener {
             Player player = (Player) event.getWhoClicked();
             ItemStack result = event.getRecipe().getResult();
             String itemType = result.getType().name();
-            plugin.getMissionManager().progressMission(player, "CRAFT_ITEM", itemType, result.getAmount());
+
+            int crafted = result.getAmount();
+            if (event.isShiftClick()) {
+                int minStack = 64;
+                for (ItemStack ingredient : event.getInventory().getMatrix()) {
+                    if (ingredient != null && ingredient.getType() != Material.AIR) {
+                        minStack = Math.min(minStack, ingredient.getAmount());
+                    }
+                }
+                crafted = crafted * minStack;
+            }
+
+            plugin.getMissionManager().progressMission(player, "CRAFT_ITEM", itemType, crafted);
         }
     }
 

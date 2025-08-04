@@ -1,5 +1,6 @@
 package com.Lino.battlePass;
 
+import com.Lino.battlePass.commands.BattlePassTabCompleter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import com.Lino.battlePass.managers.*;
@@ -70,6 +71,7 @@ public class BattlePass extends JavaPlugin {
                             eventManager = new EventManager(BattlePass.this);
                             getServer().getPluginManager().registerEvents(eventManager, BattlePass.this);
                             getCommand("battlepass").setExecutor(new BattlePassCommand(BattlePass.this));
+                            getCommand("battlepass").setTabCompleter(new BattlePassTabCompleter());
 
                             new BattlePassTask(BattlePass.this).runTaskTimer(BattlePass.this, 6000L, 1200L);
 

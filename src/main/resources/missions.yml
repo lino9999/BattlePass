@@ -152,7 +152,7 @@ mission-pools:
     max-required: 10
     min-xp: 350
     max-xp: 550
-    weight: 6
+    weight: 4
 
   mine-iron:
     type: MINE_BLOCK
