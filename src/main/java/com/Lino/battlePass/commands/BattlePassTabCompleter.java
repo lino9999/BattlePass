@@ -28,12 +28,16 @@ public class BattlePassTabCompleter implements TabCompleter {
                 completions.add("removexp");
                 completions.add("addcoins");
                 completions.add("removecoins");
+                completions.add("giveitem");
             }
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("reset") && sender.hasPermission("battlepass.admin")) {
                 completions.add("season");
                 completions.add("mission");
                 completions.add("missions");
+            } else if (args[0].equalsIgnoreCase("giveitem") && sender.hasPermission("battlepass.admin")) {
+                completions.add("premium");
+                completions.add("coins");
             } else if (sender.hasPermission("battlepass.admin")) {
                 String subCommand = args[0].toLowerCase();
 
@@ -49,7 +53,11 @@ public class BattlePassTabCompleter implements TabCompleter {
         } else if (args.length == 3 && sender.hasPermission("battlepass.admin")) {
             String subCommand = args[0].toLowerCase();
 
-            if (subCommand.equals("addxp") || subCommand.equals("removexp") ||
+            if (subCommand.equals("giveitem")) {
+                return Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .collect(Collectors.toList());
+            } else if (subCommand.equals("addxp") || subCommand.equals("removexp") ||
                     subCommand.equals("addcoins") || subCommand.equals("removecoins")) {
 
                 completions.add("10");
@@ -57,6 +65,16 @@ public class BattlePassTabCompleter implements TabCompleter {
                 completions.add("100");
                 completions.add("500");
                 completions.add("1000");
+            }
+        } else if (args.length == 4 && sender.hasPermission("battlepass.admin")) {
+            String subCommand = args[0].toLowerCase();
+
+            if (subCommand.equals("giveitem")) {
+                completions.add("1");
+                completions.add("5");
+                completions.add("10");
+                completions.add("32");
+                completions.add("64");
             }
         }
 

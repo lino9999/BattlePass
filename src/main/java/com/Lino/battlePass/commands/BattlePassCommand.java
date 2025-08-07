@@ -9,6 +9,8 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import java.util.HashMap;
 
 public class BattlePassCommand implements CommandExecutor {
 
@@ -74,6 +76,9 @@ public class BattlePassCommand implements CommandExecutor {
             case "removecoins":
                 return handleCoinsCommand(sender, args, false);
 
+            case "giveitem":
+                return handleGiveItemCommand(sender, args);
+
             default:
                 if (sender instanceof Player) {
                     plugin.getGuiManager().openBattlePassGUI((Player) sender, 1);
@@ -97,6 +102,7 @@ public class BattlePassCommand implements CommandExecutor {
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.remove-xp"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.add-coins"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.remove-coins"));
+            sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.giveitem"));
         }
     }
 
@@ -336,6 +342,88 @@ public class BattlePassCommand implements CommandExecutor {
             }
 
             plugin.getPlayerDataManager().markForSave(target.getUniqueId());
+            return true;
+
+        } catch (NumberFormatException e) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.invalid-amount"));
+            return true;
+        }
+    }
+
+    private boolean handleGiveItemCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("battlepass.admin")) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.no-permission"));
+            return true;
+        }
+
+        if (args.length < 4) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.usage.giveitem"));
+            return true;
+        }
+
+        String itemType = args[1].toLowerCase();
+        Player target = Bukkit.getPlayer(args[2]);
+
+        if (target == null) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.player-not-found"));
+            return true;
+        }
+
+        try {
+            int amount = Integer.parseInt(args[3]);
+            if (amount <= 0) {
+                sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.amount-must-be-positive"));
+                return true;
+            }
+
+            ItemStack item;
+            String itemName;
+
+            switch (itemType) {
+                case "premium":
+                    item = plugin.getCustomItemManager().createPremiumPassItem(amount);
+                    itemName = "Premium Pass Voucher";
+                    break;
+                case "coins":
+                    item = plugin.getCustomItemManager().createBattleCoinsItem(amount);
+                    itemName = "Battle Coin Token";
+                    break;
+                default:
+                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                            plugin.getMessageManager().getMessage("messages.invalid-item-type"));
+                    return true;
+            }
+
+            HashMap<Integer, ItemStack> leftover = target.getInventory().addItem(item);
+
+            if (!leftover.isEmpty()) {
+                for (ItemStack drop : leftover.values()) {
+                    target.getWorld().dropItemNaturally(target.getLocation(), drop);
+                }
+                sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.items.given-dropped",
+                                "%amount%", String.valueOf(amount),
+                                "%item%", itemName,
+                                "%target%", target.getName()));
+            } else {
+                sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.items.given",
+                                "%amount%", String.valueOf(amount),
+                                "%item%", itemName,
+                                "%target%", target.getName()));
+            }
+
+            target.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.items.received",
+                            "%amount%", String.valueOf(amount),
+                            "%item%", itemName));
+            target.playSound(target.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.0f);
+
             return true;
 
         } catch (NumberFormatException e) {

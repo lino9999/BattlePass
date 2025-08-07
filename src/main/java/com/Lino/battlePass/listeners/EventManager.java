@@ -10,15 +10,18 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.NamespacedKey;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,6 +77,8 @@ public class EventManager implements Listener {
                         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
                     }
                 }
+
+                plugin.getSoundManager().checkAndUpdateSound(player);
             }
         }.runTaskLater(plugin, 40L);
     }
@@ -90,6 +95,7 @@ public class EventManager implements Listener {
             }
         }
 
+        plugin.getSoundManager().stopItemSound(uuid);
         plugin.getMissionManager().clearPlayerActionbars(uuid);
         plugin.getPlayerDataManager().removePlayer(uuid);
         plugin.getGuiManager().getCurrentPages().remove(event.getPlayer().getEntityId());
@@ -290,6 +296,120 @@ public class EventManager implements Listener {
 
         if (event.isDropItems() && oreTypes.contains(mat)) {
             plugin.getMissionManager().progressMission(player, "MINE_BLOCK", blockType, 1);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_AIR &&
+                event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+        ItemStack item = event.getItem();
+
+        if (item == null) return;
+
+        if (plugin.getCustomItemManager().isPremiumPassItem(item)) {
+            event.setCancelled(true);
+
+            PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            if (data.hasPremium) {
+                player.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.items.already-have-premium"));
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                return;
+            }
+
+            data.hasPremium = true;
+            plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+
+            if (item.getAmount() > 1) {
+                item.setAmount(item.getAmount() - 1);
+            } else {
+                player.getInventory().remove(item);
+            }
+
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.items.premium-activated"));
+            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.2f);
+
+            for (int i = 0; i < 20; i++) {
+                final int index = i;
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME,
+                            0.5f, 0.5f + (index * 0.1f));
+                }, i * 2L);
+            }
+
+        } else if (plugin.getCustomItemManager().isBattleCoinsItem(item)) {
+            event.setCancelled(true);
+
+            int amount = item.getAmount();
+            PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            data.battleCoins += amount;
+            plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+
+            player.getInventory().remove(item);
+
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.items.coins-redeemed",
+                            "%amount%", String.valueOf(amount)));
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+
+            for (int i = 0; i < Math.min(amount, 10); i++) {
+                final int index = i;
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
+                            0.8f, 1.2f + (index * 0.1f));
+                }, i * 3L);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerItemHeld(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            plugin.getSoundManager().checkAndUpdateSound(player);
+        }, 1L);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
+        Player player = event.getPlayer();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            plugin.getSoundManager().checkAndUpdateSound(player);
+        }, 1L);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (event.getPlayer() instanceof Player) {
+            Player player = (Player) event.getPlayer();
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                plugin.getSoundManager().checkAndUpdateSound(player);
+            }, 1L);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        Player player = event.getPlayer();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            plugin.getSoundManager().checkAndUpdateSound(player);
+        }, 1L);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerPickupItem(EntityPickupItemEvent event) {
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                plugin.getSoundManager().checkAndUpdateSound(player);
+            }, 1L);
         }
     }
 

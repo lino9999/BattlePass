@@ -9,6 +9,7 @@ messages:
   player-not-found: "<gradient:#FF0000:#FF6B6B>✗ Player not found!</gradient>"
   invalid-amount: "<gradient:#FF0000:#FF6B6B>✗ Invalid amount! Please enter a number.</gradient>"
   amount-must-be-positive: "<gradient:#FF0000:#FF6B6B>✗ Amount must be positive!</gradient>"
+  invalid-item-type: "<gradient:#FF0000:#FF6B6B>✗ Invalid item type! Use 'premium' or 'coins'.</gradient>"
 
   usage:
     battlepass: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass"
@@ -18,6 +19,7 @@ messages:
     remove-xp: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass removexp <player> <amount>"
     add-coins: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass addcoins <player> <amount>"
     remove-coins: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass removecoins <player> <amount>"
+    giveitem: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass giveitem <type> <player> <amount>"
 
   help:
     header: "<gradient:#FFD93D:#FF6B6B>⚡ BATTLE PASS COMMANDS ⚡</gradient>"
@@ -32,6 +34,7 @@ messages:
     remove-xp: "<gradient:#4ECDC4:#45B7D1>/bp removexp <player> <amount></gradient> &7- Remove XP from a player"
     add-coins: "<gradient:#4ECDC4:#45B7D1>/bp addcoins <player> <amount></gradient> &7- Add Battle Coins"
     remove-coins: "<gradient:#4ECDC4:#45B7D1>/bp removecoins <player> <amount></gradient> &7- Remove Battle Coins"
+    giveitem: "<gradient:#4ECDC4:#45B7D1>/bp giveitem <type> <player> <amount></gradient> &7- Give custom items"
 
   premium:
     given-sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Premium pass given to <gradient:#FFD93D:#FF6B6B>%target%</gradient>"
@@ -100,6 +103,14 @@ messages:
     insufficient-coins: "<gradient:#FF6B6B:#FF0000>✗ Insufficient Battle Coins!</gradient> &7Need: <gradient:#4ECDC4:#45B7D1>%required%</gradient> &7Have: <gradient:#4ECDC4:#45B7D1>%current%</gradient>"
     purchase-success: "<gradient:#00FF88:#45B7D1>✓ Purchase Successful!</gradient> &fBought <gradient:#FFD93D:#FF6B6B>%item%</gradient> for <gradient:#FFD93D:#FF6B6B>%price% Battle Coins</gradient>"
     shop-title: "<gradient:#FFD93D:#FF6B6B>Battle Pass Shop</gradient>"
+
+  items:
+    given: "<gradient:#00FF88:#45B7D1>✓</gradient> Given <gradient:#FFD93D:#FF6B6B>%amount%x %item%</gradient> to %target%"
+    given-dropped: "<gradient:#00FF88:#45B7D1>✓</gradient> Given <gradient:#FFD93D:#FF6B6B>%amount%x %item%</gradient> to %target% <gradient:#FFE66D:#FF6B6B>(Some items dropped)</gradient>"
+    received: "<gradient:#00FF88:#45B7D1>✓</gradient> You received <gradient:#FFD93D:#FF6B6B>%amount%x %item%</gradient>"
+    already-have-premium: "<gradient:#FF6B6B:#FF0000>✗ You already have the Premium Battle Pass!</gradient>"
+    premium-activated: "<gradient:#FFD93D:#FF6B6B>★ PREMIUM ACTIVATED ★</gradient>\n<gradient:#F7B731:#FC4A1A>You now have access to all premium rewards!</gradient>"
+    coins-redeemed: "<gradient:#00FF88:#45B7D1>✓ Redeemed %amount% Battle Coins!</gradient>"
 
 gui:
   battlepass: "<gradient:#FF6B6B:#4ECDC4>⚡ BATTLE PASS</gradient> &8- &7Page %page%"

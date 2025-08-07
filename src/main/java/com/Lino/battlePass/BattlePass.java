@@ -29,6 +29,8 @@ public class BattlePass extends JavaPlugin {
     private EventManager eventManager;
     private ShopManager shopManager;
     private CoinsDistributionTask coinsDistributionTask;
+    private CustomItemManager customItemManager;
+    private SoundManager soundManager;
 
     private boolean updateAvailable = false;
     private String latestVersion = "";
@@ -50,6 +52,8 @@ public class BattlePass extends JavaPlugin {
         rewardManager = new RewardManager(this, configManager);
         missionManager = new MissionManager(this, configManager, databaseManager, playerDataManager);
         shopManager = new ShopManager(this);
+        customItemManager = new CustomItemManager(this);
+        soundManager = new SoundManager(this, customItemManager);
         guiManager = new GuiManager(this, playerDataManager, missionManager, rewardManager, messageManager, configManager);
 
         databaseManager.initialize().thenRun(() -> {
@@ -99,6 +103,9 @@ public class BattlePass extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (soundManager != null) {
+            soundManager.stopAllSounds();
+        }
         if (coinsDistributionTask != null) {
             coinsDistributionTask.cancel();
         }
@@ -225,5 +232,13 @@ public class BattlePass extends JavaPlugin {
 
     public void setCoinsDistributionTask(CoinsDistributionTask task) {
         this.coinsDistributionTask = task;
+    }
+
+    public CustomItemManager getCustomItemManager() {
+        return customItemManager;
+    }
+
+    public SoundManager getSoundManager() {
+        return soundManager;
     }
 }
