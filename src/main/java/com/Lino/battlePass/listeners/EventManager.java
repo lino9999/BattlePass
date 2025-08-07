@@ -347,12 +347,18 @@ public class EventManager implements Listener {
         } else if (plugin.getCustomItemManager().isBattleCoinsItem(item)) {
             event.setCancelled(true);
 
-            int amount = item.getAmount();
+            ItemStack itemInHand = player.getInventory().getItemInMainHand();
+
+            if (!plugin.getCustomItemManager().isBattleCoinsItem(itemInHand)) {
+                return;
+            }
+
+            int amount = itemInHand.getAmount();
             PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
             data.battleCoins += amount;
             plugin.getPlayerDataManager().markForSave(player.getUniqueId());
 
-            player.getInventory().remove(item);
+            player.getInventory().setItemInMainHand(null);
 
             player.sendMessage(plugin.getMessageManager().getPrefix() +
                     plugin.getMessageManager().getMessage("messages.items.coins-redeemed",
