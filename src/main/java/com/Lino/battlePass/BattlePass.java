@@ -1,6 +1,7 @@
 package com.Lino.battlePass;
 
 import com.Lino.battlePass.commands.BattlePassTabCompleter;
+import com.Lino.battlePass.listeners.MissionProgressListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import com.Lino.battlePass.managers.*;
@@ -73,7 +74,6 @@ public class BattlePass extends JavaPlugin {
                             playerDataManager.loadOnlinePlayers();
 
                             eventManager = new EventManager(BattlePass.this);
-                            getServer().getPluginManager().registerEvents(eventManager, BattlePass.this);
                             getCommand("battlepass").setExecutor(new BattlePassCommand(BattlePass.this));
                             getCommand("battlepass").setTabCompleter(new BattlePassTabCompleter());
 
@@ -240,5 +240,12 @@ public class BattlePass extends JavaPlugin {
 
     public SoundManager getSoundManager() {
         return soundManager;
+    }
+
+    public MissionProgressListener getMissionProgressListener() {
+        if (eventManager != null) {
+            return eventManager.getMissionProgressListener();
+        }
+        return null;
     }
 }

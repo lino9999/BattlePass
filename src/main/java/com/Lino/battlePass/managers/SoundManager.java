@@ -25,6 +25,10 @@ public class SoundManager {
     public void startItemSound(Player player) {
         UUID uuid = player.getUniqueId();
 
+        if (!plugin.getConfigManager().isCustomItemSoundsEnabled()) {
+            return;
+        }
+
         stopItemSound(uuid);
 
         BukkitTask task = new BukkitRunnable() {
@@ -63,6 +67,24 @@ public class SoundManager {
                     if (tickCounter % 15 == 5) {
                         player.playSound(player.getLocation(), Sound.ENTITY_GLOW_SQUID_AMBIENT, 0.1f, 2.0f);
                     }
+
+                } else if (customItemManager.isLevelBoostItem(itemInHand)) {
+                    if (tickCounter % 25 == 0) {
+                        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.15f, 0.8f);
+                    }
+
+                    if (tickCounter % 35 == 10) {
+                        player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.1f, 1.2f);
+                    }
+
+                    if (tickCounter % 40 == 20) {
+                        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.1f, 0.6f);
+                    }
+
+                    if (tickCounter % 50 == 0) {
+                        player.playSound(player.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.08f, 1.5f);
+                    }
+
                 } else {
                     stopItemSound(uuid);
                     return;
@@ -83,10 +105,17 @@ public class SoundManager {
     }
 
     public void checkAndUpdateSound(Player player) {
+        if (!plugin.getConfigManager().isCustomItemSoundsEnabled()) {
+            stopItemSound(player.getUniqueId());
+            return;
+        }
+
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
         UUID uuid = player.getUniqueId();
 
-        if (customItemManager.isPremiumPassItem(itemInHand) || customItemManager.isBattleCoinsItem(itemInHand)) {
+        if (customItemManager.isPremiumPassItem(itemInHand) ||
+                customItemManager.isBattleCoinsItem(itemInHand) ||
+                customItemManager.isLevelBoostItem(itemInHand)) {
             if (!activeSoundTasks.containsKey(uuid)) {
                 startItemSound(player);
             }

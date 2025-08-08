@@ -38,6 +38,7 @@ public class BattlePassTabCompleter implements TabCompleter {
             } else if (args[0].equalsIgnoreCase("giveitem") && sender.hasPermission("battlepass.admin")) {
                 completions.add("premium");
                 completions.add("coins");
+                completions.add("levelboost");
             } else if (sender.hasPermission("battlepass.admin")) {
                 String subCommand = args[0].toLowerCase();
 

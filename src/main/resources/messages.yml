@@ -9,7 +9,7 @@ messages:
   player-not-found: "<gradient:#FF0000:#FF6B6B>✗ Player not found!</gradient>"
   invalid-amount: "<gradient:#FF0000:#FF6B6B>✗ Invalid amount! Please enter a number.</gradient>"
   amount-must-be-positive: "<gradient:#FF0000:#FF6B6B>✗ Amount must be positive!</gradient>"
-  invalid-item-type: "<gradient:#FF0000:#FF6B6B>✗ Invalid item type! Use 'premium' or 'coins'.</gradient>"
+  invalid-item-type: "<gradient:#FF0000:#FF6B6B>✗ Invalid item type! Use 'premium', 'coins' or 'levelboost'.</gradient>"
 
   usage:
     battlepass: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass"
@@ -111,6 +111,8 @@ messages:
     already-have-premium: "<gradient:#FF6B6B:#FF0000>✗ You already have the Premium Battle Pass!</gradient>"
     premium-activated: "<gradient:#FFD93D:#FF6B6B>★ PREMIUM ACTIVATED ★</gradient>\n<gradient:#F7B731:#FC4A1A>You now have access to all premium rewards!</gradient>"
     coins-redeemed: "<gradient:#00FF88:#45B7D1>✓ Redeemed %amount% Battle Coins!</gradient>"
+    max-level-reached: "<gradient:#FF6B6B:#FF0000>✗ You have already reached the maximum level!</gradient>"
+    xp-boost-used: "<gradient:#00FF88:#45B7D1>★ XP BOOST!</gradient>\n<gradient:#4ECDC4:#45B7D1>Consumed %items% elixir(s) and gained %amount% XP!</gradient>"
 
 gui:
   battlepass: "<gradient:#FF6B6B:#4ECDC4>⚡ BATTLE PASS</gradient> &8- &7Page %page%"

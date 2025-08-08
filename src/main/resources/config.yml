@@ -15,7 +15,7 @@ season:
 # - 1000 XP per level = 53,000 total XP (balanced for 30 days)
 # - 2000 XP per level = 106,000 total XP (hard)
 experience:
-  xp-per-level: 200
+  xp-per-level: 400
 
 # Daily reward configuration
 daily-reward:
@@ -47,3 +47,9 @@ battle-coins:
 # Shop configuration
 shop:
   enabled: true
+
+# Custom Items configuration
+# sounds-enabled: Whether to play ambient sounds when holding custom items
+# Set to false to save resources on low-performance servers
+custom-items:
+  sounds-enabled: true

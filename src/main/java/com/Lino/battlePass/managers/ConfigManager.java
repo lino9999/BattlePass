@@ -27,6 +27,7 @@ public class ConfigManager {
     private boolean resetCoinsOnSeasonEnd = true;
     private int coinsDistributionHours = 24;
     private int missionResetHours = 24;
+    private boolean customItemSoundsEnabled = true;
 
     public ConfigManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -42,6 +43,7 @@ public class ConfigManager {
         resetCoinsOnSeasonEnd = config.getBoolean("season.reset-coins-on-season-end", true);
         coinsDistributionHours = config.getInt("battle-coins.distribution-hours", 24);
         missionResetHours = config.getInt("missions.reset-hours", 24);
+        customItemSoundsEnabled = config.getBoolean("custom-items.sounds-enabled", true);
 
         coinsDistribution.clear();
         for (int i = 1; i <= 10; i++) {
@@ -122,5 +124,9 @@ public class ConfigManager {
 
     public int getMissionResetHours() {
         return missionResetHours;
+    }
+
+    public boolean isCustomItemSoundsEnabled() {
+        return customItemSoundsEnabled;
     }
 }

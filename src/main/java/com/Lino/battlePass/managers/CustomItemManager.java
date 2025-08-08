@@ -18,11 +18,13 @@ public class CustomItemManager {
     private final BattlePass plugin;
     private final NamespacedKey premiumItemKey;
     private final NamespacedKey coinsItemKey;
+    private final NamespacedKey levelItemKey;
 
     public CustomItemManager(BattlePass plugin) {
         this.plugin = plugin;
         this.premiumItemKey = new NamespacedKey(plugin, "premium_pass_item");
         this.coinsItemKey = new NamespacedKey(plugin, "battle_coins_item");
+        this.levelItemKey = new NamespacedKey(plugin, "level_boost_item");
     }
 
     public ItemStack createPremiumPassItem(int amount) {
@@ -87,6 +89,37 @@ public class CustomItemManager {
         return item;
     }
 
+    public ItemStack createLevelBoostItem(int amount) {
+        ItemStack item = new ItemStack(Material.EXPERIENCE_BOTTLE, amount);
+        ItemMeta meta = item.getItemMeta();
+
+        meta.setDisplayName(GradientColorParser.parse("<gradient:#00FF00:#00FFFF>✧ Experience Boost Elixir ✧</gradient>"));
+
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.add(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>Experience Elixir</gradient>"));
+        lore.add(GradientColorParser.parse("&7A powerful elixir infused with"));
+        lore.add(GradientColorParser.parse("&7concentrated experience essence,"));
+        lore.add(GradientColorParser.parse("&7boosting your battle pass progress"));
+        lore.add("");
+        lore.add(GradientColorParser.parse("<gradient:#4ECDC4:#45B7D1>▼ Power ▼</gradient>"));
+        lore.add(GradientColorParser.parse("&7• Grants <gradient:#FFD93D:#FF6B6B>+100 Battle Pass XP</gradient>"));
+        lore.add(GradientColorParser.parse("&7• Instant experience boost"));
+        lore.add(GradientColorParser.parse("&7• Stackable consumable"));
+        lore.add("");
+        lore.add(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>➤ RIGHT CLICK TO CONSUME</gradient>"));
+        lore.add("");
+        lore.add(GradientColorParser.parse("&8&oThe elixir bubbles with raw experience..."));
+
+        meta.setLore(lore);
+        meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        meta.getPersistentDataContainer().set(levelItemKey, PersistentDataType.BOOLEAN, true);
+
+        item.setItemMeta(meta);
+        return item;
+    }
+
     public boolean isPremiumPassItem(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
         ItemMeta meta = item.getItemMeta();
@@ -99,11 +132,21 @@ public class CustomItemManager {
         return meta.getPersistentDataContainer().has(coinsItemKey, PersistentDataType.BOOLEAN);
     }
 
+    public boolean isLevelBoostItem(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        ItemMeta meta = item.getItemMeta();
+        return meta.getPersistentDataContainer().has(levelItemKey, PersistentDataType.BOOLEAN);
+    }
+
     public NamespacedKey getPremiumItemKey() {
         return premiumItemKey;
     }
 
     public NamespacedKey getCoinsItemKey() {
         return coinsItemKey;
+    }
+
+    public NamespacedKey getLevelItemKey() {
+        return levelItemKey;
     }
 }

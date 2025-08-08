@@ -393,6 +393,10 @@ public class BattlePassCommand implements CommandExecutor {
                     item = plugin.getCustomItemManager().createBattleCoinsItem(amount);
                     itemName = "Battle Coin Token";
                     break;
+                case "levelboost":
+                    item = plugin.getCustomItemManager().createLevelBoostItem(amount);
+                    itemName = "Experience Boost Elixir";
+                    break;
                 default:
                     sender.sendMessage(plugin.getMessageManager().getPrefix() +
                             plugin.getMessageManager().getMessage("messages.invalid-item-type"));

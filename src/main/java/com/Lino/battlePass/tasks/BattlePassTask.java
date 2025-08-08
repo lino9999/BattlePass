@@ -13,7 +13,7 @@ public class BattlePassTask extends BukkitRunnable {
 
     private final BattlePass plugin;
     private long lastCleanupTime = System.currentTimeMillis();
-    private static final long CLEANUP_INTERVAL = 300000; // 5 minuti
+    private static final long CLEANUP_INTERVAL = 300000;
 
     public BattlePassTask(BattlePass plugin) {
         this.plugin = plugin;
@@ -26,7 +26,6 @@ public class BattlePassTask extends BukkitRunnable {
         checkRewardNotifications();
         updatePlayTime();
 
-        // Periodic cleanup every 5 minutes
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastCleanupTime >= CLEANUP_INTERVAL) {
             performPeriodicCleanup();
@@ -62,13 +61,20 @@ public class BattlePassTask extends BukkitRunnable {
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID uuid = player.getUniqueId();
-            Long startTime = plugin.getEventManager().getPlayTimeStart().get(uuid);
 
-            if (startTime != null) {
-                long playTime = (currentTime - startTime) / 60000;
-                if (playTime > 0) {
-                    plugin.getMissionManager().progressMission(player, "PLAY_TIME", "ANY", (int) playTime);
-                    plugin.getEventManager().getPlayTimeStart().put(uuid, currentTime);
+            if (plugin.getEventManager() != null &&
+                    plugin.getEventManager().getPlayerConnectionListener() != null) {
+
+                Long startTime = plugin.getEventManager().getPlayerConnectionListener()
+                        .getPlayTimeStart().get(uuid);
+
+                if (startTime != null) {
+                    long playTime = (currentTime - startTime) / 60000;
+                    if (playTime > 0) {
+                        plugin.getMissionManager().progressMission(player, "PLAY_TIME", "ANY", (int) playTime);
+                        plugin.getEventManager().getPlayerConnectionListener()
+                                .getPlayTimeStart().put(uuid, currentTime);
+                    }
                 }
             }
         }
