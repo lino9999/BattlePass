@@ -101,7 +101,7 @@ messages:
 
   shop:
     insufficient-coins: "<gradient:#FF6B6B:#FF0000>✗ Insufficient Battle Coins!</gradient> &7Need: <gradient:#4ECDC4:#45B7D1>%required%</gradient> &7Have: <gradient:#4ECDC4:#45B7D1>%current%</gradient>"
-    purchase-success: "<gradient:#00FF88:#45B7D1>✓ Purchase Successful!</gradient> &fBought <gradient:#FFD93D:#FF6B6B>%item%</gradient> for <gradient:#FFD93D:#FF6B6B>%price% Battle Coins</gradient>"
+    purchase-success: "<gradient:#00FF88:#45B7D1>✓ Purchase Successful!</gradient> &fBought %item% &ffor <gradient:#FFD93D:#FF6B6B>%price% Battle Coins</gradient>"
     shop-title: "<gradient:#FFD93D:#FF6B6B>Battle Pass Shop</gradient>"
 
   items:

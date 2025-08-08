@@ -1,424 +1,156 @@
 shop-items:
-  # Economia
-  money-small:
-    slot: 10
-    material: GOLD_NUGGET
-    display-name: "&e&lSmall Money Pack"
+  # Premium Battle Pass Voucher
+  premium-pass-single:
+    slot: 11
+    material: NETHER_STAR
+    display-name: "<gradient:#FF00FF:#00FFFF>★ Premium Battle Pass Voucher ★</gradient>"
     lore:
-      - "&7A small boost to your economy!"
       - ""
-      - "&7You will receive:"
-      - "&f• $5,000"
+      - "<gradient:#FFD700:#FFA500>Mystical Voucher</gradient>"
+      - "&7Unlock the legendary premium pass"
+      - "&7and gain access to exclusive rewards!"
       - ""
-      - "&7Price: &e10 Battle Coins"
+      - "<gradient:#4ECDC4:#45B7D1>▼ Features ▼</gradient>"
+      - "&7• <gradient:#FFD93D:#FF6B6B>Premium Battle Pass</gradient> for this season"
+      - "&7• Access to all premium rewards"
+      - "&7• Exclusive items and perks"
       - ""
-      - "&e&lCLICK TO PURCHASE"
+      - "&7Price: <gradient:#FFD93D:#FF6B6B>250 Battle Coins</gradient>"
+      - ""
+      - "<gradient:#00FF88:#45B7D1>▶ CLICK TO PURCHASE</gradient>"
+    price: 250
+    commands:
+      - "bp giveitem premium <player> 1"
+
+  # Battle Coin Token Bundles
+  coins-small:
+    slot: 15
+    material: GOLD_NUGGET
+    display-name: "<gradient:#FFD700:#FFA500>✦ Small Coin Bundle ✦</gradient>"
+    lore:
+      - ""
+      - "<gradient:#FFD700:#FFFF00>Currency Bundle</gradient>"
+      - "&7A small stack of gleaming"
+      - "&7battle coin tokens"
+      - ""
+      - "<gradient:#4ECDC4:#45B7D1>▼ Contains ▼</gradient>"
+      - "&7• <gradient:#FFD93D:#FF6B6B>10 Battle Coin Tokens</gradient>"
+      - "&7• Worth 10 Battle Coins when redeemed"
+      - ""
+      - "&7Price: <gradient:#FFD93D:#FF6B6B>10 Battle Coins</gradient>"
+      - ""
+      - "<gradient:#00FF88:#45B7D1>▶ CLICK TO PURCHASE</gradient>"
     price: 10
     commands:
-      - "eco give <player> 5000"
+      - "bp giveitem coins <player> 10"
 
-  money-medium:
-    slot: 11
-    material: GOLD_INGOT
-    display-name: "&6&lMedium Money Pack"
-    lore:
-      - "&7A nice amount of money!"
-      - ""
-      - "&7You will receive:"
-      - "&f• $15,000"
-      - ""
-      - "&7Price: &e25 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 25
-    commands:
-      - "eco give <player> 15000"
-
-  money-large:
-    slot: 12
-    material: GOLD_BLOCK
-    display-name: "&6&lLarge Money Pack"
-    lore:
-      - "&7A substantial economic boost!"
-      - ""
-      - "&7You will receive:"
-      - "&f• $50,000"
-      - ""
-      - "&7Price: &e75 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 75
-    commands:
-      - "eco give <player> 50000"
-
-  money-ultra:
-    slot: 13
-    material: GOLD_BLOCK
-    display-name: "&6&lUltra Money Pack"
-    lore:
-      - "&7A substantial economic boost!"
-      - ""
-      - "&7You will receive:"
-      - "&f• $150,000"
-      - ""
-      - "&7Price: &e75 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 95
-    commands:
-      - "eco give <player> 150000"
-
-  # Blocchi preziosi
-  diamond-block:
-    slot: 14
-    material: DIAMOND_BLOCK
-    display-name: "&b&lDiamond Block"
-    lore:
-      - "&7A precious diamond block!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 1x Diamond Block"
-      - ""
-      - "&7Price: &e30 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 30
-    items:
-      - material: DIAMOND_BLOCK
-        amount: 1
-
-  emerald-block:
-    slot: 15
-    material: EMERALD_BLOCK
-    display-name: "&a&lEmerald Block"
-    lore:
-      - "&7A valuable emerald block!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 1x Emerald Block"
-      - ""
-      - "&7Price: &e25 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 25
-    items:
-      - material: EMERALD_BLOCK
-        amount: 1
-
-  netherite-ingot:
-    slot: 16
-    material: NETHERITE_INGOT
-    display-name: "&4&lNetherite Ingot"
-    lore:
-      - "&7The rarest material!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 1x Netherite Ingot"
-      - ""
-      - "&7Price: &e50 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 50
-    items:
-      - material: NETHERITE_INGOT
-        amount: 1
-
-  # Strumenti e armature
-  diamond-tools:
-    slot: 19
-    material: DIAMOND_PICKAXE
-    display-name: "&b&lDiamond Tool Set"
-    lore:
-      - "&7A complete set of diamond tools!"
-      - ""
-      - "&7Contains:"
-      - "&f• Diamond Pickaxe"
-      - "&f• Diamond Axe"
-      - "&f• Diamond Shovel"
-      - "&f• Diamond Hoe"
-      - "&f• Diamond Sword"
-      - ""
-      - "&7Price: &e40 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 40
-    items:
-      - material: DIAMOND_PICKAXE
-        amount: 1
-      - material: DIAMOND_AXE
-        amount: 1
-      - material: DIAMOND_SHOVEL
-        amount: 1
-      - material: DIAMOND_HOE
-        amount: 1
-      - material: DIAMOND_SWORD
-        amount: 1
-
-  diamond-armor:
+  # Experience Boost Elixirs
+  xp-boost-single:
     slot: 20
-    material: DIAMOND_CHESTPLATE
-    display-name: "&b&lDiamond Armor Set"
-    lore:
-      - "&7Full diamond protection!"
-      - ""
-      - "&7Contains:"
-      - "&f• Diamond Helmet"
-      - "&f• Diamond Chestplate"
-      - "&f• Diamond Leggings"
-      - "&f• Diamond Boots"
-      - ""
-      - "&7Price: &e45 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 45
-    items:
-      - material: DIAMOND_HELMET
-        amount: 1
-      - material: DIAMOND_CHESTPLATE
-        amount: 1
-      - material: DIAMOND_LEGGINGS
-        amount: 1
-      - material: DIAMOND_BOOTS
-        amount: 1
-
-  # Oggetti utili
-  elytra:
-    slot: 21
-    material: ELYTRA
-    display-name: "&f&lElytra"
-    lore:
-      - "&7Wings to fly through the skies!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 1x Elytra"
-      - ""
-      - "&7Price: &e60 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 60
-    items:
-      - material: ELYTRA
-        amount: 1
-
-  shulker-box:
-    slot: 22
-    material: SHULKER_BOX
-    display-name: "&d&lShulker Box"
-    lore:
-      - "&7Portable storage solution!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 1x Shulker Box"
-      - ""
-      - "&7Price: &e35 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 35
-    items:
-      - material: SHULKER_BOX
-        amount: 1
-
-  totem:
-    slot: 23
-    material: TOTEM_OF_UNDYING
-    display-name: "&6&lTotem of Undying"
-    lore:
-      - "&7Cheat death once!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 1x Totem of Undying"
-      - ""
-      - "&7Price: &e80 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 80
-    items:
-      - material: TOTEM_OF_UNDYING
-        amount: 1
-
-  # Consumabili
-  golden-apples:
-    slot: 24
-    material: GOLDEN_APPLE
-    display-name: "&6&lGolden Apple Pack"
-    lore:
-      - "&7Healing and regeneration!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 16x Golden Apples"
-      - ""
-      - "&7Price: &e20 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 20
-    items:
-      - material: GOLDEN_APPLE
-        amount: 16
-
-  enchanted-golden-apple:
-    slot: 25
-    material: ENCHANTED_GOLDEN_APPLE
-    display-name: "&5&lEnchanted Golden Apple"
-    lore:
-      - "&7The ultimate healing item!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 1x Enchanted Golden Apple"
-      - ""
-      - "&7Price: &e30 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 30
-    items:
-      - material: ENCHANTED_GOLDEN_APPLE
-        amount: 1
-
-  experience-bottles:
-    slot: 28
     material: EXPERIENCE_BOTTLE
-    display-name: "&a&lExperience Bottles"
+    display-name: "<gradient:#00FF00:#00FFFF>✧ Experience Boost Elixir ✧</gradient>"
     lore:
-      - "&7Level up your enchantments!"
       - ""
-      - "&7You will receive:"
-      - "&f• 64x Experience Bottles"
+      - "<gradient:#00FF88:#45B7D1>Experience Elixir</gradient>"
+      - "&7A single dose of concentrated"
+      - "&7experience essence"
       - ""
-      - "&7Price: &e15 Battle Coins"
+      - "<gradient:#4ECDC4:#45B7D1>▼ Effect ▼</gradient>"
+      - "&7• Grants <gradient:#FFD93D:#FF6B6B>+100 Battle Pass XP</gradient>"
+      - "&7• Instant experience boost"
       - ""
-      - "&e&lCLICK TO PURCHASE"
+      - "&7Price: <gradient:#FFD93D:#FF6B6B>15 Battle Coins</gradient>"
+      - ""
+      - "<gradient:#00FF88:#45B7D1>▶ CLICK TO PURCHASE</gradient>"
     price: 15
-    items:
-      - material: EXPERIENCE_BOTTLE
-        amount: 64
-
-  ender-pearls:
-    slot: 29
-    material: ENDER_PEARL
-    display-name: "&5&lEnder Pearl Pack"
-    lore:
-      - "&7Teleport to safety!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 16x Ender Pearls"
-      - ""
-      - "&7Price: &e18 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 18
-    items:
-      - material: ENDER_PEARL
-        amount: 16
-
-  # Blocchi da costruzione
-  building-blocks:
-    slot: 30
-    material: QUARTZ_BLOCK
-    display-name: "&f&lBuilder's Pack"
-    lore:
-      - "&7Premium building materials!"
-      - ""
-      - "&7Contains:"
-      - "&f• 64x Quartz Blocks"
-      - "&f• 64x Sea Lanterns"
-      - "&f• 64x Prismarine Blocks"
-      - "&f• 64x Dark Prismarine"
-      - ""
-      - "&7Price: &e22 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 22
-    items:
-      - material: QUARTZ_BLOCK
-        amount: 64
-      - material: SEA_LANTERN
-        amount: 64
-      - material: PRISMARINE
-        amount: 64
-      - material: DARK_PRISMARINE
-        amount: 64
-
-  # Materiali rari
-  nether-star:
-    slot: 31
-    material: NETHER_STAR
-    display-name: "&f&lNether Star"
-    lore:
-      - "&7Create a beacon!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 1x Nether Star"
-      - ""
-      - "&7Price: &e70 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 70
-    items:
-      - material: NETHER_STAR
-        amount: 1
-
-  beacon:
-    slot: 32
-    material: BEACON
-    display-name: "&b&lBeacon"
-    lore:
-      - "&7Powerful area effects!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 1x Beacon"
-      - ""
-      - "&7Price: &e90 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 90
-    items:
-      - material: BEACON
-        amount: 1
-
-  # Oggetti per redstone
-  redstone-pack:
-    slot: 33
-    material: REDSTONE_BLOCK
-    display-name: "&c&lRedstone Engineer Pack"
-    lore:
-      - "&7Everything for redstone builds!"
-      - ""
-      - "&7Contains:"
-      - "&f• 64x Redstone Blocks"
-      - "&f• 32x Pistons"
-      - "&f• 32x Sticky Pistons"
-      - "&f• 16x Observers"
-      - "&f• 64x Redstone Repeaters"
-      - ""
-      - "&7Price: &e28 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 28
-    items:
-      - material: REDSTONE_BLOCK
-        amount: 64
-      - material: PISTON
-        amount: 32
-      - material: STICKY_PISTON
-        amount: 32
-      - material: OBSERVER
-        amount: 16
-      - material: REPEATER
-        amount: 64
-
-  # XP economico
-  xp-levels:
-    slot: 34
-    material: ENCHANTING_TABLE
-    display-name: "&5&lExperience Levels"
-    lore:
-      - "&7Direct XP level boost!"
-      - ""
-      - "&7You will receive:"
-      - "&f• 30 Experience Levels"
-      - ""
-      - "&7Price: &e12 Battle Coins"
-      - ""
-      - "&e&lCLICK TO PURCHASE"
-    price: 12
     commands:
-      - "xp give <player> 30L"
+      - "bp giveitem levelboost <player> 1"
+
+  xp-boost-bundle-small:
+    slot: 21
+    material: EXPERIENCE_BOTTLE
+    display-name: "<gradient:#00FF00:#00FFFF>✧ Small XP Bundle ✧</gradient>"
+    lore:
+      - ""
+      - "<gradient:#00FF88:#45B7D1>Experience Bundle</gradient>"
+      - "&7A collection of experience"
+      - "&7boost elixirs"
+      - ""
+      - "<gradient:#4ECDC4:#45B7D1>▼ Contains ▼</gradient>"
+      - "&7• <gradient:#FFD93D:#FF6B6B>5 Experience Elixirs</gradient>"
+      - "&7• Total: <gradient:#FFD93D:#FF6B6B>+500 Battle Pass XP</gradient>"
+      - ""
+      - "&7Price: <gradient:#FFD93D:#FF6B6B>70 Battle Coins</gradient>"
+      - "&8&oSave 5 coins!"
+      - ""
+      - "<gradient:#00FF88:#45B7D1>▶ CLICK TO PURCHASE</gradient>"
+    price: 70
+    commands:
+      - "bp giveitem levelboost <player> 5"
+
+  xp-boost-bundle-medium:
+    slot: 22
+    material: EXPERIENCE_BOTTLE
+    display-name: "<gradient:#00FF00:#00FFFF>✧ Medium XP Bundle ✧</gradient>"
+    lore:
+      - ""
+      - "<gradient:#00FF88:#45B7D1>Experience Bundle</gradient>"
+      - "&7A generous collection of"
+      - "&7experience boost elixirs"
+      - ""
+      - "<gradient:#4ECDC4:#45B7D1>▼ Contains ▼</gradient>"
+      - "&7• <gradient:#FFD93D:#FF6B6B>16 Experience Elixirs</gradient>"
+      - "&7• Total: <gradient:#FFD93D:#FF6B6B>+1,600 Battle Pass XP</gradient>"
+      - ""
+      - "&7Price: <gradient:#FFD93D:#FF6B6B>200 Battle Coins</gradient>"
+      - "&8&oSave 40 coins!"
+      - ""
+      - "<gradient:#00FF88:#45B7D1>▶ CLICK TO PURCHASE</gradient>"
+    price: 200
+    commands:
+      - "bp giveitem levelboost <player> 16"
+
+  xp-boost-bundle-large:
+    slot: 23
+    material: EXPERIENCE_BOTTLE
+    display-name: "<gradient:#00FF00:#00FFFF>✧ Large XP Bundle ✧</gradient>"
+    lore:
+      - ""
+      - "<gradient:#00FF88:#45B7D1>Experience Bundle</gradient>"
+      - "&7A massive collection of"
+      - "&7experience boost elixirs"
+      - ""
+      - "<gradient:#4ECDC4:#45B7D1>▼ Contains ▼</gradient>"
+      - "&7• <gradient:#FFD93D:#FF6B6B>32 Experience Elixirs</gradient>"
+      - "&7• Total: <gradient:#FFD93D:#FF6B6B>+3,200 Battle Pass XP</gradient>"
+      - ""
+      - "&7Price: <gradient:#FFD93D:#FF6B6B>380 Battle Coins</gradient>"
+      - "&8&oSave 100 coins!"
+      - ""
+      - "<gradient:#00FF88:#45B7D1>▶ CLICK TO PURCHASE</gradient>"
+    price: 380
+    commands:
+      - "bp giveitem levelboost <player> 32"
+
+  xp-boost-bundle-mega:
+    slot: 24
+    material: EXPERIENCE_BOTTLE
+    display-name: "<gradient:#00FF00:#00FFFF>✧ MEGA XP Bundle ✧</gradient>"
+    lore:
+      - ""
+      - "<gradient:#00FF88:#45B7D1>MEGA Experience Bundle</gradient>"
+      - "&7The ultimate collection of"
+      - "&7experience boost elixirs!"
+      - ""
+      - "<gradient:#4ECDC4:#45B7D1>▼ Contains ▼</gradient>"
+      - "&7• <gradient:#FFD93D:#FF6B6B>64 Experience Elixirs</gradient>"
+      - "&7• Total: <gradient:#FFD93D:#FF6B6B>+6,400 Battle Pass XP</gradient>"
+      - "&7• <gradient:#FF00FF:#00FFFF>★ BEST VALUE ★</gradient>"
+      - ""
+      - "&7Price: <gradient:#FFD93D:#FF6B6B>700 Battle Coins</gradient>"
+      - "&8&oSave 260 coins!"
+      - ""
+      - "<gradient:#00FF88:#45B7D1>▶ CLICK TO PURCHASE</gradient>"
+    price: 700
+    commands:
+      - "bp giveitem levelboost <player> 64"
