@@ -15,7 +15,7 @@ season:
 # - 1000 XP per level = 53,000 total XP (balanced for 30 days)
 # - 2000 XP per level = 106,000 total XP (hard)
 experience:
-  xp-per-level: 400
+  xp-per-level: 200
 
 # Daily reward configuration
 daily-reward:
@@ -53,3 +53,24 @@ shop:
 # Set to false to save resources on low-performance servers
 custom-items:
   sounds-enabled: true
+
+# GUI Customization
+# Customize the appearance of the Battle Pass GUI
+# You can use any valid Minecraft material name
+# Examples: DIAMOND_BLOCK, GOLD_BLOCK, EMERALD_BLOCK, GLOWSTONE, SEA_LANTERN, etc.
+gui:
+  # Blocks displayed for locked rewards (when player doesn't have the required level)
+  reward-locked:
+    # Free rewards locked block
+    free: GRAY_STAINED_GLASS
+    # Premium rewards locked block (when player has premium but not the level)
+    premium: GRAY_STAINED_GLASS
+
+  # Block displayed for premium rewards when player doesn't have premium pass
+  premium-no-pass: IRON_BARS
+
+  # Block displayed for available rewards (when player can claim)
+  reward-available: CHEST
+
+  # Separator blocks between premium and free rows (middle row)
+  separator: GRAY_STAINED_GLASS_PANE

@@ -96,8 +96,10 @@ public class GuiClickListener implements Listener {
                 handleDailyRewardClaim(player, currentPage);
                 break;
 
-            case CHEST:
-                handleRewardClaim(player, slot, currentPage);
+            default:
+                if (clicked.getType() == plugin.getConfigManager().getGuiRewardAvailableMaterial()) {
+                    handleRewardClaim(player, slot, currentPage);
+                }
                 break;
         }
     }

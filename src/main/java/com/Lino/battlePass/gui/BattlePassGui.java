@@ -99,8 +99,7 @@ public class BattlePassGui extends BaseGui {
         String rewardType = plugin.getMessageManager().getMessage(isPremium ? "reward-types.premium" : "reward-types.free");
 
         if (data.level >= level && hasAccess) {
-            // Can claim
-            ItemStack item = new ItemStack(Material.CHEST);
+            ItemStack item = new ItemStack(plugin.getConfigManager().getGuiRewardAvailableMaterial());
             ItemMeta meta = item.getItemMeta();
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-available.name",
                     "%level%", String.valueOf(level),
@@ -112,8 +111,7 @@ public class BattlePassGui extends BaseGui {
             return item;
 
         } else if (!hasAccess && isPremium) {
-            // Premium locked
-            ItemStack item = new ItemStack(Material.IRON_BARS);
+            ItemStack item = new ItemStack(plugin.getConfigManager().getGuiPremiumNoPassMaterial());
             ItemMeta meta = item.getItemMeta();
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-premium-locked.name",
                     "%level%", String.valueOf(level)));
@@ -124,8 +122,11 @@ public class BattlePassGui extends BaseGui {
             return item;
 
         } else {
-            // Level locked
-            ItemStack item = new ItemStack(Material.GRAY_STAINED_GLASS);
+            Material lockedMaterial = isPremium ?
+                    plugin.getConfigManager().getGuiPremiumLockedMaterial() :
+                    plugin.getConfigManager().getGuiFreeLockedMaterial();
+
+            ItemStack item = new ItemStack(lockedMaterial);
             ItemMeta meta = item.getItemMeta();
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-level-locked.name",
                     "%level%", String.valueOf(level),

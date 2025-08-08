@@ -1,6 +1,7 @@
 package com.Lino.battlePass.managers;
 
 import com.Lino.battlePass.BattlePass;
+import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -29,6 +30,12 @@ public class ConfigManager {
     private int missionResetHours = 24;
     private boolean customItemSoundsEnabled = true;
 
+    private Material guiFreeLockedMaterial = Material.GRAY_STAINED_GLASS;
+    private Material guiPremiumLockedMaterial = Material.GRAY_STAINED_GLASS;
+    private Material guiPremiumNoPassMaterial = Material.IRON_BARS;
+    private Material guiRewardAvailableMaterial = Material.CHEST;
+    private Material guiSeparatorMaterial = Material.GRAY_STAINED_GLASS_PANE;
+
     public ConfigManager(BattlePass plugin) {
         this.plugin = plugin;
         reload();
@@ -44,6 +51,12 @@ public class ConfigManager {
         coinsDistributionHours = config.getInt("battle-coins.distribution-hours", 24);
         missionResetHours = config.getInt("missions.reset-hours", 24);
         customItemSoundsEnabled = config.getBoolean("custom-items.sounds-enabled", true);
+
+        guiFreeLockedMaterial = parseMaterial(config.getString("gui.reward-locked.free", "GRAY_STAINED_GLASS"), Material.GRAY_STAINED_GLASS);
+        guiPremiumLockedMaterial = parseMaterial(config.getString("gui.reward-locked.premium", "GRAY_STAINED_GLASS"), Material.GRAY_STAINED_GLASS);
+        guiPremiumNoPassMaterial = parseMaterial(config.getString("gui.premium-no-pass", "IRON_BARS"), Material.IRON_BARS);
+        guiRewardAvailableMaterial = parseMaterial(config.getString("gui.reward-available", "CHEST"), Material.CHEST);
+        guiSeparatorMaterial = parseMaterial(config.getString("gui.separator", "GRAY_STAINED_GLASS_PANE"), Material.GRAY_STAINED_GLASS_PANE);
 
         coinsDistribution.clear();
         for (int i = 1; i <= 10; i++) {
@@ -68,6 +81,19 @@ public class ConfigManager {
             plugin.saveResource("BattlePassPREMIUM.yml", false);
         }
         battlePassPremiumConfig = YamlConfiguration.loadConfiguration(battlePassPremiumFile);
+    }
+
+    private Material parseMaterial(String materialName, Material defaultMaterial) {
+        if (materialName == null || materialName.isEmpty()) {
+            return defaultMaterial;
+        }
+
+        try {
+            return Material.valueOf(materialName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid material '" + materialName + "' in config. Using default: " + defaultMaterial.name());
+            return defaultMaterial;
+        }
     }
 
     public FileConfiguration getConfig() {
@@ -128,5 +154,25 @@ public class ConfigManager {
 
     public boolean isCustomItemSoundsEnabled() {
         return customItemSoundsEnabled;
+    }
+
+    public Material getGuiFreeLockedMaterial() {
+        return guiFreeLockedMaterial;
+    }
+
+    public Material getGuiPremiumLockedMaterial() {
+        return guiPremiumLockedMaterial;
+    }
+
+    public Material getGuiPremiumNoPassMaterial() {
+        return guiPremiumNoPassMaterial;
+    }
+
+    public Material getGuiRewardAvailableMaterial() {
+        return guiRewardAvailableMaterial;
+    }
+
+    public Material getGuiSeparatorMaterial() {
+        return guiSeparatorMaterial;
     }
 }
