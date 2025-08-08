@@ -1,8 +1,9 @@
 name: BattlePass
-version: '5.6'
+version: '5.7'
 main: com.Lino.battlePass.BattlePass
 api-version: '1.21'
 author: Lino
+website: https://www.spigotmc.org/resources/battlepass.125992/
 
 commands:
   battlepass:
