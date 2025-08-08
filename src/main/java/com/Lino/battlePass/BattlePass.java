@@ -3,6 +3,7 @@ package com.Lino.battlePass;
 import com.Lino.battlePass.commands.BattlePassTabCompleter;
 import com.Lino.battlePass.listeners.MissionProgressListener;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import com.Lino.battlePass.managers.*;
 import com.Lino.battlePass.commands.BattlePassCommand;
@@ -180,6 +181,46 @@ public class BattlePass extends JavaPlugin {
         rewardManager.loadRewards();
         shopManager.reload();
         guiManager.clearCache();
+
+        // Chiudi e riapri la GUI per tutti i giocatori che la stanno visualizzando
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getOpenInventory() != null && player.getOpenInventory().getTitle() != null) {
+                String title = player.getOpenInventory().getTitle();
+                boolean isBattlePassGUI = false;
+                int currentPage = 1;
+
+                for (int i = 1; i <= 6; i++) {
+                    if (title.equals(messageManager.getMessage("gui.battlepass", "%page%", String.valueOf(i)))) {
+                        isBattlePassGUI = true;
+                        currentPage = i;
+                        break;
+                    }
+                }
+
+                if (isBattlePassGUI) {
+                    player.closeInventory();
+                    final int page = currentPage;
+                    Bukkit.getScheduler().runTaskLater(this, () -> {
+                        guiManager.openBattlePassGUI(player, page);
+                    }, 1L);
+                } else if (title.equals(messageManager.getMessage("gui.leaderboard"))) {
+                    player.closeInventory();
+                    Bukkit.getScheduler().runTaskLater(this, () -> {
+                        guiManager.openLeaderboardGUI(player);
+                    }, 1L);
+                } else if (title.equals(messageManager.getMessage("gui.missions"))) {
+                    player.closeInventory();
+                    Bukkit.getScheduler().runTaskLater(this, () -> {
+                        guiManager.openMissionsGUI(player);
+                    }, 1L);
+                } else if (title.equals(messageManager.getMessage("gui.shop"))) {
+                    player.closeInventory();
+                    Bukkit.getScheduler().runTaskLater(this, () -> {
+                        guiManager.openShopGUI(player);
+                    }, 1L);
+                }
+            }
+        }
     }
 
     public boolean isUpdateAvailable() {

@@ -167,7 +167,7 @@ public class BattlePassGui extends BaseGui {
     }
 
     private void setupSeparator(Inventory gui) {
-        ItemStack separator = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemStack separator = new ItemStack(plugin.getConfigManager().getGuiSeparatorMaterial());
         ItemMeta meta = separator.getItemMeta();
         meta.setDisplayName(plugin.getMessageManager().getMessage("items.separator.name"));
         separator.setItemMeta(meta);
