@@ -16,6 +16,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 public class RewardsEditorListener implements Listener {
@@ -185,7 +186,44 @@ public class RewardsEditorListener implements Listener {
     }
 
     private void handleLevelEditClick(Player player, InventoryClickEvent event) {
+    {
+        Player player = (Player) event.getWhoClicked();
+        Inventory topInv = event.getView().getTopInventory();
+        Inventory clickedInv = event.getClickedInventory();
         int slot = event.getSlot();
+
+        if (clickedInv == null) return;
+
+        // Click inside top inventory (GUI)
+        if (clickedInv.equals(topInv)) {
+            // Reward slots
+            if (slot >= 0 && slot <= 35) {
+                event.setCancelled(true);
+                LevelRewardEditGui editor = guiManager.getOpenLevelRewardEditor(player);
+                if (editor == null) return;
+                if (event.getCursor() != null && event.getCursor().getType() != Material.AIR) {
+                    // Add reward from cursor
+                    ItemStack item = event.getCursor().clone();
+                    editor.addRewardAt(slot, new EditableReward(item));
+                    topInv.setItem(slot, item);
+                    event.setCursor(null);
+                } else {
+                    // Remove reward
+                    editor.removeRewardAt(slot);
+                    topInv.setItem(slot, null);
+                }
+                return;
+            }
+            // Buttons and controls
+            if (slot >= 36) {
+                event.setCancelled(true);
+                guiManager.handleEditorButtonClick(player, slot);
+                return;
+            }
+        }
+
+        // Click inside player's own inventory: allow normal pickup/place
+    }
         LevelRewardEditGui editor = plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId());
 
         if (editor == null) {

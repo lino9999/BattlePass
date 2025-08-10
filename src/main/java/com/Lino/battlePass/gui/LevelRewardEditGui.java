@@ -205,6 +205,15 @@ public class LevelRewardEditGui {
         currentRewards.add(reward);
     }
 
+    public void addRewardAt(int index, EditableReward reward) {
+        if (index < 0 || index >= 36) return;
+        while (currentRewards.size() <= index) {
+            currentRewards.add(null);
+        }
+        currentRewards.set(index, reward);
+    }
+
+
     public void removeReward(int index) {
         if (index >= 0 && index < currentRewards.size()) {
             currentRewards.remove(index);
