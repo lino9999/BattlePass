@@ -33,6 +33,7 @@ public class BattlePass extends JavaPlugin {
     private CoinsDistributionTask coinsDistributionTask;
     private CustomItemManager customItemManager;
     private SoundManager soundManager;
+    private RewardEditorManager rewardEditorManager;
 
     private boolean updateAvailable = false;
     private String latestVersion = "";
@@ -57,6 +58,7 @@ public class BattlePass extends JavaPlugin {
         customItemManager = new CustomItemManager(this);
         soundManager = new SoundManager(this, customItemManager);
         guiManager = new GuiManager(this, playerDataManager, missionManager, rewardManager, messageManager, configManager);
+        rewardEditorManager = new RewardEditorManager(this);
 
         databaseManager.initialize().thenRun(() -> {
             getServer().getScheduler().runTask(this, () -> {
@@ -182,7 +184,6 @@ public class BattlePass extends JavaPlugin {
         shopManager.reload();
         guiManager.clearCache();
 
-        // Chiudi e riapri la GUI per tutti i giocatori che la stanno visualizzando
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getOpenInventory() != null && player.getOpenInventory().getTitle() != null) {
                 String title = player.getOpenInventory().getTitle();
@@ -288,5 +289,9 @@ public class BattlePass extends JavaPlugin {
             return eventManager.getMissionProgressListener();
         }
         return null;
+    }
+
+    public RewardEditorManager getRewardEditorManager() {
+        return rewardEditorManager;
     }
 }

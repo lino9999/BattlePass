@@ -96,6 +96,12 @@ public class GuiClickListener implements Listener {
                 handleDailyRewardClaim(player, currentPage);
                 break;
 
+            case COMMAND_BLOCK:
+                if (player.hasPermission("battlepass.admin") && slot == 46) {
+                    new com.Lino.battlePass.gui.RewardsEditorGui(plugin, player).open();
+                }
+                break;
+
             default:
                 if (clicked.getType() == plugin.getConfigManager().getGuiRewardAvailableMaterial()) {
                     handleRewardClaim(player, slot, currentPage);

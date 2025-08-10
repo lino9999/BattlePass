@@ -1,11 +1,14 @@
 package com.Lino.battlePass.managers;
 
 import com.Lino.battlePass.BattlePass;
+import com.Lino.battlePass.models.EditableReward;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.models.Reward;
+import com.Lino.battlePass.utils.ItemSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -126,7 +129,6 @@ public class RewardManager {
                 ItemStack item = new ItemStack(reward.material, reward.amount);
                 HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(item);
 
-                // Drop items that don't fit in inventory
                 if (!leftover.isEmpty()) {
                     for (ItemStack drop : leftover.values()) {
                         player.getWorld().dropItemNaturally(player.getLocation(), drop);
@@ -177,5 +179,56 @@ public class RewardManager {
 
     public Map<Integer, List<Reward>> getPremiumRewardsByLevel() {
         return premiumRewardsByLevel;
+    }
+
+    public List<EditableReward> getEditableRewards(int level, boolean isPremium) {
+        List<EditableReward> editableRewards = new ArrayList<>();
+
+        FileConfiguration config = isPremium ?
+                configManager.getBattlePassPremiumConfig() :
+                configManager.getBattlePassFreeConfig();
+
+        String levelPath = "level-" + level;
+
+        if (!config.contains(levelPath)) {
+            return editableRewards;
+        }
+
+        ConfigurationSection levelSection = config.getConfigurationSection(levelPath);
+        if (levelSection == null) {
+            return editableRewards;
+        }
+
+        if (levelSection.contains("command")) {
+            String command = levelSection.getString("command");
+            String display = levelSection.getString("display", "Mystery Reward");
+            editableRewards.add(new EditableReward(command, display));
+        } else if (levelSection.contains("material")) {
+            ItemStack item = ItemSerializer.loadItemFromConfig(levelSection);
+            if (item != null) {
+                editableRewards.add(new EditableReward(item));
+            }
+        } else if (levelSection.contains("items")) {
+            ConfigurationSection itemsSection = levelSection.getConfigurationSection("items");
+            if (itemsSection != null) {
+                for (String key : itemsSection.getKeys(false)) {
+                    ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
+                    if (itemSection != null) {
+                        if (itemSection.contains("command")) {
+                            String command = itemSection.getString("command");
+                            String display = itemSection.getString("display", "Mystery Reward");
+                            editableRewards.add(new EditableReward(command, display));
+                        } else {
+                            ItemStack item = ItemSerializer.loadItemFromConfig(itemSection);
+                            if (item != null) {
+                                editableRewards.add(new EditableReward(item));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return editableRewards;
     }
 }

@@ -12,6 +12,7 @@ public class EventManager {
     private final MissionProgressListener missionProgressListener;
     private final CustomItemsListener customItemsListener;
     private final GuiClickListener guiClickListener;
+    private final RewardsEditorListener rewardsEditorListener;
 
     public EventManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -21,6 +22,7 @@ public class EventManager {
         this.missionProgressListener = new MissionProgressListener(plugin);
         this.customItemsListener = new CustomItemsListener(plugin);
         this.guiClickListener = new GuiClickListener(plugin);
+        this.rewardsEditorListener = new RewardsEditorListener(plugin);
 
         registerListeners();
     }
@@ -30,6 +32,7 @@ public class EventManager {
         plugin.getServer().getPluginManager().registerEvents(missionProgressListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(customItemsListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(guiClickListener, plugin);
+        plugin.getServer().getPluginManager().registerEvents(rewardsEditorListener, plugin);
     }
 
     public PlayerConnectionListener getPlayerConnectionListener() {

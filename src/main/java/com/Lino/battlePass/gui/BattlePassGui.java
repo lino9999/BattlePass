@@ -73,24 +73,20 @@ public class BattlePassGui extends BaseGui {
         for (int i = 0; i <= 8 && startLevel + i <= 54; i++) {
             int level = startLevel + i;
 
-            // Premium rewards (top row)
             List<Reward> premiumLevel = premiumRewards.get(level);
             if (premiumLevel != null && !premiumLevel.isEmpty()) {
                 if (!playerData.claimedPremiumRewards.contains(level)) {
                     ItemStack premiumItem = createRewardItem(premiumLevel, level, playerData, playerData.hasPremium, true);
                     gui.setItem(9 + i, premiumItem);
                 }
-                // If claimed, leave the slot empty
             }
 
-            // Free rewards (bottom row)
             List<Reward> freeLevel = freeRewards.get(level);
             if (freeLevel != null && !freeLevel.isEmpty()) {
                 if (!playerData.claimedFreeRewards.contains(level)) {
                     ItemStack freeItem = createRewardItem(freeLevel, level, playerData, true, false);
                     gui.setItem(27 + i, freeItem);
                 }
-                // If claimed, leave the slot empty
             }
         }
     }
@@ -224,7 +220,6 @@ public class BattlePassGui extends BaseGui {
     }
 
     private void setupActionButtons(Inventory gui) {
-        // Missions button
         ItemStack missions = new ItemStack(Material.BOOK);
         ItemMeta missionsMeta = missions.getItemMeta();
         missionsMeta.setDisplayName(plugin.getMessageManager().getMessage("items.missions-button.name"));
@@ -238,7 +233,6 @@ public class BattlePassGui extends BaseGui {
         missions.setItemMeta(missionsMeta);
         gui.setItem(49, missions);
 
-        // Leaderboard button
         ItemStack leaderboard = new ItemStack(Material.GOLDEN_HELMET);
         ItemMeta leaderboardMeta = leaderboard.getItemMeta();
         leaderboardMeta.setDisplayName(plugin.getMessageManager().getMessage("items.leaderboard-button.name"));
@@ -255,7 +249,6 @@ public class BattlePassGui extends BaseGui {
         leaderboard.setItemMeta(leaderboardMeta);
         gui.setItem(48, leaderboard);
 
-        // Shop button (if enabled)
         if (plugin.getConfigManager().isShopEnabled()) {
             ItemStack shop = new ItemStack(Material.GOLD_INGOT);
             ItemMeta shopMeta = shop.getItemMeta();
@@ -271,7 +264,6 @@ public class BattlePassGui extends BaseGui {
             gui.setItem(47, shop);
         }
 
-        // Daily reward button
         ItemStack dailyReward = new ItemStack(Material.SUNFLOWER);
         ItemMeta dailyMeta = dailyReward.getItemMeta();
         dailyMeta.setDisplayName(plugin.getMessageManager().getMessage("items.daily-reward.name"));
@@ -290,5 +282,23 @@ public class BattlePassGui extends BaseGui {
         dailyMeta.setLore(dailyLore);
         dailyReward.setItemMeta(dailyMeta);
         gui.setItem(50, dailyReward);
+
+        if (player.hasPermission("battlepass.admin")) {
+            ItemStack rewardsEditor = new ItemStack(Material.COMMAND_BLOCK);
+            ItemMeta editorMeta = rewardsEditor.getItemMeta();
+            editorMeta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>⚙ Rewards Editor</gradient>"));
+
+            List<String> editorLore = new ArrayList<>();
+            editorLore.add("");
+            editorLore.add(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Admin Only</gradient>"));
+            editorLore.add(GradientColorParser.parse("&7Edit battle pass rewards"));
+            editorLore.add(GradientColorParser.parse("&7for all levels"));
+            editorLore.add("");
+            editorLore.add(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>▶ CLICK TO OPEN</gradient>"));
+
+            editorMeta.setLore(editorLore);
+            rewardsEditor.setItemMeta(editorMeta);
+            gui.setItem(46, rewardsEditor);
+        }
     }
 }
