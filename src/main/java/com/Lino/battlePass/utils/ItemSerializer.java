@@ -23,51 +23,28 @@ public class ItemSerializer {
             return;
         }
 
-        section.set("material", item.getType().name());
-        section.set("amount", item.getAmount());
-
-        if (item.hasItemMeta()) {
-            ItemMeta meta = item.getItemMeta();
-
-            if (meta.hasDisplayName()) {
-                section.set("display-name", meta.getDisplayName());
-            }
-
-            if (meta.hasLore()) {
-                section.set("lore", meta.getLore());
-            }
-
-            if (!meta.getEnchants().isEmpty()) {
-                ConfigurationSection enchantSection = section.createSection("enchantments");
-                for (Map.Entry<Enchantment, Integer> entry : meta.getEnchants().entrySet()) {
-                    enchantSection.set(entry.getKey().getName(), entry.getValue());
-                }
-            }
-
-            if (!meta.getItemFlags().isEmpty()) {
-                List<String> flags = new ArrayList<>();
-                for (ItemFlag flag : meta.getItemFlags()) {
-                    flags.add(flag.name());
-                }
-                section.set("item-flags", flags);
-            }
-
-            if (meta.hasCustomModelData()) {
-                section.set("custom-model-data", meta.getCustomModelData());
-            }
-
-            if (meta.isUnbreakable()) {
-                section.set("unbreakable", true);
-            }
-        }
-
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
             dataOutput.writeObject(item);
             dataOutput.close();
             String base64 = Base64Coder.encodeLines(outputStream.toByteArray());
-            section.set("data", base64);
+            section.set("serialized-item", base64);
+
+            section.set("material", item.getType().name());
+            section.set("amount", item.getAmount());
+
+            if (item.hasItemMeta()) {
+                ItemMeta meta = item.getItemMeta();
+
+                if (meta.hasDisplayName()) {
+                    section.set("display-name", meta.getDisplayName());
+                }
+
+                if (meta.hasLore()) {
+                    section.set("lore", meta.getLore());
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -78,9 +55,9 @@ public class ItemSerializer {
             return null;
         }
 
-        if (section.contains("data")) {
+        if (section.contains("serialized-item")) {
             try {
-                String data = section.getString("data");
+                String data = section.getString("serialized-item");
                 ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64Coder.decodeLines(data));
                 BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
                 ItemStack item = (ItemStack) dataInput.readObject();

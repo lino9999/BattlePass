@@ -119,6 +119,12 @@ public class RewardManager {
         StringBuilder message = new StringBuilder(messageManager.getPrefix() + messageManager.getMessage(
                 isPremium ? "messages.rewards.premium-claimed" : "messages.rewards.free-claimed"));
 
+        FileConfiguration config = isPremium ?
+                configManager.getBattlePassPremiumConfig() :
+                configManager.getBattlePassFreeConfig();
+
+        String levelPath = "level-" + level;
+
         for (Reward reward : rewards) {
             if (reward.command != null) {
                 String command = reward.command.replace("<player>", player.getName());
@@ -126,20 +132,50 @@ public class RewardManager {
                 message.append("\n").append(messageManager.getMessage("messages.rewards.command-reward",
                         "%reward%", reward.displayName));
             } else {
-                ItemStack item = new ItemStack(reward.material, reward.amount);
+                ItemStack item = null;
+
+                if (config.contains(levelPath)) {
+                    ConfigurationSection levelSection = config.getConfigurationSection(levelPath);
+                    if (levelSection != null) {
+                        if (levelSection.contains("serialized-item")) {
+                            item = ItemSerializer.loadItemFromConfig(levelSection);
+                        } else if (levelSection.contains("items")) {
+                            ConfigurationSection itemsSection = levelSection.getConfigurationSection("items");
+                            if (itemsSection != null) {
+                                for (String key : itemsSection.getKeys(false)) {
+                                    ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
+                                    if (itemSection != null && !itemSection.contains("command")) {
+                                        ItemStack loadedItem = ItemSerializer.loadItemFromConfig(itemSection);
+                                        if (loadedItem != null && loadedItem.getType() == reward.material) {
+                                            item = loadedItem;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (item == null) {
+                    item = new ItemStack(reward.material, reward.amount);
+                }
+
                 HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(item);
+
+                String itemName = formatMaterial(item.getType());
 
                 if (!leftover.isEmpty()) {
                     for (ItemStack drop : leftover.values()) {
                         player.getWorld().dropItemNaturally(player.getLocation(), drop);
                     }
                     message.append("\n").append(messageManager.getMessage("messages.rewards.item-reward-dropped",
-                            "%amount%", String.valueOf(reward.amount),
-                            "%item%", formatMaterial(reward.material)));
+                            "%amount%", String.valueOf(item.getAmount()),
+                            "%item%", itemName));
                 } else {
                     message.append("\n").append(messageManager.getMessage("messages.rewards.item-reward",
-                            "%amount%", String.valueOf(reward.amount),
-                            "%item%", formatMaterial(reward.material)));
+                            "%amount%", String.valueOf(item.getAmount()),
+                            "%item%", itemName));
                 }
             }
         }

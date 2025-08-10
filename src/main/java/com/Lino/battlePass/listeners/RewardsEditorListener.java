@@ -12,11 +12,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 public class RewardsEditorListener implements Listener {
@@ -31,52 +31,43 @@ public class RewardsEditorListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
-        String title = ChatColor.stripColor(event.getView().getTitle());
+        if (!(event.getWhoClicked() instanceof Player)) return;
+
         Player player = (Player) event.getWhoClicked();
+        String title = ChatColor.stripColor(event.getView().getTitle());
 
         if (title == null) return;
 
         if (title.contains(REWARDS_EDITOR_TITLE)) {
             event.setCancelled(true);
             handleRewardsEditorClick(player, event.getSlot());
+
         } else if (title.contains(FREE_REWARDS_TITLE) || title.contains(PREMIUM_REWARDS_TITLE)) {
             event.setCancelled(true);
             handleRewardsCategoryClick(player, event.getSlot(), title.contains(PREMIUM_REWARDS_TITLE));
+
         } else if (title.contains(EDIT_LEVEL_TITLE)) {
             handleLevelEditClick(player, event);
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onInventoryDrag(InventoryDragEvent event) {
-        String title = ChatColor.stripColor(event.getView().getTitle());
-
-        if (title != null && title.contains(EDIT_LEVEL_TITLE)) {
-            Player player = (Player) event.getWhoClicked();
-            LevelRewardEditGui editor = plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId());
-
-            if (editor != null) {
-                for (Integer slot : event.getRawSlots()) {
-                    if (slot >= 0 && slot < 36 && slot < event.getView().getTopInventory().getSize()) {
-                        event.setCancelled(true);
-                        return;
-                    }
-                }
-            }
-        }
-    }
-
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof Player)) return;
+
         Player player = (Player) event.getPlayer();
         String title = ChatColor.stripColor(event.getView().getTitle());
 
         if (title != null && title.contains(EDIT_LEVEL_TITLE)) {
-            LevelRewardEditGui editor = plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId());
-            if (editor != null && !plugin.getRewardEditorManager().hasCommandInput(player.getUniqueId())) {
-                plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
+            if (!plugin.getRewardEditorManager().hasCommandInput(player.getUniqueId())) {
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    String newTitle = ChatColor.stripColor(player.getOpenInventory().getTitle());
+                    if (newTitle == null || !newTitle.contains(EDIT_LEVEL_TITLE)) {
+                        plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
+                    }
+                }, 5L);
             }
         }
     }
@@ -87,7 +78,6 @@ public class RewardsEditorListener implements Listener {
 
         if (plugin.getRewardEditorManager().hasCommandInput(player.getUniqueId())) {
             event.setCancelled(true);
-
             String message = event.getMessage();
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 plugin.getRewardEditorManager().handleCommandInput(player, message);
@@ -96,33 +86,25 @@ public class RewardsEditorListener implements Listener {
     }
 
     private void handleRewardsEditorClick(Player player, int slot) {
-        plugin.getLogger().info("Rewards Editor Click - Slot: " + slot);
-
         switch (slot) {
             case 11:
-                plugin.getLogger().info("Opening Free Rewards Category");
                 player.closeInventory();
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     new RewardsCategoryGui(plugin, player, false, 1).open();
                 }, 1L);
                 break;
             case 15:
-                plugin.getLogger().info("Opening Premium Rewards Category");
                 player.closeInventory();
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     new RewardsCategoryGui(plugin, player, true, 1).open();
                 }, 1L);
                 break;
             case 22:
-                plugin.getLogger().info("Going back to Battle Pass");
                 int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
                 player.closeInventory();
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     plugin.getGuiManager().openBattlePassGUI(player, page);
                 }, 1L);
-                break;
-            default:
-                plugin.getLogger().info("Unknown slot clicked: " + slot);
                 break;
         }
     }
@@ -138,14 +120,11 @@ public class RewardsEditorListener implements Listener {
             } catch (NumberFormatException ignored) {}
         }
 
-        plugin.getLogger().info("Category Click - Slot: " + slot + ", Premium: " + isPremium + ", Page: " + currentPage);
-
         if (slot < 45) {
             int startLevel = (currentPage - 1) * 45 + 1;
             int level = startLevel + slot;
 
             if (level <= 54) {
-                plugin.getLogger().info("Opening Level Editor for level " + level);
                 player.closeInventory();
                 final int finalLevel = level;
                 final boolean finalIsPremium = isPremium;
@@ -154,7 +133,6 @@ public class RewardsEditorListener implements Listener {
                 }, 1L);
             }
         } else if (slot == 45 && currentPage > 1) {
-            plugin.getLogger().info("Previous page");
             player.closeInventory();
             final int prevPage = currentPage - 1;
             final boolean finalIsPremium = isPremium;
@@ -162,7 +140,6 @@ public class RewardsEditorListener implements Listener {
                 new RewardsCategoryGui(plugin, player, finalIsPremium, prevPage).open();
             }, 1L);
         } else if (slot == 53 && ((currentPage - 1) * 45 + 45) < 54) {
-            plugin.getLogger().info("Next page");
             player.closeInventory();
             final int nextPage = currentPage + 1;
             final boolean finalIsPremium = isPremium;
@@ -170,13 +147,11 @@ public class RewardsEditorListener implements Listener {
                 new RewardsCategoryGui(plugin, player, finalIsPremium, nextPage).open();
             }, 1L);
         } else if (slot == 48) {
-            plugin.getLogger().info("Back to Rewards Editor");
             player.closeInventory();
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 new RewardsEditorGui(plugin, player).open();
             }, 1L);
         } else if (slot == 49) {
-            plugin.getLogger().info("Saving all rewards");
             player.closeInventory();
             plugin.getRewardEditorManager().saveAllRewards(player);
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -186,44 +161,6 @@ public class RewardsEditorListener implements Listener {
     }
 
     private void handleLevelEditClick(Player player, InventoryClickEvent event) {
-    {
-        Player player = (Player) event.getWhoClicked();
-        Inventory topInv = event.getView().getTopInventory();
-        Inventory clickedInv = event.getClickedInventory();
-        int slot = event.getSlot();
-
-        if (clickedInv == null) return;
-
-        // Click inside top inventory (GUI)
-        if (clickedInv.equals(topInv)) {
-            // Reward slots
-            if (slot >= 0 && slot <= 35) {
-                event.setCancelled(true);
-                LevelRewardEditGui editor = guiManager.getOpenLevelRewardEditor(player);
-                if (editor == null) return;
-                if (event.getCursor() != null && event.getCursor().getType() != Material.AIR) {
-                    // Add reward from cursor
-                    ItemStack item = event.getCursor().clone();
-                    editor.addRewardAt(slot, new EditableReward(item));
-                    topInv.setItem(slot, item);
-                    event.setCursor(null);
-                } else {
-                    // Remove reward
-                    editor.removeRewardAt(slot);
-                    topInv.setItem(slot, null);
-                }
-                return;
-            }
-            // Buttons and controls
-            if (slot >= 36) {
-                event.setCancelled(true);
-                guiManager.handleEditorButtonClick(player, slot);
-                return;
-            }
-        }
-
-        // Click inside player's own inventory: allow normal pickup/place
-    }
         LevelRewardEditGui editor = plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId());
 
         if (editor == null) {
@@ -231,64 +168,93 @@ public class RewardsEditorListener implements Listener {
             return;
         }
 
-        plugin.getLogger().info("Level Edit Click - Slot: " + slot);
+        int clickedSlot = event.getSlot();
+        int rawSlot = event.getRawSlot();
+        int inventorySize = event.getInventory().getSize();
 
-        if (slot < 36) {
-            if (event.getCurrentItem() != null && event.getCurrentItem().getType() != Material.AIR) {
-                event.setCancelled(true);
-                plugin.getLogger().info("Removing reward at slot " + slot);
-                editor.removeReward(slot);
-                player.closeInventory();
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    editor.open();
-                }, 1L);
-            } else if (event.getCursor() != null && event.getCursor().getType() != Material.AIR) {
-                ItemStack item = event.getCursor().clone();
-                plugin.getLogger().info("Adding item reward: " + item.getType());
-                editor.addReward(new EditableReward(item));
-                event.setCancelled(true);
-                player.closeInventory();
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    editor.open();
-                }, 1L);
+        if (rawSlot >= inventorySize) {
+            if (event.getAction() == InventoryAction.PICKUP_ALL ||
+                    event.getAction() == InventoryAction.PICKUP_HALF ||
+                    event.getAction() == InventoryAction.PICKUP_ONE ||
+                    event.getAction() == InventoryAction.PICKUP_SOME) {
+                return;
             }
-        } else if (slot >= 36 && slot < 54) {
-            event.setCancelled(true);
 
-            switch (slot) {
-                case 46:
-                    plugin.getLogger().info("Starting command input");
-                    plugin.getRewardEditorManager().startCommandInput(player, editor.getLevel(), editor.isPremium());
-                    break;
-                case 48:
-                    plugin.getLogger().info("Cancelling edit");
-                    plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
-                    player.closeInventory();
-                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                        new RewardsCategoryGui(plugin, player, editor.isPremium(),
-                                ((editor.getLevel() - 1) / 45) + 1).open();
-                    }, 1L);
-                    break;
-                case 49:
-                    plugin.getLogger().info("Saving rewards for level " + editor.getLevel());
-                    plugin.getRewardEditorManager().saveRewards(player, editor.getLevel(),
-                            editor.isPremium(), editor.getCurrentRewards());
-                    plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
-                    player.closeInventory();
-                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                        new RewardsCategoryGui(plugin, player, editor.isPremium(),
-                                ((editor.getLevel() - 1) / 45) + 1).open();
-                    }, 1L);
-                    break;
-                case 50:
-                    plugin.getLogger().info("Clearing all rewards");
-                    editor.clearRewards();
-                    player.closeInventory();
-                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                        editor.open();
-                    }, 1L);
-                    break;
+            if (event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT) {
+                ItemStack item = event.getCurrentItem();
+                if (item != null && item.getType() != Material.AIR) {
+                    event.setCancelled(true);
+                    editor.addReward(new EditableReward(item.clone()));
+                    refreshEditor(player, editor);
+                }
+            }
+            return;
+        }
+
+        event.setCancelled(true);
+
+        if (rawSlot >= 0 && rawSlot < 36) {
+            ItemStack currentItem = event.getInventory().getItem(rawSlot);
+            ItemStack cursorItem = event.getCursor();
+
+            if (currentItem != null && currentItem.getType() != Material.AIR) {
+                editor.removeReward(rawSlot);
+                refreshEditor(player, editor);
+            }
+            else if (cursorItem != null && cursorItem.getType() != Material.AIR) {
+                editor.addReward(new EditableReward(cursorItem.clone()));
+                event.getView().setCursor(null);
+                refreshEditor(player, editor);
             }
         }
+        else if (rawSlot >= 36 && rawSlot < 54) {
+            handleControlButtons(player, editor, rawSlot);
+        }
+    }
+
+    private void handleControlButtons(Player player, LevelRewardEditGui editor, int slot) {
+        switch (slot) {
+            case 45:
+                break;
+
+            case 46:
+                plugin.getRewardEditorManager().startCommandInput(player, editor.getLevel(), editor.isPremium());
+                break;
+
+            case 48:
+                plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
+                player.closeInventory();
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    new RewardsCategoryGui(plugin, player, editor.isPremium(),
+                            ((editor.getLevel() - 1) / 45) + 1).open();
+                }, 1L);
+                break;
+
+            case 49:
+                plugin.getRewardEditorManager().saveRewards(player, editor.getLevel(),
+                        editor.isPremium(), editor.getCurrentRewards());
+                plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
+                player.closeInventory();
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    new RewardsCategoryGui(plugin, player, editor.isPremium(),
+                            ((editor.getLevel() - 1) / 45) + 1).open();
+                }, 1L);
+                break;
+
+            case 50:
+                editor.clearRewards();
+                refreshEditor(player, editor);
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    private void refreshEditor(Player player, LevelRewardEditGui editor) {
+        player.closeInventory();
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            editor.open();
+        }, 1L);
     }
 }

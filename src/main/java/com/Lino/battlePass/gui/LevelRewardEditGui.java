@@ -33,8 +33,6 @@ public class LevelRewardEditGui {
     }
 
     private void loadCurrentRewards() {
-        // Temporaneamente, se getEditableRewards non è disponibile,
-        // usa questo approccio alternativo
         try {
             List<EditableReward> rewards = plugin.getRewardManager().getEditableRewards(level, isPremium);
             if (rewards != null) {
@@ -42,7 +40,6 @@ public class LevelRewardEditGui {
             }
         } catch (Exception e) {
             // Se il metodo non esiste, lascia la lista vuota
-            plugin.getLogger().warning("Could not load rewards for level " + level + ": " + e.getMessage());
         }
     }
 
@@ -204,15 +201,6 @@ public class LevelRewardEditGui {
     public void addReward(EditableReward reward) {
         currentRewards.add(reward);
     }
-
-    public void addRewardAt(int index, EditableReward reward) {
-        if (index < 0 || index >= 36) return;
-        while (currentRewards.size() <= index) {
-            currentRewards.add(null);
-        }
-        currentRewards.set(index, reward);
-    }
-
 
     public void removeReward(int index) {
         if (index >= 0 && index < currentRewards.size()) {
