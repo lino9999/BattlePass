@@ -72,5 +72,13 @@ gui:
   # Block displayed for available rewards (when player can claim)
   reward-available: CHEST
 
+  # Blocks displayed for already claimed rewards
+  # Use 'NONE' to hide the slot completely (empty slot)
+  reward-claimed:
+    # Free rewards claimed block
+    free: GREEN_STAINED_GLASS
+    # Premium rewards claimed block
+    premium: LIME_STAINED_GLASS
+
   # Separator blocks between premium and free rows (middle row)
   separator: GRAY_STAINED_GLASS_PANE

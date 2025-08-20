@@ -35,6 +35,10 @@ public class ConfigManager {
     private Material guiPremiumNoPassMaterial = Material.IRON_BARS;
     private Material guiRewardAvailableMaterial = Material.CHEST;
     private Material guiSeparatorMaterial = Material.GRAY_STAINED_GLASS_PANE;
+    private Material guiFreeClaimedMaterial = Material.GREEN_STAINED_GLASS;
+    private Material guiPremiumClaimedMaterial = Material.LIME_STAINED_GLASS;
+    private boolean hideFreeClaimedRewards = false;
+    private boolean hidePremiumClaimedRewards = false;
 
     public ConfigManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -57,6 +61,24 @@ public class ConfigManager {
         guiPremiumNoPassMaterial = parseMaterial(config.getString("gui.premium-no-pass", "IRON_BARS"), Material.IRON_BARS);
         guiRewardAvailableMaterial = parseMaterial(config.getString("gui.reward-available", "CHEST"), Material.CHEST);
         guiSeparatorMaterial = parseMaterial(config.getString("gui.separator", "GRAY_STAINED_GLASS_PANE"), Material.GRAY_STAINED_GLASS_PANE);
+
+        String freeClaimedStr = config.getString("gui.reward-claimed.free", "GREEN_STAINED_GLASS");
+        if (freeClaimedStr != null && freeClaimedStr.equalsIgnoreCase("NONE")) {
+            hideFreeClaimedRewards = true;
+            guiFreeClaimedMaterial = null;
+        } else {
+            hideFreeClaimedRewards = false;
+            guiFreeClaimedMaterial = parseMaterial(freeClaimedStr, Material.GREEN_STAINED_GLASS);
+        }
+
+        String premiumClaimedStr = config.getString("gui.reward-claimed.premium", "LIME_STAINED_GLASS");
+        if (premiumClaimedStr != null && premiumClaimedStr.equalsIgnoreCase("NONE")) {
+            hidePremiumClaimedRewards = true;
+            guiPremiumClaimedMaterial = null;
+        } else {
+            hidePremiumClaimedRewards = false;
+            guiPremiumClaimedMaterial = parseMaterial(premiumClaimedStr, Material.LIME_STAINED_GLASS);
+        }
 
         coinsDistribution.clear();
         for (int i = 1; i <= 10; i++) {
@@ -174,5 +196,21 @@ public class ConfigManager {
 
     public Material getGuiSeparatorMaterial() {
         return guiSeparatorMaterial;
+    }
+
+    public Material getGuiFreeClaimedMaterial() {
+        return guiFreeClaimedMaterial;
+    }
+
+    public Material getGuiPremiumClaimedMaterial() {
+        return guiPremiumClaimedMaterial;
+    }
+
+    public boolean shouldHideFreeClaimedRewards() {
+        return hideFreeClaimedRewards;
+    }
+
+    public boolean shouldHidePremiumClaimedRewards() {
+        return hidePremiumClaimedRewards;
     }
 }

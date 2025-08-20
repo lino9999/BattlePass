@@ -2,6 +2,7 @@ package com.Lino.battlePass;
 
 import com.Lino.battlePass.commands.BattlePassTabCompleter;
 import com.Lino.battlePass.listeners.MissionProgressListener;
+import com.Lino.battlePass.placeholders.BattlePassExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -34,6 +35,7 @@ public class BattlePass extends JavaPlugin {
     private CustomItemManager customItemManager;
     private SoundManager soundManager;
     private RewardEditorManager rewardEditorManager;
+    private BattlePassExpansion placeholderExpansion;
 
     private boolean updateAvailable = false;
     private String latestVersion = "";
@@ -90,6 +92,7 @@ public class BattlePass extends JavaPlugin {
                                 coinsDistributionTask.runTaskTimer(BattlePass.this, 200L, 1200L);
                             });
 
+                            registerPlaceholders();
                             checkForUpdates();
 
                             getLogger().info(messageManager.getMessage("messages.plugin-enabled"));
@@ -106,6 +109,9 @@ public class BattlePass extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (placeholderExpansion != null) {
+            placeholderExpansion.unregister();
+        }
         if (soundManager != null) {
             soundManager.stopAllSounds();
         }
@@ -120,6 +126,14 @@ public class BattlePass extends JavaPlugin {
         }
         if (databaseManager != null) {
             databaseManager.shutdown();
+        }
+    }
+
+    private void registerPlaceholders() {
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            placeholderExpansion = new BattlePassExpansion(this);
+            placeholderExpansion.register();
+            getLogger().info("PlaceholderAPI support enabled!");
         }
     }
 

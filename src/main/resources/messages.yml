@@ -358,3 +358,25 @@ time:
 reward-types:
   free: "<gradient:#4ECDC4:#45B7D1>Free</gradient>"
   premium: "<gradient:#FFD93D:#FF6B6B>Premium</gradient>"
+
+reward-level-locked:
+  name: "<gradient:#FF6B6B:#FF0000>Level %level% Reward</gradient>"
+  lore-header:
+    - "&7"
+    - "&8▼ Rewards ▼"
+  lore-footer:
+    - "&7"
+    - "&8▸ &7Required Level: <gradient:#FF6B6B:#FF0000>%level%</gradient>"
+    - "&7"
+    - "<gradient:#FF6B6B:#FF0000>LOCKED</gradient>"
+
+reward-claimed:
+  name: "&8Level %level% %type% Reward"
+  lore-header:
+    - "&7"
+    - "&8▼ Rewards ▼"
+  lore-footer:
+    - "&7"
+    - "&8▸ &7Required Level: &8%level%"
+    - "&7"
+    - "&8✓ ALREADY CLAIMED"

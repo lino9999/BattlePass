@@ -78,6 +78,13 @@ public class BattlePassGui extends BaseGui {
                 if (!playerData.claimedPremiumRewards.contains(level)) {
                     ItemStack premiumItem = createRewardItem(premiumLevel, level, playerData, playerData.hasPremium, true);
                     gui.setItem(9 + i, premiumItem);
+                } else {
+                    if (!plugin.getConfigManager().shouldHidePremiumClaimedRewards()) {
+                        ItemStack claimedItem = createClaimedRewardItem(premiumLevel, level, true);
+                        if (claimedItem != null) {
+                            gui.setItem(9 + i, claimedItem);
+                        }
+                    }
                 }
             }
 
@@ -86,6 +93,13 @@ public class BattlePassGui extends BaseGui {
                 if (!playerData.claimedFreeRewards.contains(level)) {
                     ItemStack freeItem = createRewardItem(freeLevel, level, playerData, true, false);
                     gui.setItem(27 + i, freeItem);
+                } else {
+                    if (!plugin.getConfigManager().shouldHideFreeClaimedRewards()) {
+                        ItemStack claimedItem = createClaimedRewardItem(freeLevel, level, false);
+                        if (claimedItem != null) {
+                            gui.setItem(27 + i, claimedItem);
+                        }
+                    }
                 }
             }
         }
@@ -133,6 +147,27 @@ public class BattlePassGui extends BaseGui {
             item.setItemMeta(meta);
             return item;
         }
+    }
+
+    private ItemStack createClaimedRewardItem(List<Reward> rewards, int level, boolean isPremium) {
+        Material material = isPremium ?
+                plugin.getConfigManager().getGuiPremiumClaimedMaterial() :
+                plugin.getConfigManager().getGuiFreeClaimedMaterial();
+
+        if (material == null) {
+            return null;
+        }
+
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-claimed.name",
+                "%level%", String.valueOf(level),
+                "%type%", plugin.getMessageManager().getMessage(isPremium ? "reward-types.premium" : "reward-types.free")));
+
+        List<String> lore = createRewardLore(rewards, "items.reward-claimed");
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+        return item;
     }
 
     private List<String> createRewardLore(List<Reward> rewards, String configPath) {
@@ -294,7 +329,7 @@ public class BattlePassGui extends BaseGui {
             editorLore.add(GradientColorParser.parse("&7Edit battle pass rewards"));
             editorLore.add(GradientColorParser.parse("&7for all levels"));
             editorLore.add("");
-            editorLore.add(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>▶ CLICK TO OPEN</gradient>"));
+            editorLore.add(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>▶ CLICK TO OPEN</gradient>"));
 
             editorMeta.setLore(editorLore);
             rewardsEditor.setItemMeta(editorMeta);

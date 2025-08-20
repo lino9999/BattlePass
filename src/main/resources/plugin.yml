@@ -4,6 +4,7 @@ main: com.Lino.battlePass.BattlePass
 api-version: '1.21'
 author: Lino
 website: https://www.spigotmc.org/resources/battlepass.125992/
+softdepend: [PlaceholderAPI]
 
 commands:
   battlepass:
