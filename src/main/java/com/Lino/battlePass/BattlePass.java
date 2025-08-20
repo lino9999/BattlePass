@@ -197,6 +197,7 @@ public class BattlePass extends JavaPlugin {
         rewardManager.loadRewards();
         shopManager.reload();
         guiManager.clearCache();
+        missionManager.recalculateResetTimeOnReload();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getOpenInventory() != null && player.getOpenInventory().getTitle() != null) {

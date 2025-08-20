@@ -101,6 +101,22 @@ public class MissionManager {
         });
     }
 
+    public void recalculateResetTimeOnReload() {
+        if (nextMissionReset != null) {
+            LocalDateTime now = LocalDateTime.now();
+            int hoursInterval = configManager.getMissionResetHours();
+
+            LocalDateTime lastReset = nextMissionReset.minusHours(24);
+
+            while (lastReset.plusHours(hoursInterval).isBefore(now)) {
+                lastReset = lastReset.plusHours(hoursInterval);
+            }
+
+            nextMissionReset = lastReset.plusHours(hoursInterval);
+            saveSeasonData();
+        }
+    }
+
     private void generateDailyMissions() {
         if (currentMissionDate == null) {
             currentMissionDate = LocalDateTime.now().toLocalDate().toString();
@@ -113,7 +129,7 @@ public class MissionManager {
         }
 
         List<Mission> newMissions = new ArrayList<>();
-        List<MissionTemplate> templates = new ArrayList<>();
+        Map<String, List<MissionTemplate>> templatesByType = new HashMap<>();
 
         for (String key : pools.getKeys(false)) {
             ConfigurationSection missionSection = pools.getConfigurationSection(key);
@@ -128,32 +144,71 @@ public class MissionManager {
             int maxXP = missionSection.getInt("max-xp");
             int weight = missionSection.getInt("weight", 10);
 
+            String missionKey = type + "_" + target;
+
+            templatesByType.computeIfAbsent(missionKey, k -> new ArrayList<>());
+
             for (int i = 0; i < weight; i++) {
-                templates.add(new MissionTemplate(displayName, type, target,
+                templatesByType.get(missionKey).add(new MissionTemplate(displayName, type, target,
                         minRequired, maxRequired, minXP, maxXP));
             }
         }
 
-        if (templates.isEmpty()) {
-            plugin.getLogger().warning("No valid missions found in missions.yml!");
-            return;
+        List<String> allKeys = new ArrayList<>(templatesByType.keySet());
+        Collections.shuffle(allKeys);
+
+        Set<String> usedMissionTypes = new HashSet<>();
+        int missionsToGenerate = configManager.getDailyMissionsCount();
+        int generated = 0;
+
+        for (String key : allKeys) {
+            if (generated >= missionsToGenerate) break;
+
+            if (!usedMissionTypes.contains(key)) {
+                List<MissionTemplate> templates = templatesByType.get(key);
+                if (!templates.isEmpty()) {
+                    MissionTemplate template = templates.get(ThreadLocalRandom.current().nextInt(templates.size()));
+
+                    int required = ThreadLocalRandom.current().nextInt(
+                            template.minRequired, template.maxRequired + 1);
+                    int xpReward = ThreadLocalRandom.current().nextInt(
+                            template.minXP, template.maxXP + 1);
+
+                    String name = template.nameFormat
+                            .replace("<amount>", String.valueOf(required))
+                            .replace("<target>", formatTarget(template.target));
+
+                    newMissions.add(new Mission(name, template.type, template.target,
+                            required, xpReward));
+
+                    usedMissionTypes.add(key);
+                    generated++;
+                }
+            }
         }
 
-        Collections.shuffle(templates);
+        if (generated < missionsToGenerate) {
+            List<MissionTemplate> allTemplates = new ArrayList<>();
+            for (List<MissionTemplate> list : templatesByType.values()) {
+                allTemplates.addAll(list);
+            }
+            Collections.shuffle(allTemplates);
 
-        for (int i = 0; i < configManager.getDailyMissionsCount() && i < templates.size(); i++) {
-            MissionTemplate template = templates.get(i);
-            int required = ThreadLocalRandom.current().nextInt(
-                    template.minRequired, template.maxRequired + 1);
-            int xpReward = ThreadLocalRandom.current().nextInt(
-                    template.minXP, template.maxXP + 1);
+            for (int i = generated; i < missionsToGenerate && i < allTemplates.size(); i++) {
+                MissionTemplate template = allTemplates.get(i);
 
-            String name = template.nameFormat
-                    .replace("<amount>", String.valueOf(required))
-                    .replace("<target>", formatTarget(template.target));
+                int required = ThreadLocalRandom.current().nextInt(
+                        template.minRequired, template.maxRequired + 1);
+                int xpReward = ThreadLocalRandom.current().nextInt(
+                        template.minXP, template.maxXP + 1);
 
-            newMissions.add(new Mission(name, template.type, template.target,
-                    required, xpReward));
+                String name = template.nameFormat
+                        .replace("<amount>", String.valueOf(required))
+                        .replace("<target>", formatTarget(template.target));
+
+                newMissions.add(new Mission(name, template.type, template.target,
+                        required, xpReward));
+            }
         }
 
         dailyMissions = new ArrayList<>(newMissions);
@@ -556,4 +611,5 @@ public class MissionManager {
 
     public boolean isInitialized() {
         return currentMissionDate != null && !dailyMissions.isEmpty();
-    }}
+    }
+}
