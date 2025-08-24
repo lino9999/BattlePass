@@ -54,12 +54,27 @@ public class GuiClickListener implements Listener {
                 plugin.getGuiManager().openBattlePassGUI(player, page);
             }
         } else if (title.equals(plugin.getMessageManager().getMessage("gui.missions"))) {
-            if (clicked.getType() == Material.BARRIER) {
-                int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
-                plugin.getGuiManager().openBattlePassGUI(player, page);
-            }
+            handleMissionsClick(player, clicked, event.getSlot());
         } else if (title.equals(plugin.getMessageManager().getMessage("gui.shop"))) {
             handleShopClick(player, clicked, event.getSlot());
+        }
+    }
+
+    private void handleMissionsClick(Player player, ItemStack clicked, int slot) {
+        if (clicked.getType() == Material.BARRIER) {
+            int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
+            plugin.getGuiManager().openBattlePassGUI(player, page);
+        } else if (clicked.getType() == Material.TNT && slot == 45) {
+            if (player.hasPermission("battlepass.admin")) {
+                player.closeInventory();
+                plugin.getMissionManager().forceResetMissions();
+                player.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.mission.reset-complete"));
+
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    plugin.getGuiManager().openMissionsGUI(player);
+                }, 20L);
+            }
         }
     }
 

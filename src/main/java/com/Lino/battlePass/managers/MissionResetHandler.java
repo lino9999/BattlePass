@@ -100,12 +100,14 @@ public class MissionResetHandler {
         calculateNextReset();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.forced-reset"));
+            player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.admin-reset"));
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-        }
 
-        for (PlayerData data : plugin.getPlayerDataManager().getPlayerCache().values()) {
-            data.missionProgress.clear();
+            PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            if (data != null) {
+                data.missionProgress.clear();
+                plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+            }
         }
     }
 

@@ -23,7 +23,8 @@ public class MissionGenerator {
         }
 
         List<Mission> newMissions = new ArrayList<>();
-        Map<String, List<MissionTemplate>> templatesByType = new HashMap<>();
+        List<WeightedMissionTemplate> weightedTemplates = new ArrayList<>();
+        Map<String, MissionTemplate> uniqueTemplates = new HashMap<>();
 
         for (String key : pools.getKeys(false)) {
             ConfigurationSection missionSection = pools.getConfigurationSection(key);
@@ -38,52 +39,51 @@ public class MissionGenerator {
             int maxXP = missionSection.getInt("max-xp");
             int weight = missionSection.getInt("weight", 10);
 
-            String missionTypeKey = type + "_" + target;
+            MissionTemplate template = new MissionTemplate(displayName, type, target,
+                    minRequired, maxRequired, minXP, maxXP);
 
-            templatesByType.computeIfAbsent(missionTypeKey, k -> new ArrayList<>());
-
-            for (int i = 0; i < weight; i++) {
-                templatesByType.get(missionTypeKey).add(new MissionTemplate(displayName, type, target,
-                        minRequired, maxRequired, minXP, maxXP));
-            }
+            uniqueTemplates.put(key, template);
+            weightedTemplates.add(new WeightedMissionTemplate(template, weight, key));
         }
 
-        List<String> allKeys = new ArrayList<>(templatesByType.keySet());
-        Collections.shuffle(allKeys);
-
-        Set<String> usedMissionTypes = new HashSet<>();
         int missionsToGenerate = configManager.getDailyMissionsCount();
-        int generated = 0;
+        Set<String> usedMissionKeys = new HashSet<>();
 
-        for (String key : allKeys) {
-            if (generated >= missionsToGenerate) break;
+        for (int i = 0; i < missionsToGenerate && !weightedTemplates.isEmpty(); i++) {
+            WeightedMissionTemplate selected = selectWeightedRandom(weightedTemplates);
 
-            if (!usedMissionTypes.contains(key)) {
-                List<MissionTemplate> templates = templatesByType.get(key);
-                if (!templates.isEmpty()) {
-                    Mission mission = createMissionFromTemplate(
-                            templates.get(ThreadLocalRandom.current().nextInt(templates.size()))
-                    );
-                    newMissions.add(mission);
-                    usedMissionTypes.add(key);
-                    generated++;
-                }
-            }
-        }
+            if (selected != null) {
+                Mission mission = createMissionFromTemplate(selected.template);
+                newMissions.add(mission);
+                usedMissionKeys.add(selected.key);
 
-        if (generated < missionsToGenerate) {
-            List<MissionTemplate> allTemplates = new ArrayList<>();
-            for (List<MissionTemplate> list : templatesByType.values()) {
-                allTemplates.addAll(list);
-            }
-            Collections.shuffle(allTemplates);
-
-            for (int i = generated; i < missionsToGenerate && i < allTemplates.size(); i++) {
-                newMissions.add(createMissionFromTemplate(allTemplates.get(i)));
+                weightedTemplates.removeIf(w -> w.key.equals(selected.key));
             }
         }
 
         return newMissions;
+    }
+
+    private WeightedMissionTemplate selectWeightedRandom(List<WeightedMissionTemplate> weightedTemplates) {
+        if (weightedTemplates.isEmpty()) return null;
+
+        int totalWeight = weightedTemplates.stream().mapToInt(w -> w.weight).sum();
+
+        if (totalWeight == 0) {
+            return weightedTemplates.get(ThreadLocalRandom.current().nextInt(weightedTemplates.size()));
+        }
+
+        int randomValue = ThreadLocalRandom.current().nextInt(totalWeight);
+        int currentWeight = 0;
+
+        for (WeightedMissionTemplate weighted : weightedTemplates) {
+            currentWeight += weighted.weight;
+            if (randomValue < currentWeight) {
+                return weighted;
+            }
+        }
+
+        return weightedTemplates.get(weightedTemplates.size() - 1);
     }
 
     private Mission createMissionFromTemplate(MissionTemplate template) {
@@ -104,5 +104,17 @@ public class MissionGenerator {
             return "";
         }
         return target.toLowerCase().replace("_", " ");
+    }
+
+    private static class WeightedMissionTemplate {
+        final MissionTemplate template;
+        final int weight;
+        final String key;
+
+        WeightedMissionTemplate(MissionTemplate template, int weight, String key) {
+            this.template = template;
+            this.weight = weight;
+            this.key = key;
+        }
     }
 }

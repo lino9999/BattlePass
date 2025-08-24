@@ -31,6 +31,10 @@ public class MissionsGui extends BaseGui {
         setupMissions(gui);
         gui.setItem(49, createBackButton());
 
+        if (player.hasPermission("battlepass.admin")) {
+            setupAdminResetButton(gui);
+        }
+
         player.openInventory(gui);
     }
 
@@ -82,5 +86,28 @@ public class MissionsGui extends BaseGui {
             missionItem.setItemMeta(meta);
             gui.setItem(slots[i], missionItem);
         }
+    }
+
+    private void setupAdminResetButton(Inventory gui) {
+        ItemStack resetButton = new ItemStack(Material.TNT);
+        ItemMeta meta = resetButton.getItemMeta();
+
+        meta.setDisplayName(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>Force Reset Missions</gradient>"));
+
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.add(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>Admin Only</gradient>"));
+        lore.add(GradientColorParser.parse("&7Force reset all daily missions"));
+        lore.add(GradientColorParser.parse("&7and generate new ones"));
+        lore.add("");
+        lore.add(GradientColorParser.parse("&cWarning:"));
+        lore.add(GradientColorParser.parse("&7This will reset progress"));
+        lore.add(GradientColorParser.parse("&7for all players!"));
+        lore.add("");
+        lore.add(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>▶ CLICK TO RESET</gradient>"));
+
+        meta.setLore(lore);
+        resetButton.setItemMeta(meta);
+        gui.setItem(45, resetButton);
     }
 }

@@ -18,7 +18,7 @@ public class MissionProgressTracker {
     private final Map<UUID, Map<String, Long>> lastActionbarUpdate = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, Integer>> actionbarTasks = new ConcurrentHashMap<>();
     private final Set<Integer> scheduledTaskIds = ConcurrentHashMap.newKeySet();
-    private final Set<String> completedMissionKeys = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Set<String>> playerCompletedMissions = new ConcurrentHashMap<>();
 
     public MissionProgressTracker(BattlePass plugin) {
         this.plugin = plugin;
@@ -27,6 +27,9 @@ public class MissionProgressTracker {
     public void trackProgress(Player player, String type, String target, int amount, List<Mission> dailyMissions) {
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         if (data == null || dailyMissions.isEmpty()) return;
+
+        UUID playerUUID = player.getUniqueId();
+        Set<String> completedKeys = playerCompletedMissions.computeIfAbsent(playerUUID, k -> ConcurrentHashMap.newKeySet());
 
         boolean changed = false;
         MessageManager messageManager = plugin.getMessageManager();
@@ -37,15 +40,15 @@ public class MissionProgressTracker {
             if (!mission.target.equals("ANY") && !mission.target.equals(target)) continue;
 
             String missionKey = generateMissionKey(mission);
-            String completedKey = player.getUniqueId() + "_" + missionKey;
 
-            if (completedMissionKeys.contains(completedKey)) {
+            if (completedKeys.contains(missionKey)) {
                 continue;
             }
 
             int currentProgress = data.missionProgress.getOrDefault(missionKey, 0);
 
             if (currentProgress >= mission.required) {
+                completedKeys.add(missionKey);
                 continue;
             }
 
@@ -54,7 +57,7 @@ public class MissionProgressTracker {
             changed = true;
 
             if (newProgress >= mission.required && currentProgress < mission.required) {
-                completedMissionKeys.add(completedKey);
+                completedKeys.add(missionKey);
 
                 data.xp += mission.xpReward;
                 checkLevelUp(player, data);
@@ -80,8 +83,15 @@ public class MissionProgressTracker {
     }
 
     public void resetProgress(String currentMissionDate) {
-        completedMissionKeys.clear();
+        playerCompletedMissions.clear();
         lastActionbarUpdate.clear();
+
+        for (Map.Entry<UUID, Map<String, Integer>> entry : actionbarTasks.entrySet()) {
+            for (Integer taskId : entry.getValue().values()) {
+                Bukkit.getScheduler().cancelTask(taskId);
+                scheduledTaskIds.remove(taskId);
+            }
+        }
         actionbarTasks.clear();
 
         for (PlayerData data : plugin.getPlayerDataManager().getPlayerCache().values()) {
@@ -224,6 +234,7 @@ public class MissionProgressTracker {
             actionbarTasks.remove(uuid);
         }
         lastActionbarUpdate.remove(uuid);
+        playerCompletedMissions.remove(uuid);
     }
 
     public void shutdown() {
@@ -235,7 +246,7 @@ public class MissionProgressTracker {
         );
         actionbarTasks.clear();
         lastActionbarUpdate.clear();
-        completedMissionKeys.clear();
+        playerCompletedMissions.clear();
     }
 
     public int getCompletedMissionsCount(PlayerData data, List<Mission> missions) {
