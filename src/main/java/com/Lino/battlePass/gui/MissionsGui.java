@@ -56,7 +56,7 @@ public class MissionsGui extends BaseGui {
 
         for (int i = 0; i < currentMissions.size() && i < slots.length; i++) {
             Mission mission = currentMissions.get(i);
-            String key = mission.name.toLowerCase().replace(" ", "_");
+            String key = mission.type + "_" + mission.target + "_" + mission.required;
             int progress = playerData.missionProgress.getOrDefault(key, 0);
             boolean completed = progress >= mission.required;
 

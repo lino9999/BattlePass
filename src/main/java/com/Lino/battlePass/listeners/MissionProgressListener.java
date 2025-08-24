@@ -163,24 +163,33 @@ public class MissionProgressListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCraftItem(CraftItemEvent event) {
-        if (event.getWhoClicked() instanceof Player) {
-            Player player = (Player) event.getWhoClicked();
-            ItemStack result = event.getRecipe().getResult();
-            String itemType = result.getType().name();
+        if (!(event.getWhoClicked() instanceof Player)) return;
 
-            int crafted = result.getAmount();
-            if (event.isShiftClick()) {
-                int minStack = 64;
-                for (ItemStack ingredient : event.getInventory().getMatrix()) {
-                    if (ingredient != null && ingredient.getType() != Material.AIR) {
-                        minStack = Math.min(minStack, ingredient.getAmount());
-                    }
+        Player player = (Player) event.getWhoClicked();
+        ItemStack result = event.getRecipe().getResult();
+
+        if (result == null || result.getType() == Material.AIR) return;
+
+        String itemType = result.getType().name();
+        int crafted = result.getAmount();
+
+        if (event.isShiftClick()) {
+            ItemStack[] matrix = event.getInventory().getMatrix();
+            int minIngredientCount = Integer.MAX_VALUE;
+
+            for (ItemStack ingredient : matrix) {
+                if (ingredient != null && ingredient.getType() != Material.AIR) {
+                    int maxCraftable = ingredient.getAmount();
+                    minIngredientCount = Math.min(minIngredientCount, maxCraftable);
                 }
-                crafted = crafted * minStack;
             }
 
-            plugin.getMissionManager().progressMission(player, "CRAFT_ITEM", itemType, crafted);
+            if (minIngredientCount != Integer.MAX_VALUE && minIngredientCount > 0) {
+                crafted = result.getAmount() * minIngredientCount;
+            }
         }
+
+        plugin.getMissionManager().progressMission(player, "CRAFT_ITEM", itemType, crafted);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

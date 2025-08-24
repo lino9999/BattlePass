@@ -159,18 +159,7 @@ public class BattlePassExpansion extends PlaceholderExpansion {
     }
 
     private int getCompletedMissionsCount(PlayerData data) {
-        int completed = 0;
-        List<Mission> missions = plugin.getMissionManager().getDailyMissions();
-
-        for (Mission mission : missions) {
-            String key = mission.name.toLowerCase().replace(" ", "_");
-            int progress = data.missionProgress.getOrDefault(key, 0);
-            if (progress >= mission.required) {
-                completed++;
-            }
-        }
-
-        return completed;
+        return plugin.getMissionManager().getCompletedMissionsCount(data);
     }
 
     private String getMissionPlaceholder(PlayerData data, String missionIdentifier) {
@@ -181,7 +170,7 @@ public class BattlePassExpansion extends PlaceholderExpansion {
 
             if (missionIndex >= 0 && missionIndex < missions.size()) {
                 Mission mission = missions.get(missionIndex);
-                String key = mission.name.toLowerCase().replace(" ", "_");
+                String key = mission.type + "_" + mission.target + "_" + mission.required;
                 int progress = data.missionProgress.getOrDefault(key, 0);
 
                 if (missionIdentifier.startsWith("progress_")) {
