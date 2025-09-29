@@ -5,28 +5,75 @@ import com.Lino.battlePass.models.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class PlayerDataManager {
 
     private final BattlePass plugin;
     private final DatabaseManager databaseManager;
     private final Map<UUID, PlayerData> playerCache = new ConcurrentHashMap<>();
-    private final Map<UUID, Long> pendingSaves = new ConcurrentHashMap<>();
-    private final ScheduledExecutorService saveScheduler = Executors.newSingleThreadScheduledExecutor();
-
-    private static final long SAVE_DELAY = 5000L;
-    private static final long BATCH_SAVE_INTERVAL = 30000L;
+    private final Set<UUID> dirtyPlayers = ConcurrentHashMap.newKeySet();
 
     public PlayerDataManager(BattlePass plugin, DatabaseManager databaseManager) {
         this.plugin = plugin;
         this.databaseManager = databaseManager;
+    }
 
-        saveScheduler.scheduleAtFixedRate(this::performBatchSave,
-                BATCH_SAVE_INTERVAL, BATCH_SAVE_INTERVAL, TimeUnit.MILLISECONDS);
+    public void loadPlayer(UUID uuid) {
+        if (playerCache.containsKey(uuid)) return;
+        databaseManager.loadPlayerData(uuid).thenAccept(data -> {
+            if (data != null) {
+                playerCache.put(uuid, data);
+            } else {
+                plugin.getLogger().warning("Could not load player data for " + uuid + ". The player might not be able to interact with BattlePass features until they rejoin.");
+            }
+        });
+    }
+
+    public void removePlayer(UUID uuid) {
+        savePlayer(uuid);
+        playerCache.remove(uuid);
+    }
+
+    public void savePlayer(UUID uuid) {
+        PlayerData data = playerCache.get(uuid);
+        if (data != null && dirtyPlayers.contains(uuid)) {
+            databaseManager.savePlayerData(uuid, data).thenRun(() -> {
+                dirtyPlayers.remove(uuid);
+            });
+        }
+    }
+
+    public void markForSave(UUID uuid) {
+        dirtyPlayers.add(uuid);
+    }
+
+    public void saveAllPlayers() {
+        Set<UUID> playersToSave = playerCache.keySet().stream()
+                .filter(dirtyPlayers::contains)
+                .collect(Collectors.toSet());
+
+        if (playersToSave.isEmpty()) return;
+
+        CompletableFuture<?>[] futures = playersToSave.stream()
+                .map(uuid -> databaseManager.savePlayerData(uuid, playerCache.get(uuid)))
+                .toArray(CompletableFuture[]::new);
+
+        CompletableFuture.allOf(futures).join();
+        dirtyPlayers.clear();
+    }
+
+    public PlayerData getPlayerData(UUID uuid) {
+        return playerCache.get(uuid);
+    }
+
+    public Map<UUID, PlayerData> getPlayerCache() {
+        return playerCache;
     }
 
     public void loadOnlinePlayers() {
@@ -35,103 +82,13 @@ public class PlayerDataManager {
         }
     }
 
-    public void loadPlayer(UUID uuid) {
-        databaseManager.loadPlayerData(uuid).thenAccept(data -> {
-            playerCache.put(uuid, data);
-        });
-    }
-
-    public PlayerData getPlayerData(UUID uuid) {
-        PlayerData data = playerCache.get(uuid);
-        if (data == null) {
-            // Load synchronously if not in cache
-            data = databaseManager.loadPlayerData(uuid).join();
-            playerCache.put(uuid, data);
-        }
-        return data;
-    }
-
-    public void markForSave(UUID uuid) {
-        pendingSaves.put(uuid, System.currentTimeMillis());
-    }
-
-    private void performBatchSave() {
-        if (pendingSaves.isEmpty()) return;
-
-        long currentTime = System.currentTimeMillis();
-        Map<UUID, PlayerData> toSave = new HashMap<>();
-
-        pendingSaves.entrySet().removeIf(entry -> {
-            if (currentTime - entry.getValue() >= SAVE_DELAY) {
-                PlayerData data = playerCache.get(entry.getKey());
-                if (data != null) {
-                    toSave.put(entry.getKey(), data);
-                }
-                return true;
-            }
-            return false;
-        });
-
-        if (toSave.isEmpty()) return;
-
-        for (Map.Entry<UUID, PlayerData> entry : toSave.entrySet()) {
-            databaseManager.savePlayerData(entry.getKey(), entry.getValue());
-        }
-    }
-
-    public void saveAllPlayers() {
-        // Force save all players immediately
-        for (Map.Entry<UUID, PlayerData> entry : playerCache.entrySet()) {
-            databaseManager.savePlayerData(entry.getKey(), entry.getValue()).join();
-        }
-
-        pendingSaves.clear();
-
-        saveScheduler.shutdown();
-        try {
-            if (!saveScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                saveScheduler.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            saveScheduler.shutdownNow();
-        }
-    }
-
-    public void removePlayer(UUID uuid) {
-        markForSave(uuid);
-
-        // Save immediately when player leaves
-        PlayerData data = playerCache.get(uuid);
-        if (data != null) {
-            databaseManager.savePlayerData(uuid, data).thenRun(() -> {
-                pendingSaves.remove(uuid);
-
-                // Remove from cache after save is complete
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    // Double-check player is still offline
-                    if (!Bukkit.getOfflinePlayer(uuid).isOnline()) {
-                        playerCache.remove(uuid);
-                    }
-                }, 100L);
-            });
-        }
+    public void clearCache() {
+        saveAllPlayers();
+        playerCache.clear();
     }
 
     public void cleanupStaleEntries() {
-        playerCache.entrySet().removeIf(entry -> {
-            UUID uuid = entry.getKey();
-
-            return !Bukkit.getOfflinePlayer(uuid).isOnline() &&
-                    !pendingSaves.containsKey(uuid);
-        });
-    }
-
-    public void clearCache() {
-        playerCache.clear();
-        pendingSaves.clear();
-    }
-
-    public Map<UUID, PlayerData> getPlayerCache() {
-        return playerCache;
+        playerCache.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+        dirtyPlayers.removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
     }
 }

@@ -17,7 +17,6 @@ public class DatabaseManager {
     private final BattlePass plugin;
     private Connection connection;
     private final ExecutorService databaseExecutor = Executors.newSingleThreadExecutor();
-
     private PreparedStatement insertPlayerStmt;
     private PreparedStatement updatePlayerStmt;
     private PreparedStatement selectPlayerStmt;
@@ -39,7 +38,6 @@ public class DatabaseManager {
             }
 
             File dbFile = new File(databaseDir, "battlepass.db");
-
             Properties props = new Properties();
             props.setProperty("journal_mode", "WAL");
             props.setProperty("synchronous", "NORMAL");
@@ -47,7 +45,6 @@ public class DatabaseManager {
             props.setProperty("cache_size", "10000");
 
             connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath(), props);
-
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute("PRAGMA journal_mode=WAL");
                 stmt.execute("PRAGMA synchronous=NORMAL");
@@ -67,7 +64,6 @@ public class DatabaseManager {
                                 "last_daily_reward INTEGER DEFAULT 0," +
                                 "battle_coins INTEGER DEFAULT 0)"
                 );
-
                 try {
                     stmt.executeUpdate("ALTER TABLE players ADD COLUMN battle_coins INTEGER DEFAULT 0");
                 } catch (SQLException e) {
@@ -81,7 +77,6 @@ public class DatabaseManager {
                                 "date TEXT," +
                                 "PRIMARY KEY (uuid, mission, date))"
                 );
-
                 stmt.executeUpdate(
                         "CREATE TABLE IF NOT EXISTS season_data (" +
                                 "id INTEGER PRIMARY KEY," +
@@ -91,7 +86,6 @@ public class DatabaseManager {
                                 "current_mission_date TEXT," +
                                 "next_coins_distribution TEXT)"
                 );
-
                 try {
                     stmt.executeUpdate("ALTER TABLE season_data ADD COLUMN next_coins_distribution TEXT");
                 } catch (SQLException e) {
@@ -107,7 +101,6 @@ public class DatabaseManager {
                                 "xp_reward INTEGER," +
                                 "date TEXT)"
                 );
-
                 stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_missions_uuid_date ON missions(uuid, date)");
                 stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_players_total_levels ON players(total_levels DESC, level DESC, xp DESC)");
             }
@@ -124,16 +117,13 @@ public class DatabaseManager {
                     "INSERT OR IGNORE INTO players (uuid, xp, level, claimed_free, claimed_premium, " +
                             "last_notification, total_levels, has_premium, last_daily_reward, battle_coins) VALUES (?, 0, 1, '', '', 0, 0, 0, 0, 0)"
             );
-
             updatePlayerStmt = connection.prepareStatement(
                     "UPDATE players SET xp = ?, level = ?, claimed_free = ?, claimed_premium = ?, " +
                             "last_notification = ?, total_levels = ?, has_premium = ?, last_daily_reward = ?, battle_coins = ? WHERE uuid = ?"
             );
-
             selectPlayerStmt = connection.prepareStatement(
                     "SELECT * FROM players WHERE uuid = ?"
             );
-
             insertMissionStmt = connection.prepareStatement(
                     "INSERT OR REPLACE INTO missions (uuid, mission, progress, date) VALUES (?, ?, ?, ?)"
             );
@@ -182,7 +172,6 @@ public class DatabaseManager {
                 }
 
                 String missionDate = getCurrentMissionDate();
-
                 try (PreparedStatement missionPs = connection.prepareStatement(
                         "SELECT * FROM missions WHERE uuid = ? AND date = ?")) {
                     missionPs.setString(1, uuid.toString());
@@ -196,12 +185,12 @@ public class DatabaseManager {
                         }
                     }
                 }
-
+                return data;
             } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to load player data for " + uuid.toString() + ". This may be due to a database lock or corruption.");
                 e.printStackTrace();
+                return null;
             }
-
-            return data;
         }, databaseExecutor);
     }
 
@@ -461,13 +450,11 @@ public class DatabaseManager {
 
     public void shutdown() {
         databaseExecutor.shutdown();
-
         try {
             if (insertPlayerStmt != null) insertPlayerStmt.close();
             if (updatePlayerStmt != null) updatePlayerStmt.close();
             if (selectPlayerStmt != null) selectPlayerStmt.close();
             if (insertMissionStmt != null) insertMissionStmt.close();
-
             if (connection != null && !connection.isClosed()) {
                 connection.close();
             }
