@@ -35,16 +35,13 @@ public class RewardManager {
         premiumRewards.clear();
         freeRewardsByLevel.clear();
         premiumRewardsByLevel.clear();
-
         FileConfiguration freeConfig = configManager.getBattlePassFreeConfig();
         FileConfiguration premiumConfig = configManager.getBattlePassPremiumConfig();
 
         for (int i = 1; i <= 54; i++) {
             String levelPath = "level-" + i;
-
             List<Reward> freeLevel = new ArrayList<>();
             List<Reward> premiumLevel = new ArrayList<>();
-
             if (freeConfig.contains(levelPath)) {
                 if (freeConfig.contains(levelPath + ".material") || freeConfig.contains(levelPath + ".command")) {
                     Reward reward = loadSingleReward(freeConfig, levelPath, i, true);
@@ -65,6 +62,7 @@ public class RewardManager {
 
             if (premiumConfig.contains(levelPath)) {
                 if (premiumConfig.contains(levelPath + ".material") || premiumConfig.contains(levelPath + ".command")) {
+
                     Reward reward = loadSingleReward(premiumConfig, levelPath, i, false);
                     if (reward != null) {
                         premiumRewards.add(reward);
@@ -109,6 +107,37 @@ public class RewardManager {
 
     public void claimRewards(Player player, PlayerData data, List<Reward> rewards,
                              int level, boolean isPremium) {
+
+        Map<String, Set<Integer>> dbClaimedData;
+        try {
+            dbClaimedData = plugin.getDatabaseManager().getClaimedRewards(player.getUniqueId()).join();
+        } catch (Exception e) {
+            player.sendMessage(plugin.getMessageManager().getPrefix() + "§cError while claiming reward. Please try again.");
+            e.printStackTrace();
+            return;
+        }
+
+        Set<Integer> dbClaimedSet = isPremium ? dbClaimedData.get("premium") : dbClaimedData.get("free");
+
+        if (dbClaimedSet != null && dbClaimedSet.contains(level)) {
+            MessageManager mm = plugin.getMessageManager();
+            player.sendMessage(mm.getPrefix() + mm.getMessage("messages.rewards.already-claimed-error"));
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+
+            if (isPremium) {
+                if (!data.claimedPremiumRewards.contains(level)) {
+                    data.claimedPremiumRewards.add(level);
+                    plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+                }
+            } else {
+                if (!data.claimedFreeRewards.contains(level)) {
+                    data.claimedFreeRewards.add(level);
+                    plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+                }
+            }
+            return;
+        }
+
         if (isPremium) {
             data.claimedPremiumRewards.add(level);
         } else {
@@ -118,11 +147,9 @@ public class RewardManager {
         MessageManager messageManager = plugin.getMessageManager();
         StringBuilder message = new StringBuilder(messageManager.getPrefix() + messageManager.getMessage(
                 isPremium ? "messages.rewards.premium-claimed" : "messages.rewards.free-claimed"));
-
         FileConfiguration config = isPremium ?
                 configManager.getBattlePassPremiumConfig() :
                 configManager.getBattlePassFreeConfig();
-
         String levelPath = "level-" + level;
 
         for (Reward reward : rewards) {
@@ -133,7 +160,6 @@ public class RewardManager {
                         "%reward%", reward.displayName));
             } else {
                 ItemStack item = null;
-
                 if (config.contains(levelPath)) {
                     ConfigurationSection levelSection = config.getConfigurationSection(levelPath);
                     if (levelSection != null) {
@@ -158,11 +184,11 @@ public class RewardManager {
                 }
 
                 if (item == null) {
-                    item = new ItemStack(reward.material, reward.amount);
+                    item = new
+                            ItemStack(reward.material, reward.amount);
                 }
 
                 HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(item);
-
                 String itemName = formatMaterial(item.getType());
 
                 if (!leftover.isEmpty()) {
@@ -187,7 +213,6 @@ public class RewardManager {
 
     public int countAvailableRewards(Player player, PlayerData data) {
         int count = 0;
-
         for (int level : freeRewardsByLevel.keySet()) {
             if (data.level >= level && !data.claimedFreeRewards.contains(level)) {
                 count++;
@@ -219,11 +244,9 @@ public class RewardManager {
 
     public List<EditableReward> getEditableRewards(int level, boolean isPremium) {
         List<EditableReward> editableRewards = new ArrayList<>();
-
         FileConfiguration config = isPremium ?
                 configManager.getBattlePassPremiumConfig() :
                 configManager.getBattlePassFreeConfig();
-
         String levelPath = "level-" + level;
 
         if (!config.contains(levelPath)) {

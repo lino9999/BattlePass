@@ -83,6 +83,7 @@ messages:
     item-reward: "&7• &f%amount%x <gradient:#4ECDC4:#45B7D1>%item%</gradient>"
     item-reward-dropped: "&7• &f%amount%x <gradient:#4ECDC4:#45B7D1>%item%</gradient> <gradient:#FFD93D:#FF6B6B>(Dropped on ground)</gradient>"
     command-reward: "&7• <gradient:#FFD93D:#FF6B6B>%reward%</gradient>"
+    already-claimed-error: "<gradient:#FF6B6B:#FF0000>✗ This reward has already been redeemed! If you believe this is an error, please contact our staff.</gradient>"
 
   daily-reward:
     claimed: "<gradient:#00FF88:#45B7D1>✓ Daily Reward Claimed!</gradient> &fYou received <gradient:#FFD93D:#FF6B6B>%amount% XP</gradient>"

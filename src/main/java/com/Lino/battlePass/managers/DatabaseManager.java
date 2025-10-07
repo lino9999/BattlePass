@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class DatabaseManager {
 
@@ -149,7 +150,7 @@ public class DatabaseManager {
                         data.battleCoins = rs.getInt("battle_coins");
 
                         String claimedFree = rs.getString("claimed_free");
-                        if (!claimedFree.isEmpty()) {
+                        if (claimedFree != null && !claimedFree.isEmpty()) {
                             for (String level : claimedFree.split(",")) {
                                 if (!level.isEmpty()) {
                                     data.claimedFreeRewards.add(Integer.parseInt(level));
@@ -158,7 +159,7 @@ public class DatabaseManager {
                         }
 
                         String claimedPremium = rs.getString("claimed_premium");
-                        if (!claimedPremium.isEmpty()) {
+                        if (claimedPremium != null && !claimedPremium.isEmpty()) {
                             for (String level : claimedPremium.split(",")) {
                                 if (!level.isEmpty()) {
                                     data.claimedPremiumRewards.add(Integer.parseInt(level));
@@ -194,15 +195,50 @@ public class DatabaseManager {
         }, databaseExecutor);
     }
 
+    public CompletableFuture<Map<String, Set<Integer>>> getClaimedRewards(UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            Map<String, Set<Integer>> claimedData = new HashMap<>();
+            Set<Integer> free = new HashSet<>();
+            Set<Integer> premium = new HashSet<>();
+            claimedData.put("free", free);
+            claimedData.put("premium", premium);
+
+            try (PreparedStatement ps = connection.prepareStatement("SELECT claimed_free, claimed_premium FROM players WHERE uuid = ?")) {
+                ps.setString(1, uuid.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String claimedFreeStr = rs.getString("claimed_free");
+                        if (claimedFreeStr != null && !claimedFreeStr.isEmpty()) {
+                            Arrays.stream(claimedFreeStr.split(","))
+                                    .filter(s -> !s.isEmpty())
+                                    .map(Integer::parseInt)
+                                    .forEach(free::add);
+                        }
+
+                        String claimedPremiumStr = rs.getString("claimed_premium");
+                        if (claimedPremiumStr != null && !claimedPremiumStr.isEmpty()) {
+                            Arrays.stream(claimedPremiumStr.split(","))
+                                    .filter(s -> !s.isEmpty())
+                                    .map(Integer::parseInt)
+                                    .forEach(premium::add);
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Could not perform security check for claimed rewards for " + uuid);
+                e.printStackTrace();
+            }
+            return claimedData;
+        }, databaseExecutor);
+    }
+
     public CompletableFuture<Void> savePlayerData(UUID uuid, PlayerData data) {
         return CompletableFuture.runAsync(() -> {
             try {
                 updatePlayerStmt.setInt(1, data.xp);
                 updatePlayerStmt.setInt(2, data.level);
-                updatePlayerStmt.setString(3, String.join(",",
-                        data.claimedFreeRewards.stream().map(String::valueOf).toArray(String[]::new)));
-                updatePlayerStmt.setString(4, String.join(",",
-                        data.claimedPremiumRewards.stream().map(String::valueOf).toArray(String[]::new)));
+                updatePlayerStmt.setString(3, data.claimedFreeRewards.stream().map(String::valueOf).collect(Collectors.joining(",")));
+                updatePlayerStmt.setString(4, data.claimedPremiumRewards.stream().map(String::valueOf).collect(Collectors.joining(",")));
                 updatePlayerStmt.setInt(5, data.lastNotification);
                 updatePlayerStmt.setInt(6, data.totalLevels);
                 updatePlayerStmt.setInt(7, data.hasPremium ? 1 : 0);
@@ -218,8 +254,9 @@ public class DatabaseManager {
                     insertMissionStmt.setString(2, mission.getKey());
                     insertMissionStmt.setInt(3, mission.getValue());
                     insertMissionStmt.setString(4, missionDate);
-                    insertMissionStmt.executeUpdate();
+                    insertMissionStmt.addBatch();
                 }
+                insertMissionStmt.executeBatch();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
