@@ -23,28 +23,17 @@ public class GradientColorParser {
         }
     }
 
-    /**
-     * Parses a string and applies gradient colors
-     * Supports gradient tags, hex colors AND standard color codes
-     * All three formats can be used together in the same message
-     * Falls back to standard colors on older versions
-     */
     public static String parse(String message) {
         if (message == null) return null;
 
-        // First, handle gradient patterns
         message = parseGradients(message);
-
-        // Then, handle hex colors
         message = parseHexColors(message);
 
-        // Finally, handle standard color codes (this preserves compatibility)
         return ChatColor.translateAlternateColorCodes('&', message);
     }
 
     private static String parseGradients(String message) {
         if (!SUPPORTS_HEX) {
-            // Remove gradient tags on older versions
             return message.replaceAll("<gradient:#[A-Fa-f0-9]{6}:#[A-Fa-f0-9]{6}>(.*?)</gradient>", "$1");
         }
 
@@ -57,7 +46,6 @@ public class GradientColorParser {
             String text = matcher.group(3);
 
             String gradientText = applyGradient(text, startHex, endHex);
-            // Use Matcher.quoteReplacement to escape special characters
             matcher.appendReplacement(buffer, Matcher.quoteReplacement(gradientText));
         }
 
@@ -67,7 +55,6 @@ public class GradientColorParser {
 
     private static String parseHexColors(String message) {
         if (!SUPPORTS_HEX) {
-            // Remove hex colors on older versions
             return message.replaceAll("&#[A-Fa-f0-9]{6}", "");
         }
 
@@ -77,7 +64,6 @@ public class GradientColorParser {
         while (matcher.find()) {
             String hex = matcher.group(1);
             String replacement = ChatColor.of("#" + hex).toString();
-            // Use Matcher.quoteReplacement to escape special characters
             matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
         }
 
@@ -90,28 +76,38 @@ public class GradientColorParser {
 
         Color startColor = hexToColor(startHex);
         Color endColor = hexToColor(endHex);
-
         StringBuilder result = new StringBuilder();
-        int length = text.length();
 
-        for (int i = 0; i < length; i++) {
+        String strippedText = stripColors(text);
+        int length = strippedText.length();
+        int colorIndex = 0;
+
+        for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
+            if (c == '§' || c == '&') {
+                if (i + 1 < text.length()) {
+                    result.append(c).append(text.charAt(i + 1));
+                    i++;
+                } else {
+                    result.append(c);
+                }
+            } else {
+                if (Character.isWhitespace(c)) {
+                    result.append(c);
+                    continue;
+                }
 
-            if (c == ' ') {
-                result.append(c);
-                continue;
+                float ratio = length <= 1 ? 0.5f : (float) colorIndex / (float) (length - 1);
+                Color currentColor = interpolateColor(startColor, endColor, ratio);
+                String hexColor = String.format("#%02x%02x%02x",
+                        currentColor.getRed(),
+                        currentColor.getGreen(),
+                        currentColor.getBlue());
+
+                result.append(ChatColor.of(hexColor)).append(c);
+                colorIndex++;
             }
-
-            float ratio = length == 1 ? 0 : (float) i / (float) (length - 1);
-            Color currentColor = interpolateColor(startColor, endColor, ratio);
-            String hexColor = String.format("#%02x%02x%02x",
-                    currentColor.getRed(),
-                    currentColor.getGreen(),
-                    currentColor.getBlue());
-
-            result.append(ChatColor.of(hexColor)).append(c);
         }
-
         return result.toString();
     }
 
@@ -127,19 +123,12 @@ public class GradientColorParser {
         return new Color(red, green, blue);
     }
 
-    /**
-     * Strips all color codes including gradients and hex colors
-     */
     public static String stripColors(String message) {
         if (message == null) return null;
 
-        // Remove gradient tags
         message = message.replaceAll("<gradient:#[A-Fa-f0-9]{6}:#[A-Fa-f0-9]{6}>(.*?)</gradient>", "$1");
-
-        // Remove hex colors
         message = message.replaceAll("&#[A-Fa-f0-9]{6}", "");
 
-        // Remove standard color codes
         return ChatColor.stripColor(message);
     }
 }

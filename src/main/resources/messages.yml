@@ -270,7 +270,7 @@ items:
       - "<gradient:#00FF88:#45B7D1>✓ COMPLETED</gradient>"
 
   mission-in-progress:
-    name: "<gradient:#FFE66D:#FF6B6B>⚡ %mission%</gradient>"
+    name: "&c&l %mission%"
     lore:
       - "&7"
       - "&8▸ &7Progress: <gradient:#FFE66D:#FF6B6B>%progress%/%required%</gradient>"
