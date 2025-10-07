@@ -2,11 +2,12 @@ package com.Lino.battlePass.managers;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.utils.GradientColorParser;
-import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MessageManager {
 
@@ -32,12 +33,26 @@ public class MessageManager {
             }
         }
 
-        // Use the new gradient parser instead of just ChatColor
         return GradientColorParser.parse(message);
     }
 
+    public List<String> getMessages(String path, Object... replacements) {
+        List<String> messages = messagesConfig.getStringList(path);
+        List<String> processedMessages = new ArrayList<>();
+
+        for (String message : messages) {
+            String processedLine = message;
+            if (replacements.length > 0 && replacements.length % 2 == 0) {
+                for (int i = 0; i < replacements.length; i += 2) {
+                    processedLine = processedLine.replace(replacements[i].toString(), replacements[i + 1].toString());
+                }
+            }
+            processedMessages.add(GradientColorParser.parse(processedLine));
+        }
+        return processedMessages;
+    }
+
     public String getPrefix() {
-        // Use the gradient parser for the prefix as well
         return GradientColorParser.parse(
                 messagesConfig.getString("prefix", "&6&l[BATTLE PASS] &e"));
     }

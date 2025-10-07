@@ -67,20 +67,17 @@ public class MissionsGui extends BaseGui {
             ItemStack missionItem = new ItemStack(completed ? Material.LIME_DYE : Material.GRAY_DYE);
             ItemMeta meta = missionItem.getItemMeta();
 
-            String itemName = completed ? "items.mission-completed.name" : "items.mission-in-progress.name";
-            String itemLore = completed ? "items.mission-completed.lore" : "items.mission-in-progress.lore";
+            String itemNamePath = completed ? "items.mission-completed.name" : "items.mission-in-progress.name";
+            String itemLorePath = completed ? "items.mission-completed.lore" : "items.mission-in-progress.lore";
 
-            meta.setDisplayName(plugin.getMessageManager().getMessage(itemName, "%mission%", mission.name));
+            meta.setDisplayName(plugin.getMessageManager().getMessage(itemNamePath, "%mission%", mission.name));
 
-            List<String> lore = new ArrayList<>();
-            for (String line : plugin.getMessageManager().getMessagesConfig().getStringList(itemLore)) {
-                String processedLine = line
-                        .replace("%progress%", String.valueOf(progress))
-                        .replace("%required%", String.valueOf(mission.required))
-                        .replace("%reward_xp%", String.valueOf(mission.xpReward))
-                        .replace("%reset_time%", plugin.getMissionManager().getTimeUntilReset());
-                lore.add(GradientColorParser.parse(processedLine));
-            }
+            List<String> lore = plugin.getMessageManager().getMessages(itemLorePath,
+                    "%progress%", String.valueOf(progress),
+                    "%required%", String.valueOf(mission.required),
+                    "%reward_xp%", String.valueOf(mission.xpReward),
+                    "%reset_time%", plugin.getMissionManager().getTimeUntilReset()
+            );
 
             meta.setLore(lore);
             missionItem.setItemMeta(meta);
