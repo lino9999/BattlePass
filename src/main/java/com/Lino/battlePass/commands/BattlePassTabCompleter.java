@@ -29,6 +29,8 @@ public class BattlePassTabCompleter implements TabCompleter {
                 completions.add("addcoins");
                 completions.add("removecoins");
                 completions.add("giveitem");
+                completions.add("excludefromtop");
+                completions.add("includetop");
             }
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("reset") && sender.hasPermission("battlepass.admin")) {
@@ -44,7 +46,8 @@ public class BattlePassTabCompleter implements TabCompleter {
 
                 if (subCommand.equals("addpremium") || subCommand.equals("removepremium") ||
                         subCommand.equals("addxp") || subCommand.equals("removexp") ||
-                        subCommand.equals("addcoins") || subCommand.equals("removecoins")) {
+                        subCommand.equals("addcoins") || subCommand.equals("removecoins") ||
+                        subCommand.equals("excludefromtop") || subCommand.equals("includetop")) {
 
                     return Bukkit.getOnlinePlayers().stream()
                             .map(Player::getName)

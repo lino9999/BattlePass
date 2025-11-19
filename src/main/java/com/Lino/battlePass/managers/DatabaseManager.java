@@ -63,10 +63,15 @@ public class DatabaseManager {
                                 "total_levels INTEGER DEFAULT 0," +
                                 "has_premium INTEGER DEFAULT 0," +
                                 "last_daily_reward INTEGER DEFAULT 0," +
-                                "battle_coins INTEGER DEFAULT 0)"
+                                "battle_coins INTEGER DEFAULT 0," +
+                                "exclude_from_top INTEGER DEFAULT 0)"
                 );
                 try {
                     stmt.executeUpdate("ALTER TABLE players ADD COLUMN battle_coins INTEGER DEFAULT 0");
+                } catch (SQLException e) {
+                }
+                try {
+                    stmt.executeUpdate("ALTER TABLE players ADD COLUMN exclude_from_top INTEGER DEFAULT 0");
                 } catch (SQLException e) {
                 }
 
@@ -116,11 +121,11 @@ public class DatabaseManager {
         try {
             insertPlayerStmt = connection.prepareStatement(
                     "INSERT OR IGNORE INTO players (uuid, xp, level, claimed_free, claimed_premium, " +
-                            "last_notification, total_levels, has_premium, last_daily_reward, battle_coins) VALUES (?, 0, 1, '', '', 0, 0, 0, 0, 0)"
+                            "last_notification, total_levels, has_premium, last_daily_reward, battle_coins, exclude_from_top) VALUES (?, 0, 1, '', '', 0, 0, 0, 0, 0, 0)"
             );
             updatePlayerStmt = connection.prepareStatement(
                     "UPDATE players SET xp = ?, level = ?, claimed_free = ?, claimed_premium = ?, " +
-                            "last_notification = ?, total_levels = ?, has_premium = ?, last_daily_reward = ?, battle_coins = ? WHERE uuid = ?"
+                            "last_notification = ?, total_levels = ?, has_premium = ?, last_daily_reward = ?, battle_coins = ?, exclude_from_top = ? WHERE uuid = ?"
             );
             selectPlayerStmt = connection.prepareStatement(
                     "SELECT * FROM players WHERE uuid = ?"
@@ -148,6 +153,7 @@ public class DatabaseManager {
                         data.hasPremium = rs.getInt("has_premium") == 1;
                         data.lastDailyReward = rs.getLong("last_daily_reward");
                         data.battleCoins = rs.getInt("battle_coins");
+                        data.excludeFromTop = rs.getInt("exclude_from_top") == 1;
 
                         String claimedFree = rs.getString("claimed_free");
                         if (claimedFree != null && !claimedFree.isEmpty()) {
@@ -244,7 +250,8 @@ public class DatabaseManager {
                 updatePlayerStmt.setInt(7, data.hasPremium ? 1 : 0);
                 updatePlayerStmt.setLong(8, data.lastDailyReward);
                 updatePlayerStmt.setInt(9, data.battleCoins);
-                updatePlayerStmt.setString(10, uuid.toString());
+                updatePlayerStmt.setInt(10, data.excludeFromTop ? 1 : 0);
+                updatePlayerStmt.setString(11, uuid.toString());
                 updatePlayerStmt.executeUpdate();
 
                 String missionDate = getCurrentMissionDate();
@@ -268,7 +275,7 @@ public class DatabaseManager {
             List<PlayerData> allPlayers = new ArrayList<>();
 
             try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT * FROM players ORDER BY total_levels DESC, level DESC, xp DESC LIMIT 10"
+                    "SELECT * FROM players WHERE exclude_from_top = 0 ORDER BY total_levels DESC, level DESC, xp DESC LIMIT 10"
             )) {
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
@@ -277,6 +284,7 @@ public class DatabaseManager {
                         data.level = rs.getInt("level");
                         data.totalLevels = rs.getInt("total_levels");
                         data.battleCoins = rs.getInt("battle_coins");
+                        data.excludeFromTop = rs.getInt("exclude_from_top") == 1;
                         allPlayers.add(data);
                     }
                 }

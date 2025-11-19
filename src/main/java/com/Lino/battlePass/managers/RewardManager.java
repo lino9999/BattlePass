@@ -95,7 +95,8 @@ public class RewardManager {
 
             try {
                 Material mat = Material.valueOf(material.toUpperCase());
-                return new Reward(level, mat, amount, isFree);
+                String displayName = config.getString(path + ".display", amount + "x " + formatMaterial(mat));
+                return new Reward(level, mat, displayName, amount, isFree);
             } catch (IllegalArgumentException e) {
                 plugin.getLogger().warning("Invalid material for " + (isFree ? "free" : "premium") +
                         " level " + level + ": " + material);
@@ -184,12 +185,11 @@ public class RewardManager {
                 }
 
                 if (item == null) {
-                    item = new
-                            ItemStack(reward.material, reward.amount);
+                    item = new ItemStack(reward.material, reward.amount);
                 }
 
                 HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(item);
-                String itemName = formatMaterial(item.getType());
+                String itemName = reward.displayName;
 
                 if (!leftover.isEmpty()) {
                     for (ItemStack drop : leftover.values()) {

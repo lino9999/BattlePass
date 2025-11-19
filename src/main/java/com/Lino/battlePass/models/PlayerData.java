@@ -14,6 +14,7 @@ public class PlayerData {
     public boolean hasPremium = false;
     public long lastDailyReward = 0;
     public int battleCoins = 0;
+    public boolean excludeFromTop = false;
     public final Map<String, Integer> missionProgress = new ConcurrentHashMap<>();
     public final Set<Integer> claimedFreeRewards = ConcurrentHashMap.newKeySet();
     public final Set<Integer> claimedPremiumRewards = ConcurrentHashMap.newKeySet();

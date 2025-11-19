@@ -79,6 +79,12 @@ public class BattlePassCommand implements CommandExecutor {
             case "giveitem":
                 return handleGiveItemCommand(sender, args);
 
+            case "excludefromtop":
+                return handleExcludeTopCommand(sender, args, true);
+
+            case "includetop":
+                return handleExcludeTopCommand(sender, args, false);
+
             default:
                 if (sender instanceof Player) {
                     plugin.getGuiManager().openBattlePassGUI((Player) sender, 1);
@@ -103,6 +109,8 @@ public class BattlePassCommand implements CommandExecutor {
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.add-coins"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.remove-coins"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.giveitem"));
+            sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.exclude-top"));
+            sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.include-top"));
         }
     }
 
@@ -349,6 +357,38 @@ public class BattlePassCommand implements CommandExecutor {
                     plugin.getMessageManager().getMessage("messages.invalid-amount"));
             return true;
         }
+    }
+
+    private boolean handleExcludeTopCommand(CommandSender sender, String[] args, boolean exclude) {
+        if (!sender.hasPermission("battlepass.admin")) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.no-permission"));
+            return true;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() + "Usage: /battlepass " + (exclude ? "excludefromtop" : "includetop") + " <player>");
+            return true;
+        }
+
+        Player target = Bukkit.getPlayer(args[1]);
+        if (target == null) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.player-not-found"));
+            return true;
+        }
+
+        PlayerData data = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
+        data.excludeFromTop = exclude;
+
+        // Marcalo come dirty E salva immediatamente per aggiornare il DB per la query della leaderboard
+        plugin.getPlayerDataManager().markForSave(target.getUniqueId());
+        plugin.getPlayerDataManager().savePlayer(target.getUniqueId());
+
+        String status = exclude ? "excluded from" : "included in";
+        sender.sendMessage(plugin.getMessageManager().getPrefix() + "Player " + target.getName() + " is now " + status + " the top leaderboard.");
+
+        return true;
     }
 
     private boolean handleGiveItemCommand(CommandSender sender, String[] args) {

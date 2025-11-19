@@ -10,13 +10,13 @@ public class Reward {
     public final String command;
     public final String displayName;
 
-    public Reward(int level, Material material, int amount, boolean isFree) {
+    public Reward(int level, Material material, String displayName, int amount, boolean isFree) {
         this.level = level;
         this.material = material;
         this.amount = amount;
         this.isFree = isFree;
         this.command = null;
-        this.displayName = amount + "x " + formatMaterial(material);
+        this.displayName = displayName;
     }
 
     public Reward(int level, String command, String displayName, boolean isFree) {
@@ -26,9 +26,5 @@ public class Reward {
         this.isFree = isFree;
         this.command = command;
         this.displayName = displayName;
-    }
-
-    private static String formatMaterial(Material material) {
-        return material.name().toLowerCase().replace("_", " ");
     }
 }

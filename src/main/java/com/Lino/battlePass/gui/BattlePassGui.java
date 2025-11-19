@@ -178,13 +178,7 @@ public class BattlePassGui extends BaseGui {
         }
 
         for (Reward r : rewards) {
-            if (r.command != null) {
-                lore.add(plugin.getMessageManager().getMessage("messages.rewards.command-reward", "%reward%", r.displayName));
-            } else {
-                lore.add(plugin.getMessageManager().getMessage("messages.rewards.item-reward",
-                        "%amount%", String.valueOf(r.amount),
-                        "%item%", formatMaterial(r.material)));
-            }
+            lore.add(plugin.getMessageManager().getMessage("messages.rewards.command-reward", "%reward%", r.displayName));
         }
 
         for (String line : plugin.getMessageManager().getMessagesConfig().getStringList(configPath + ".lore-footer")) {

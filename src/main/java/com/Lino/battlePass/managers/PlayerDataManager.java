@@ -43,9 +43,8 @@ public class PlayerDataManager {
     public void savePlayer(UUID uuid) {
         PlayerData data = playerCache.get(uuid);
         if (data != null && dirtyPlayers.contains(uuid)) {
-            databaseManager.savePlayerData(uuid, data).thenRun(() -> {
-                dirtyPlayers.remove(uuid);
-            });
+            databaseManager.savePlayerData(uuid, data).join();
+            dirtyPlayers.remove(uuid);
         }
     }
 

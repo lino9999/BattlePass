@@ -35,6 +35,8 @@ messages:
     add-coins: "<gradient:#4ECDC4:#45B7D1>/bp addcoins <player> <amount></gradient> &7- Add Battle Coins"
     remove-coins: "<gradient:#4ECDC4:#45B7D1>/bp removecoins <player> <amount></gradient> &7- Remove Battle Coins"
     giveitem: "<gradient:#4ECDC4:#45B7D1>/bp giveitem <type> <player> <amount></gradient> &7- Give custom items"
+    exclude-top: "<gradient:#4ECDC4:#45B7D1>/bp excludefromtop <player></gradient> &7- Hide player from leaderboard"
+    include-top: "<gradient:#4ECDC4:#45B7D1>/bp includetop <player></gradient> &7- Show player in leaderboard"
 
   premium:
     given-sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Premium pass given to <gradient:#FFD93D:#FF6B6B>%target%</gradient>"
