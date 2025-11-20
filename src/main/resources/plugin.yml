@@ -6,7 +6,6 @@ author: Lino
 website: https://www.spigotmc.org/resources/battlepass.125992/
 softdepend: [PlaceholderAPI, MythicMobs]
 
-# Questa sezione dice al server di scaricare le librerie automaticamente
 libraries:
   - com.zaxxer:HikariCP:5.1.0
   - com.mysql:mysql-connector-j:8.3.0
