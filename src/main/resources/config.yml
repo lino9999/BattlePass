@@ -8,7 +8,7 @@ season:
 
 # Database configuration
 # type: SQLITE (default) or MYSQL
-# If SQLITE is selected, the plugin will use the local 'Database' folder as before.
+# If SQLITE is selected, the plugin will use the local 'Database' folder.
 database:
   type: SQLITE #Or MySQL
   # MySQL Settings (Uncomment to use MySQL)
