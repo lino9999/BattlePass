@@ -11,14 +11,14 @@ season:
 # If SQLITE is selected, the plugin will use the local 'Database' folder.
 database:
   type: SQLITE #Or MySQL
-  # MySQL Settings (Uncomment to use MySQL)
-  # host: localhost
-  # port: 3306
-  # database: battlepass
-  # username: root
-  # password: ""
-  # prefix: "bp_"
-  # pool-size: 10
+  #MySQL Settings (Uncomment to use MySQL)
+  #host: localhost
+  #port: 3306
+  #database: battlepass
+  #username: root
+  #password: ""
+  #prefix: "bp_"
+  #pool-size: 10
 
 # Experience configuration
 experience:
