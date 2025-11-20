@@ -502,8 +502,7 @@ public class DatabaseManager {
 
             try {
                 conn = getConnection();
-                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM " + prefix + "daily_missions WHERE date != ?")) {
-                    ps.setString(1, missionDate);
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM " + prefix + "daily_missions")) {
                     ps.executeUpdate();
                 }
 
