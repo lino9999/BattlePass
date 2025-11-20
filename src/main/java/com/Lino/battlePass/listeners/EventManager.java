@@ -33,6 +33,12 @@ public class EventManager {
         plugin.getServer().getPluginManager().registerEvents(customItemsListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(guiClickListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(rewardsEditorListener, plugin);
+
+        // Check for MythicMobs hook
+        if (plugin.getServer().getPluginManager().getPlugin("MythicMobs") != null) {
+            plugin.getLogger().info("MythicMobs found! Hooking into MythicMobs events...");
+            plugin.getServer().getPluginManager().registerEvents(new MythicMobsListener(plugin), plugin);
+        }
     }
 
     public PlayerConnectionListener getPlayerConnectionListener() {

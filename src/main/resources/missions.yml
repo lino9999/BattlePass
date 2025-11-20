@@ -4,6 +4,7 @@
 #
 # Mission Types:
 # - KILL_MOB: Kill a specific mob type
+# - KILL_MYTHIC_MOB: Kill a specific MythicMobs entity (Target = Internal Mob Name)
 # - BREAK_BLOCK: Break a specific block type
 # - MINE_BLOCK: Mine a specific block type (for ores, only counts if item drops)
 # - PLACE_BLOCK: Place a specific block type
@@ -32,6 +33,18 @@ daily-missions-count: 7
 
 # Mission pools - missions will be randomly selected from these
 mission-pools:
+  # MythicMobs missions (Examples)
+  # Ensure the 'target' matches the Internal Name of your MythicMob
+  # kill-skeleton-king:
+  #   type: KILL_MYTHIC_MOB
+  #   target: SkeletonKing
+  #   display-name: "Defeat <amount> Skeleton Kings"
+  #   min-required: 1
+  #   max-required: 3
+  #   min-xp: 500
+  #   max-xp: 1000
+  #   weight: 5
+
   # Kill mob missions
   kill-zombies:
     type: KILL_MOB
