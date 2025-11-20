@@ -6,7 +6,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +39,15 @@ public class ConfigManager {
     private boolean hideFreeClaimedRewards = false;
     private boolean hidePremiumClaimedRewards = false;
 
+    private String databaseType;
+    private String dbHost;
+    private int dbPort;
+    private String dbName;
+    private String dbUser;
+    private String dbPass;
+    private String dbPrefix;
+    private int dbPoolSize;
+
     public ConfigManager(BattlePass plugin) {
         this.plugin = plugin;
         reload();
@@ -55,6 +63,15 @@ public class ConfigManager {
         coinsDistributionHours = config.getInt("battle-coins.distribution-hours", 24);
         missionResetHours = config.getInt("missions.reset-hours", 24);
         customItemSoundsEnabled = config.getBoolean("custom-items.sounds-enabled", true);
+
+        databaseType = config.getString("database.type", "SQLITE");
+        dbHost = config.getString("database.host", "localhost");
+        dbPort = config.getInt("database.port", 3306);
+        dbName = config.getString("database.database", "battlepass");
+        dbUser = config.getString("database.username", "root");
+        dbPass = config.getString("database.password", "");
+        dbPrefix = config.getString("database.prefix", "bp_");
+        dbPoolSize = config.getInt("database.pool-size", 10);
 
         guiFreeLockedMaterial = parseMaterial(config.getString("gui.reward-locked.free", "GRAY_STAINED_GLASS"), Material.GRAY_STAINED_GLASS);
         guiPremiumLockedMaterial = parseMaterial(config.getString("gui.reward-locked.premium", "GRAY_STAINED_GLASS"), Material.GRAY_STAINED_GLASS);
@@ -212,5 +229,37 @@ public class ConfigManager {
 
     public boolean shouldHidePremiumClaimedRewards() {
         return hidePremiumClaimedRewards;
+    }
+
+    public String getDatabaseType() {
+        return databaseType;
+    }
+
+    public String getDbHost() {
+        return dbHost;
+    }
+
+    public int getDbPort() {
+        return dbPort;
+    }
+
+    public String getDbName() {
+        return dbName;
+    }
+
+    public String getDbUser() {
+        return dbUser;
+    }
+
+    public String getDbPass() {
+        return dbPass;
+    }
+
+    public String getDbPrefix() {
+        return dbPrefix;
+    }
+
+    public int getDbPoolSize() {
+        return dbPoolSize;
     }
 }

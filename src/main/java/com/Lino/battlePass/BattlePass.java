@@ -14,6 +14,7 @@ import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -43,12 +44,13 @@ public class BattlePass extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        // Salva i file solo se non esistono per evitare warning
         saveDefaultConfig();
-        saveResource("missions.yml", false);
-        saveResource("messages.yml", false);
-        saveResource("BattlePassFREE.yml", false);
-        saveResource("BattlePassPREMIUM.yml", false);
-        saveResource("shop.yml", false);
+        saveResourceIfNotExists("missions.yml");
+        saveResourceIfNotExists("messages.yml");
+        saveResourceIfNotExists("BattlePassFREE.yml");
+        saveResourceIfNotExists("BattlePassPREMIUM.yml");
+        saveResourceIfNotExists("shop.yml");
 
         configManager = new ConfigManager(this);
         messageManager = new MessageManager(this);
@@ -105,6 +107,13 @@ public class BattlePass extends JavaPlugin {
                 }.runTaskTimer(this, 0L, 10L);
             });
         });
+    }
+
+    private void saveResourceIfNotExists(String filename) {
+        File file = new File(getDataFolder(), filename);
+        if (!file.exists()) {
+            saveResource(filename, false);
+        }
     }
 
     @Override

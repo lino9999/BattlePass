@@ -6,14 +6,21 @@ season:
   # Whether to reset battle coins when season ends
   reset-coins-on-season-end: true
 
+# Database configuration
+# type: SQLITE (default) or MYSQL
+# If SQLITE is selected, the plugin will use the local 'Database' folder as before.
+database:
+  type: SQLITE #Or MySQL
+  # MySQL Settings (Uncomment to use MySQL)
+  # host: localhost
+  # port: 3306
+  # database: battlepass
+  # username: root
+  # password: ""
+  # prefix: "bp_"
+  # pool-size: 10
+
 # Experience configuration
-# xp-per-level: Fixed XP required to advance to next level
-# Total XP needed for level 54 = xp-per-level × 53
-# Examples:
-# - 100 XP per level = 5,300 total XP (very easy)
-# - 400 XP per level = 21,200 total XP (easy)
-# - 1000 XP per level = 53,000 total XP (balanced for 30 days)
-# - 2000 XP per level = 106,000 total XP (hard)
 experience:
   xp-per-level: 200
 
@@ -22,14 +29,10 @@ daily-reward:
   xp: 200
 
 # Missions configuration
-# reset-hours: How often missions reset (in hours)
 missions:
   reset-hours: 24
 
 # Battle Coins distribution configuration
-# Coins distributed to top 10 players at specified intervals
-# distribution-hours: How often coins are distributed (in hours)
-# Format: position = coins amount
 battle-coins:
   distribution-hours: 24
   distribution:
@@ -49,36 +52,17 @@ shop:
   enabled: true
 
 # Custom Items configuration
-# sounds-enabled: Whether to play ambient sounds when holding custom items
-# Set to false to save resources on low-performance servers
 custom-items:
   sounds-enabled: true
 
 # GUI Customization
-# Customize the appearance of the Battle Pass GUI
-# You can use any valid Minecraft material name
-# Examples: DIAMOND_BLOCK, GOLD_BLOCK, EMERALD_BLOCK, GLOWSTONE, SEA_LANTERN, etc.
 gui:
-  # Blocks displayed for locked rewards (when player doesn't have the required level)
   reward-locked:
-    # Free rewards locked block
     free: GRAY_STAINED_GLASS
-    # Premium rewards locked block (when player has premium but not the level)
     premium: GRAY_STAINED_GLASS
-
-  # Block displayed for premium rewards when player doesn't have premium pass
   premium-no-pass: IRON_BARS
-
-  # Block displayed for available rewards (when player can claim)
   reward-available: CHEST
-
-  # Blocks displayed for already claimed rewards
-  # Use 'NONE' to hide the slot completely (empty slot)
   reward-claimed:
-    # Free rewards claimed block
     free: GREEN_STAINED_GLASS
-    # Premium rewards claimed block
     premium: LIME_STAINED_GLASS
-
-  # Separator blocks between premium and free rows (middle row)
   separator: GRAY_STAINED_GLASS_PANE
