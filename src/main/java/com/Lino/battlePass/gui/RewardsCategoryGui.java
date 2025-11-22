@@ -43,7 +43,7 @@ public class RewardsCategoryGui {
         Inventory gui = Bukkit.createInventory(null, 54, title);
 
         int startLevel = (page - 1) * LEVELS_PER_PAGE + 1;
-        int endLevel = Math.min(startLevel + LEVELS_PER_PAGE - 1, 54);
+        int endLevel = startLevel + LEVELS_PER_PAGE - 1;
 
         Map<Integer, List<Reward>> rewardsByLevel = isPremium ?
                 plugin.getRewardManager().getPremiumRewardsByLevel() :
@@ -67,7 +67,10 @@ public class RewardsCategoryGui {
             gui.setItem(45, prevPage);
         }
 
-        if (endLevel < 54) {
+        int maxLevel = plugin.getRewardManager().getMaxLevel();
+        // Allow next page if current page is full OR if we are within range to add new levels
+        // Basically, always allow one page further than the current max level
+        if (endLevel < maxLevel + LEVELS_PER_PAGE) {
             ItemStack nextPage = new ItemStack(Material.ARROW);
             ItemMeta nextMeta = nextPage.getItemMeta();
             nextMeta.setDisplayName(GradientColorParser.parse("<gradient:#4ECDC4:#45B7D1>Next Page →</gradient>"));

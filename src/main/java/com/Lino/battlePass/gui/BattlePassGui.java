@@ -5,7 +5,6 @@ import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.models.Reward;
 import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -19,12 +18,14 @@ public class BattlePassGui extends BaseGui {
     private final Player player;
     private final PlayerData playerData;
     private final int page;
+    private final int maxLevel;
 
     public BattlePassGui(BattlePass plugin, Player player, int page) {
         super(plugin, plugin.getMessageManager().getMessage("gui.battlepass", "%page%", String.valueOf(page)), 54);
         this.player = player;
         this.playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         this.page = page;
+        this.maxLevel = plugin.getRewardManager().getMaxLevel();
     }
 
     public void open() {
@@ -70,8 +71,9 @@ public class BattlePassGui extends BaseGui {
         Map<Integer, List<Reward>> premiumRewards = plugin.getRewardManager().getPremiumRewardsByLevel();
         Map<Integer, List<Reward>> freeRewards = plugin.getRewardManager().getFreeRewardsByLevel();
 
-        for (int i = 0; i <= 8 && startLevel + i <= 54; i++) {
+        for (int i = 0; i <= 8; i++) {
             int level = startLevel + i;
+            if (level > maxLevel) break;
 
             List<Reward> premiumLevel = premiumRewards.get(level);
             if (premiumLevel != null && !premiumLevel.isEmpty()) {
@@ -207,7 +209,8 @@ public class BattlePassGui extends BaseGui {
             gui.setItem(45, createNavigationItem(false, page - 1));
         }
 
-        if (page < 6) {
+        int maxPages = (int) Math.ceil(maxLevel / 9.0);
+        if (page < maxPages) {
             gui.setItem(53, createNavigationItem(true, page + 1));
         }
     }

@@ -63,8 +63,9 @@ public class RewardsEditorListener implements Listener {
         if (title != null && title.contains(EDIT_LEVEL_TITLE)) {
             if (!plugin.getRewardEditorManager().hasCommandInput(player.getUniqueId())) {
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    String newTitle = ChatColor.stripColor(player.getOpenInventory().getTitle());
-                    if (newTitle == null || !newTitle.contains(EDIT_LEVEL_TITLE)) {
+                    if (player.getOpenInventory() == null ||
+                            player.getOpenInventory().getTitle() == null ||
+                            !ChatColor.stripColor(player.getOpenInventory().getTitle()).contains(EDIT_LEVEL_TITLE)) {
                         plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
                     }
                 }, 5L);
@@ -124,14 +125,14 @@ public class RewardsEditorListener implements Listener {
             int startLevel = (currentPage - 1) * 45 + 1;
             int level = startLevel + slot;
 
-            if (level <= 54) {
-                player.closeInventory();
-                final int finalLevel = level;
-                final boolean finalIsPremium = isPremium;
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    plugin.getRewardEditorManager().openLevelEditor(player, finalLevel, finalIsPremium);
-                }, 1L);
-            }
+            // Always allow opening any level slot visible on the page to create new levels
+            player.closeInventory();
+            final int finalLevel = level;
+            final boolean finalIsPremium = isPremium;
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                plugin.getRewardEditorManager().openLevelEditor(player, finalLevel, finalIsPremium);
+            }, 1L);
+
         } else if (slot == 45 && currentPage > 1) {
             player.closeInventory();
             final int prevPage = currentPage - 1;
@@ -139,13 +140,18 @@ public class RewardsEditorListener implements Listener {
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 new RewardsCategoryGui(plugin, player, finalIsPremium, prevPage).open();
             }, 1L);
-        } else if (slot == 53 && ((currentPage - 1) * 45 + 45) < 54) {
-            player.closeInventory();
-            final int nextPage = currentPage + 1;
-            final boolean finalIsPremium = isPremium;
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                new RewardsCategoryGui(plugin, player, finalIsPremium, nextPage).open();
-            }, 1L);
+        } else if (slot == 53) {
+            // Check if next page is allowed
+            int maxLevel = plugin.getRewardManager().getMaxLevel();
+            int endLevel = (currentPage - 1) * 45 + 45;
+            if (endLevel < maxLevel + 45) {
+                player.closeInventory();
+                final int nextPage = currentPage + 1;
+                final boolean finalIsPremium = isPremium;
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    new RewardsCategoryGui(plugin, player, finalIsPremium, nextPage).open();
+                }, 1L);
+            }
         } else if (slot == 48) {
             player.closeInventory();
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {

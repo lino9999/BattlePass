@@ -117,6 +117,7 @@ public class RewardEditorManager {
 
         if (rewards.isEmpty()) {
             saveConfig(file, config);
+            plugin.reload(); // RELOAD AUTOMATICO
             player.sendMessage(GradientColorParser.parse(
                     plugin.getMessageManager().getPrefix() +
                             "<gradient:#00FF88:#45B7D1>✓ Level " + level + " rewards cleared!</gradient>"));
@@ -152,6 +153,7 @@ public class RewardEditorManager {
         }
 
         saveConfig(file, config);
+        plugin.reload(); // RELOAD AUTOMATICO
 
         player.sendMessage(GradientColorParser.parse(
                 plugin.getMessageManager().getPrefix() +
