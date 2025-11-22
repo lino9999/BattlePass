@@ -75,6 +75,11 @@ public class GuiClickListener implements Listener {
                     plugin.getGuiManager().openMissionsGUI(player);
                 }, 20L);
             }
+        } else if (clicked.getType() == Material.WRITABLE_BOOK && slot == 53) {
+            // NEW HANDLER
+            if (player.hasPermission("battlepass.admin")) {
+                plugin.getMissionEditorManager().openMissionEditor(player, 1);
+            }
         }
     }
 

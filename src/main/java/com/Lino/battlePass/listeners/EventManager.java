@@ -13,6 +13,7 @@ public class EventManager {
     private final CustomItemsListener customItemsListener;
     private final GuiClickListener guiClickListener;
     private final RewardsEditorListener rewardsEditorListener;
+    private final MissionEditorListener missionEditorListener;
 
     public EventManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -23,6 +24,7 @@ public class EventManager {
         this.customItemsListener = new CustomItemsListener(plugin);
         this.guiClickListener = new GuiClickListener(plugin);
         this.rewardsEditorListener = new RewardsEditorListener(plugin);
+        this.missionEditorListener = new MissionEditorListener(plugin);
 
         registerListeners();
     }
@@ -33,6 +35,7 @@ public class EventManager {
         plugin.getServer().getPluginManager().registerEvents(customItemsListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(guiClickListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(rewardsEditorListener, plugin);
+        plugin.getServer().getPluginManager().registerEvents(missionEditorListener, plugin);
 
         // Check for MythicMobs hook
         if (plugin.getServer().getPluginManager().getPlugin("MythicMobs") != null) {

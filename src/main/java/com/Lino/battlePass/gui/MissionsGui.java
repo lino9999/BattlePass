@@ -33,6 +33,7 @@ public class MissionsGui extends BaseGui {
 
         if (player.hasPermission("battlepass.admin")) {
             setupAdminResetButton(gui);
+            setupMissionEditorButton(gui); // NEW BUTTON
         }
 
         player.openInventory(gui);
@@ -95,16 +96,31 @@ public class MissionsGui extends BaseGui {
         lore.add("");
         lore.add(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>Admin Only</gradient>"));
         lore.add(GradientColorParser.parse("&7Force reset all daily missions"));
-        lore.add(GradientColorParser.parse("&7and generate new ones"));
-        lore.add("");
-        lore.add(GradientColorParser.parse("&cWarning:"));
-        lore.add(GradientColorParser.parse("&7This will reset progress"));
-        lore.add(GradientColorParser.parse("&7for all players!"));
         lore.add("");
         lore.add(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>▶ CLICK TO RESET</gradient>"));
 
         meta.setLore(lore);
         resetButton.setItemMeta(meta);
         gui.setItem(45, resetButton);
+    }
+
+    // NEW METHOD
+    private void setupMissionEditorButton(Inventory gui) {
+        ItemStack editButton = new ItemStack(Material.WRITABLE_BOOK);
+        ItemMeta meta = editButton.getItemMeta();
+
+        meta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FFA500>Mission Editor</gradient>"));
+
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.add(GradientColorParser.parse("<gradient:#FFD700:#FFA500>Admin Only</gradient>"));
+        lore.add(GradientColorParser.parse("&7Create, Edit or Delete"));
+        lore.add(GradientColorParser.parse("&7mission templates."));
+        lore.add("");
+        lore.add(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>▶ CLICK TO EDIT</gradient>"));
+
+        meta.setLore(lore);
+        editButton.setItemMeta(meta);
+        gui.setItem(53, editButton);
     }
 }

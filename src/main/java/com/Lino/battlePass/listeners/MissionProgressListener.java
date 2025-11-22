@@ -14,6 +14,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.FurnaceExtractEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 
@@ -35,7 +36,7 @@ public class MissionProgressListener implements Listener {
     private void initializeOreTypes() {
         for (Material mat : Material.values()) {
             String name = mat.name();
-            if (name.endsWith("_ORE") || name.equals("ANCIENT_DEBRIS")) {
+            if (name.endsWith("_ORE") || name.equals("ANCIENT_DEBRIS") || name.equals("NETHER_QUARTZ_ORE") || name.equals("GILDED_BLACKSTONE")) {
                 oreTypes.add(mat);
             }
         }
@@ -243,6 +244,36 @@ public class MissionProgressListener implements Listener {
 
         if (event.isDropItems() && oreTypes.contains(mat)) {
             plugin.getMissionManager().progressMission(player, "MINE_BLOCK", blockType, 1);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerConsume(PlayerItemConsumeEvent event) {
+        Player player = event.getPlayer();
+        String itemType = event.getItem().getType().name();
+        plugin.getMissionManager().progressMission(player, "EAT_ITEM", itemType, 1);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFurnaceExtract(FurnaceExtractEvent event) {
+        Player player = event.getPlayer();
+        String itemType = event.getItemType().name();
+        int amount = event.getItemAmount();
+        plugin.getMissionManager().progressMission(player, "SMELT_ITEM", itemType, amount);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerExpChange(PlayerExpChangeEvent event) {
+        if (event.getAmount() > 0) {
+            plugin.getMissionManager().progressMission(event.getPlayer(), "GAIN_XP", "ANY", event.getAmount());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerShearEntity(PlayerShearEntityEvent event) {
+        Player player = event.getPlayer();
+        if (event.getEntity().getType() == EntityType.SHEEP) {
+            plugin.getMissionManager().progressMission(player, "SHEAR_SHEEP", "SHEEP", 1);
         }
     }
 

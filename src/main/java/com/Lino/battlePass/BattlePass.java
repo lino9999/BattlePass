@@ -37,6 +37,7 @@ public class BattlePass extends JavaPlugin {
     private SoundManager soundManager;
     private RewardEditorManager rewardEditorManager;
     private BattlePassExpansion placeholderExpansion;
+    private MissionEditorManager missionEditorManager;
 
     private boolean updateAvailable = false;
     private String latestVersion = "";
@@ -62,6 +63,8 @@ public class BattlePass extends JavaPlugin {
         customItemManager = new CustomItemManager(this);
         soundManager = new SoundManager(this, customItemManager);
         guiManager = new GuiManager(this, playerDataManager, missionManager, rewardManager, messageManager, configManager);
+        rewardEditorManager = new RewardEditorManager(this);
+        missionEditorManager = new MissionEditorManager(this);
         rewardEditorManager = new RewardEditorManager(this);
 
         databaseManager.initialize().thenRun(() -> {
@@ -286,6 +289,10 @@ public class BattlePass extends JavaPlugin {
 
     public EventManager getEventManager() {
         return eventManager;
+    }
+
+    public MissionEditorManager getMissionEditorManager() {
+        return missionEditorManager;
     }
 
     public ShopManager getShopManager() {
