@@ -1,5 +1,5 @@
 name: BattlePass
-version: '7.3'
+version: '7.4'
 main: com.Lino.battlePass.BattlePass
 api-version: '1.21'
 author: Lino
