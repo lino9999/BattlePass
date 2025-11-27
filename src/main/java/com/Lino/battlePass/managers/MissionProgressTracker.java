@@ -37,7 +37,7 @@ public class MissionProgressTracker {
         for (Mission mission : dailyMissions) {
             if (!mission.type.equals(type)) continue;
 
-            if (!mission.target.equals("ANY") && !mission.target.equals(target)) continue;
+            if (!mission.isValidTarget(target)) continue;
 
             String missionKey = generateMissionKey(mission);
 
