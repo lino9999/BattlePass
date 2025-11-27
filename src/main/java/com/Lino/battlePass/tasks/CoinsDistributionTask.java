@@ -52,8 +52,6 @@ public class CoinsDistributionTask extends BukkitRunnable {
                     PlayerData topPlayer = topPlayers.get(i);
                     int coins = coinAmounts.get(i);
 
-                    topPlayer.battleCoins += coins;
-
                     String playerName = Bukkit.getOfflinePlayer(topPlayer.uuid).getName();
                     String rank = String.valueOf(i + 1);
 
@@ -62,21 +60,15 @@ public class CoinsDistributionTask extends BukkitRunnable {
                             "%player%", playerName,
                             "%amount%", String.valueOf(coins)));
 
-                    Player player = Bukkit.getPlayer(topPlayer.uuid);
-                    if (player != null) {
-                        PlayerData onlineData = plugin.getPlayerDataManager().getPlayerData(topPlayer.uuid);
-                        if (onlineData != null) {
-                            onlineData.battleCoins = topPlayer.battleCoins;
-                            plugin.getPlayerDataManager().markForSave(topPlayer.uuid);
+                    plugin.getPlayerDataManager().addBattleCoins(topPlayer.uuid, coins).thenAccept(success -> {
+                        Player player = Bukkit.getPlayer(topPlayer.uuid);
+                        if (player != null) {
+                            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                                    plugin.getMessageManager().getMessage("messages.coins.received",
+                                            "%amount%", String.valueOf(coins)));
+                            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
                         }
-
-                        player.sendMessage(plugin.getMessageManager().getPrefix() +
-                                plugin.getMessageManager().getMessage("messages.coins.received",
-                                        "%amount%", String.valueOf(coins)));
-                        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-                    } else {
-                        plugin.getDatabaseManager().savePlayerData(topPlayer.uuid, topPlayer);
-                    }
+                    });
                 }
             });
         });

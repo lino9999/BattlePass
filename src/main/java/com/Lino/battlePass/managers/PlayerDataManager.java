@@ -90,4 +90,22 @@ public class PlayerDataManager {
         playerCache.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
         dirtyPlayers.removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
     }
+
+    public CompletableFuture<Boolean> addBattleCoins(UUID uuid, int amount) {
+        PlayerData cacheData = playerCache.get(uuid);
+        if (cacheData != null) {
+            cacheData.battleCoins += amount;
+            markForSave(uuid);
+            return CompletableFuture.completedFuture(true);
+        }
+
+        return databaseManager.loadPlayerData(uuid).thenApply(data -> {
+            if (data == null) return false;
+
+            data.battleCoins += amount;
+            playerCache.put(uuid, data);
+            markForSave(uuid);
+            return true;
+        });
+    }
 }
