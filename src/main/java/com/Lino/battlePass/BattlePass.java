@@ -102,7 +102,7 @@ public class BattlePass extends JavaPlugin {
                             registerPlaceholders();
                             checkForUpdates();
 
-                            getLogger().info(messageManager.getMessage("messages.plugin-enabled"));
+                            getLogger().info("✓ Battle Pass enabled successfully!");
                             this.cancel();
                         } else if (attempts >= MAX_ATTEMPTS) {
                             getLogger().severe("Failed to initialize MissionManager after 30 seconds!");
