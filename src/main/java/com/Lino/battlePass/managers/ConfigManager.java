@@ -6,6 +6,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -163,8 +164,26 @@ public class ConfigManager {
         return dailyMissionsCount;
     }
 
-    public int getSeasonDuration() {
-        return seasonDuration;
+    public LocalDateTime calculateSeasonEndDate() {
+        String resetType = getConfig().getString("season.reset-type", "DURATION");
+        int duration = seasonDuration;
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if ("MONTH_START".equalsIgnoreCase(resetType)) {
+            return now.plusMonths(1)
+                    .withDayOfMonth(1)
+                    .withHour(0)
+                    .withMinute(0)
+                    .withSecond(0)
+                    .withNano(0);
+        } else {
+            return now.plusDays(duration)
+                    .withHour(0)
+                    .withMinute(0)
+                    .withSecond(0)
+                    .withNano(0);
+        }
     }
 
     public int getDailyRewardXP() {
