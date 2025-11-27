@@ -290,8 +290,8 @@ public class DatabaseManager {
         }, databaseExecutor);
     }
 
-    public CompletableFuture<Void> savePlayerData(UUID uuid, PlayerData data) {
-        return CompletableFuture.runAsync(() -> {
+    public CompletableFuture<Boolean> savePlayerData(UUID uuid, PlayerData data) {
+        return CompletableFuture.supplyAsync(() -> {
             String updateSql = "UPDATE " + prefix + "players SET xp=?, level=?, claimed_free=?, claimed_premium=?, last_notification=?, total_levels=?, has_premium=?, last_daily_reward=?, battle_coins=?, exclude_from_top=? WHERE uuid=?";
             String missionSql = isMySQL
                     ? "INSERT INTO " + prefix + "missions (uuid, mission, progress, date) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE progress = VALUES(progress)"
@@ -330,8 +330,11 @@ public class DatabaseManager {
                         ps.executeBatch();
                     }
                 }
+                return true;
             } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to save data for " + uuid + ": " + e.getMessage());
                 e.printStackTrace();
+                return false;
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
@@ -508,7 +511,6 @@ public class DatabaseManager {
                 try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + prefix + "season_data WHERE id = 1")) {
                     try (ResultSet rs = ps.executeQuery()) {
                         if (rs.next()) {
-                            // Safe parsing for End Date
                             String endDateStr = rs.getString("end_date");
                             if (endDateStr != null && !endDateStr.isEmpty()) {
                                 try {
@@ -518,7 +520,6 @@ public class DatabaseManager {
                                 }
                             }
 
-                            // Safe parsing for Mission Reset Time
                             String resetTimeStr = rs.getString("mission_reset_time");
                             if (resetTimeStr != null && !resetTimeStr.isEmpty()) {
                                 try {
@@ -528,13 +529,11 @@ public class DatabaseManager {
                                 }
                             }
 
-                            // Current Mission Date (String)
                             String currentMissionDate = rs.getString("current_mission_date");
                             if (currentMissionDate != null && !currentMissionDate.isEmpty()) {
                                 data.put("currentMissionDate", currentMissionDate);
                             }
 
-                            // Safe parsing for Next Coins Distribution
                             String coinsDistStr = rs.getString("next_coins_distribution");
                             if (coinsDistStr != null && !coinsDistStr.isEmpty()) {
                                 try {

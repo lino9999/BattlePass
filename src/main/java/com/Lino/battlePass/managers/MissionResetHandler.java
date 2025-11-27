@@ -58,14 +58,13 @@ public class MissionResetHandler {
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
         }
 
+        plugin.getPlayerDataManager().clearCache(false);
+
         plugin.getDatabaseManager().resetSeason().thenRun(() -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
-                plugin.getPlayerDataManager().clearCache();
-
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     plugin.getPlayerDataManager().loadPlayer(player.getUniqueId());
                 }
-
                 calculateSeasonEndDate();
             });
         });
@@ -79,12 +78,11 @@ public class MissionResetHandler {
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
         }
 
-        plugin.getPlayerDataManager().clearDirtyPlayers();
+        plugin.getPlayerDataManager().clearCache(false);
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             plugin.getDatabaseManager().resetSeason().thenRun(() -> {
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    plugin.getPlayerDataManager().clearCache();
                     calculateSeasonEndDate();
                     calculateNextReset();
 

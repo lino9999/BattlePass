@@ -45,8 +45,11 @@ public class PlayerDataManager {
         if (data != null && dirtyPlayers.contains(uuid)) {
             PlayerData snapshot = data.copy();
 
-            databaseManager.savePlayerData(uuid, snapshot).join();
-            dirtyPlayers.remove(uuid);
+            databaseManager.savePlayerData(uuid, snapshot).thenAccept(success -> {
+                if (success) {
+                    dirtyPlayers.remove(uuid);
+                }
+            });
         }
     }
 
@@ -64,13 +67,13 @@ public class PlayerDataManager {
         Map<UUID, PlayerData> snapshots = playersToSave.stream()
                 .collect(Collectors.toMap(uuid -> uuid, uuid -> playerCache.get(uuid).copy()));
 
-        CompletableFuture<?>[] futures = playersToSave.stream()
-                .map(uuid -> databaseManager.savePlayerData(uuid, snapshots.get(uuid)))
-                .toArray(CompletableFuture[]::new);
-
-        CompletableFuture.allOf(futures).thenRun(() -> {
-            dirtyPlayers.removeAll(playersToSave);
-        });
+        for (UUID uuid : playersToSave) {
+            databaseManager.savePlayerData(uuid, snapshots.get(uuid)).thenAccept(success -> {
+                if (success) {
+                    dirtyPlayers.remove(uuid);
+                }
+            });
+        }
     }
 
     public void saveAllPlayersSync() {
@@ -83,12 +86,17 @@ public class PlayerDataManager {
         Map<UUID, PlayerData> snapshots = playersToSave.stream()
                 .collect(Collectors.toMap(uuid -> uuid, uuid -> playerCache.get(uuid).copy()));
 
-        CompletableFuture<?>[] futures = playersToSave.stream()
-                .map(uuid -> databaseManager.savePlayerData(uuid, snapshots.get(uuid)))
-                .toArray(CompletableFuture[]::new);
-
-        CompletableFuture.allOf(futures).join();
-        dirtyPlayers.removeAll(playersToSave);
+        for (UUID uuid : playersToSave) {
+            try {
+                boolean success = databaseManager.savePlayerData(uuid, snapshots.get(uuid)).join();
+                if (success) {
+                    dirtyPlayers.remove(uuid);
+                }
+            } catch (Exception e) {
+                plugin.getLogger().severe("Failed to sync save player " + uuid);
+                e.printStackTrace();
+            }
+        }
     }
 
     public void clearDirtyPlayers() {
@@ -109,9 +117,17 @@ public class PlayerDataManager {
         }
     }
 
-    public void clearCache() {
-        saveAllPlayers();
+    public void clearCache(boolean save) {
+        if (save) {
+            saveAllPlayersSync();
+        } else {
+            clearDirtyPlayers();
+        }
         playerCache.clear();
+    }
+
+    public void clearCache() {
+        clearCache(true);
     }
 
     public void cleanupStaleEntries() {
