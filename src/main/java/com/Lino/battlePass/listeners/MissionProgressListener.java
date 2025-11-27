@@ -20,6 +20,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.projectiles.ProjectileSource;
 
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -190,9 +191,7 @@ public class MissionProgressListener implements Listener {
         if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
 
         if (event.getInventory().getHolder() instanceof Villager villager) {
-            String profession = villager.getProfession().key().value()
-                    .replace("minecraft:", "")
-                    .toUpperCase();
+            String profession = getProfessionName(villager);
             if (profession.equals("NONE")) profession = "VILLAGER";
 
             plugin.getMissionManager().progressMission(player, "TRADE_VILLAGER", profession, 1);
@@ -328,6 +327,27 @@ public class MissionProgressListener implements Listener {
         Player player = event.getPlayer();
         if (event.getEntity().getType() == EntityType.SHEEP) {
             plugin.getMissionManager().progressMission(player, "SHEAR_SHEEP", "SHEEP", 1);
+        }
+    }
+
+    public String getProfessionName(Villager villager) {
+        Villager.Profession profession = villager.getProfession();
+
+        try {
+            // Old method
+            return profession.name();
+        } catch (Exception e) {
+            // New method ('name()' is deprecated since version 1.21 and marked for removal)
+            // profession.key().value().replace("minecraft:", "").toUpperCase();
+            try {
+                Method keyMethod = profession.getClass().getMethod("key");
+                Object namespacedKey = keyMethod.invoke(profession);
+                Method valueMethod = namespacedKey.getClass().getMethod("value");
+                String keyValue = (String) valueMethod.invoke(namespacedKey);
+                return keyValue.replace("minecraft:", "").toUpperCase();
+            } catch (Exception ex) {
+                return "UNKNOWN";
+            }
         }
     }
 
