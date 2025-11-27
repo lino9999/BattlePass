@@ -128,7 +128,7 @@ items:
     name: "<gradient:#FFD93D:#FF6B6B>⭐ Your Progress</gradient>"
     lore:
       - "&7"
-      - "&8▸ &7Level: <gradient:#4ECDC4:#45B7D1>%level%</gradient>&7/<gradient:#4ECDC4:#45B7D1>54</gradient>"
+      - "&8▸ &7Level: <gradient:#4ECDC4:#45B7D1>%level%</gradient>&7/<gradient:#4ECDC4:#45B7D1>%max_level%</gradient>"
       - "&8▸ &7XP: <gradient:#FFD93D:#FF6B6B>%xp%</gradient>&7/<gradient:#FFD93D:#FF6B6B>%xp_needed%</gradient>"
       - "&7"
       - "&8▸ &7Premium Pass: %premium_status%"

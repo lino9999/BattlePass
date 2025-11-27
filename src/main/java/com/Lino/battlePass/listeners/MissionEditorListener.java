@@ -116,7 +116,7 @@ public class MissionEditorListener implements Listener {
         if (slot == 12) {
             ConfigurationSection section = plugin.getConfigManager().getMissionsConfig().getConfigurationSection("mission-pools." + key);
             if (section != null) {
-                String missionType = section.getString("type");
+                String missionType = section.getString("type", "UNKNOWN");
                 isTargetRequired = plugin.getMissionEditorManager().isTargetRequired(missionType);
             }
         }
