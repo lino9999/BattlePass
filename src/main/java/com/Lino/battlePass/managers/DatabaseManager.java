@@ -21,12 +21,18 @@ public class DatabaseManager {
     private final BattlePass plugin;
     private HikariDataSource dataSource;
     private Connection sqliteConnection;
-    private final ExecutorService databaseExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService databaseExecutor;
     private boolean isMySQL;
     private String prefix;
 
     public DatabaseManager(BattlePass plugin) {
         this.plugin = plugin;
+        String type = plugin.getConfigManager().getDatabaseType();
+        if (type.equalsIgnoreCase("MYSQL")) {
+            this.databaseExecutor = Executors.newFixedThreadPool(plugin.getConfigManager().getDbPoolSize());
+        } else {
+            this.databaseExecutor = Executors.newSingleThreadExecutor();
+        }
     }
 
     public CompletableFuture<Void> initialize() {
