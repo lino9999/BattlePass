@@ -43,7 +43,9 @@ public class PlayerDataManager {
     public void savePlayer(UUID uuid) {
         PlayerData data = playerCache.get(uuid);
         if (data != null && dirtyPlayers.contains(uuid)) {
-            databaseManager.savePlayerData(uuid, data).join();
+            PlayerData snapshot = data.copy();
+
+            databaseManager.savePlayerData(uuid, snapshot).join();
             dirtyPlayers.remove(uuid);
         }
     }
@@ -59,13 +61,38 @@ public class PlayerDataManager {
 
         if (playersToSave.isEmpty()) return;
 
+        Map<UUID, PlayerData> snapshots = playersToSave.stream()
+                .collect(Collectors.toMap(uuid -> uuid, uuid -> playerCache.get(uuid).copy()));
+
         CompletableFuture<?>[] futures = playersToSave.stream()
-                .map(uuid -> databaseManager.savePlayerData(uuid, playerCache.get(uuid)))
+                .map(uuid -> databaseManager.savePlayerData(uuid, snapshots.get(uuid)))
                 .toArray(CompletableFuture[]::new);
 
         CompletableFuture.allOf(futures).thenRun(() -> {
             dirtyPlayers.removeAll(playersToSave);
         });
+    }
+
+    public void saveAllPlayersSync() {
+        Set<UUID> playersToSave = playerCache.keySet().stream()
+                .filter(dirtyPlayers::contains)
+                .collect(Collectors.toSet());
+
+        if (playersToSave.isEmpty()) return;
+
+        Map<UUID, PlayerData> snapshots = playersToSave.stream()
+                .collect(Collectors.toMap(uuid -> uuid, uuid -> playerCache.get(uuid).copy()));
+
+        CompletableFuture<?>[] futures = playersToSave.stream()
+                .map(uuid -> databaseManager.savePlayerData(uuid, snapshots.get(uuid)))
+                .toArray(CompletableFuture[]::new);
+
+        CompletableFuture.allOf(futures).join();
+        dirtyPlayers.removeAll(playersToSave);
+    }
+
+    public void clearDirtyPlayers() {
+        dirtyPlayers.clear();
     }
 
     public PlayerData getPlayerData(UUID uuid) {
