@@ -1,11 +1,11 @@
 package com.Lino.battlePass.listeners;
 
 import com.Lino.battlePass.BattlePass;
+import com.Lino.battlePass.gui.BaseHolder;
 import com.Lino.battlePass.gui.LevelRewardEditGui;
 import com.Lino.battlePass.gui.RewardsCategoryGui;
 import com.Lino.battlePass.gui.RewardsEditorGui;
 import com.Lino.battlePass.models.EditableReward;
-import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -33,6 +33,8 @@ public class RewardsEditorListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
+        if (!BaseHolder.isBattlePassInventory(event.getView().getTopInventory())) return;
+
         if (!(event.getWhoClicked() instanceof Player)) return;
 
         Player player = (Player) event.getWhoClicked();

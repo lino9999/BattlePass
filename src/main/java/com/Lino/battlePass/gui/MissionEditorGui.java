@@ -27,7 +27,7 @@ public class MissionEditorGui {
     }
 
     public void open() {
-        Inventory gui = Bukkit.createInventory(null, 54, GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Mission Editor - Page " + page + "</gradient>"));
+        Inventory gui = BaseGui.createInventory(54, GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Mission Editor - Page " + page + "</gradient>"));
 
         ConfigurationSection pools = plugin.getConfigManager().getMissionsConfig().getConfigurationSection("mission-pools");
         List<String> keys = pools != null ? new ArrayList<>(pools.getKeys(false)) : new ArrayList<>();

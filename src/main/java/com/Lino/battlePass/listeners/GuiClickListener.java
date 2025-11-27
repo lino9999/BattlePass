@@ -1,6 +1,7 @@
 package com.Lino.battlePass.listeners;
 
 import com.Lino.battlePass.BattlePass;
+import com.Lino.battlePass.gui.BaseHolder;
 import com.Lino.battlePass.models.PlayerData;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -24,6 +25,8 @@ public class GuiClickListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
+        if (!BaseHolder.isBattlePassInventory(event.getView().getTopInventory())) return;
+
         String title = event.getView().getTitle();
         Player player = (Player) event.getWhoClicked();
 
