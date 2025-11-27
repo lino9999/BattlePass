@@ -60,7 +60,7 @@ public class MissionResetHandler {
         plugin.getDatabaseManager().resetSeason();
         plugin.getPlayerDataManager().clearCache();
 
-        seasonEndDate = LocalDateTime.now().plusDays(plugin.getConfigManager().getSeasonDuration());
+        seasonEndDate = plugin.getConfigManager().calculateSeasonEndDate();
     }
 
     public void forceResetSeason() {
@@ -77,7 +77,7 @@ public class MissionResetHandler {
             plugin.getDatabaseManager().resetSeason().thenRun(() -> {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     plugin.getPlayerDataManager().clearCache();
-                    seasonEndDate = LocalDateTime.now().plusDays(plugin.getConfigManager().getSeasonDuration());
+                    seasonEndDate = plugin.getConfigManager().calculateSeasonEndDate();
                     calculateNextReset();
 
                     for (Player player : Bukkit.getOnlinePlayers()) {

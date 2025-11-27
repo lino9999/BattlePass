@@ -53,7 +53,7 @@ public class MissionManager {
                     return;
                 }
             } else {
-                resetHandler.setSeasonEndDate(LocalDateTime.now().plusDays(configManager.getSeasonDuration()));
+                resetHandler.setSeasonEndDate(configManager.calculateSeasonEndDate());
                 currentMissionDate = LocalDateTime.now().toLocalDate().toString();
                 resetHandler.calculateNextReset();
                 saveSeasonData();
@@ -195,7 +195,6 @@ public class MissionManager {
     private void saveSeasonData() {
         databaseManager.saveSeasonData(
                 resetHandler.getSeasonEndDate(),
-                configManager.getSeasonDuration(),
                 resetHandler.getNextMissionReset(),
                 currentMissionDate
         );
