@@ -58,10 +58,20 @@ public class MissionResetHandler {
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
         }
 
-        plugin.getDatabaseManager().resetSeason();
-        plugin.getPlayerDataManager().clearCache();
+        // Reset DB and Clear Cache
+        plugin.getDatabaseManager().resetSeason().thenRun(() -> {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                plugin.getPlayerDataManager().clearCache();
 
-        calculateSeasonEndDate();
+                // IMPORTANT: Reload online players immediately after cache clear
+                // preventing them from having null data until relogin
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    plugin.getPlayerDataManager().loadPlayer(player.getUniqueId());
+                }
+
+                calculateSeasonEndDate();
+            });
+        });
     }
 
     public void forceResetSeason() {

@@ -63,8 +63,9 @@ public class PlayerDataManager {
                 .map(uuid -> databaseManager.savePlayerData(uuid, playerCache.get(uuid)))
                 .toArray(CompletableFuture[]::new);
 
-        CompletableFuture.allOf(futures).join();
-        dirtyPlayers.clear();
+        CompletableFuture.allOf(futures).thenRun(() -> {
+            dirtyPlayers.removeAll(playersToSave);
+        });
     }
 
     public PlayerData getPlayerData(UUID uuid) {
