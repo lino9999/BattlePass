@@ -131,7 +131,14 @@ public class PlayerDataManager {
     }
 
     public void cleanupStaleEntries() {
-        playerCache.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
-        dirtyPlayers.removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+        playerCache.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null && !dirtyPlayers.contains(uuid));
+
+        for (UUID uuid : playerCache.keySet()) {
+            if (Bukkit.getPlayer(uuid) == null && dirtyPlayers.contains(uuid)) {
+                savePlayer(uuid);
+            }
+        }
+
+        dirtyPlayers.removeIf(uuid -> !playerCache.containsKey(uuid));
     }
 }
