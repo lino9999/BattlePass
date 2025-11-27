@@ -20,6 +20,7 @@ public class ConfigManager {
 
     private int xpPerLevel = 200;
     private int dailyMissionsCount = 7;
+    private String seasonResetType = "DURATION";
     private int seasonDuration = 30;
     private int dailyRewardXP = 200;
     private List<Integer> coinsDistribution = new ArrayList<>();
@@ -56,6 +57,7 @@ public class ConfigManager {
     public void reload() {
         config = plugin.getConfig();
         xpPerLevel = config.getInt("experience.xp-per-level", 200);
+        seasonResetType = config.getString("season.reset-type", "DURATION");
         seasonDuration = config.getInt("season.duration", 30);
         dailyRewardXP = config.getInt("daily-reward.xp", 200);
         shopEnabled = config.getBoolean("shop.enabled", true);
@@ -161,6 +163,10 @@ public class ConfigManager {
 
     public int getDailyMissionsCount() {
         return dailyMissionsCount;
+    }
+
+    public String getSeasonResetType() {
+        return seasonResetType;
     }
 
     public int getSeasonDuration() {

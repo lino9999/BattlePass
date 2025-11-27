@@ -53,13 +53,17 @@ public class MissionManager {
                     return;
                 }
             } else {
-                resetHandler.setSeasonEndDate(LocalDateTime.now().plusDays(configManager.getSeasonDuration()));
+                resetHandler.calculateSeasonEndDate();
                 currentMissionDate = LocalDateTime.now().toLocalDate().toString();
                 resetHandler.calculateNextReset();
                 saveSeasonData();
             }
 
             loadMissionsAfterSeasonData();
+        }).exceptionally(ex -> {
+            plugin.getLogger().severe("Failed to load season data: " + ex.getMessage());
+            ex.printStackTrace();
+            return null;
         });
     }
 
@@ -195,7 +199,6 @@ public class MissionManager {
     private void saveSeasonData() {
         databaseManager.saveSeasonData(
                 resetHandler.getSeasonEndDate(),
-                configManager.getSeasonDuration(),
                 resetHandler.getNextMissionReset(),
                 currentMissionDate
         );

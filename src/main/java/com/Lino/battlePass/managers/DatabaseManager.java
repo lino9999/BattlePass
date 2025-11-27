@@ -154,7 +154,6 @@ public class DatabaseManager {
                 stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "season_data (" +
                         "id " + intKey + " PRIMARY KEY " + autoIncrement + "," +
                         "end_date TEXT," +
-                        "duration INTEGER," +
                         "mission_reset_time TEXT," +
                         "current_mission_date TEXT," +
                         "next_coins_distribution TEXT)"
@@ -341,6 +340,28 @@ public class DatabaseManager {
         }, databaseExecutor);
     }
 
+    public CompletableFuture<Void> updatePlayerCoins(UUID uuid, int amount) {
+        return CompletableFuture.runAsync(() -> {
+            Connection conn = null;
+            boolean shouldClose = isMySQL;
+
+            try {
+                conn = getConnection();
+                try (PreparedStatement ps = conn.prepareStatement("UPDATE " + prefix + "players SET battle_coins = ? WHERE uuid = ?")) {
+                    ps.setInt(1, amount);
+                    ps.setString(2, uuid.toString());
+                    ps.executeUpdate();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            } finally {
+                if (shouldClose && conn != null) {
+                    try { conn.close(); } catch (SQLException e) {}
+                }
+            }
+        }, databaseExecutor);
+    }
+
     public CompletableFuture<List<PlayerData>> getTop10Players() {
         return CompletableFuture.supplyAsync(() -> {
             List<PlayerData> allPlayers = new ArrayList<>();
@@ -373,24 +394,36 @@ public class DatabaseManager {
         }, databaseExecutor);
     }
 
-    public CompletableFuture<Void> saveSeasonData(LocalDateTime endDate, int duration, LocalDateTime missionResetTime, String currentMissionDate) {
+    public CompletableFuture<Void> saveSeasonData(LocalDateTime endDate, LocalDateTime missionResetTime, String currentMissionDate) {
         return CompletableFuture.runAsync(() -> {
-            String sql = isMySQL
-                    ? "INSERT INTO " + prefix + "season_data (id, end_date, duration, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE end_date=VALUES(end_date), duration=VALUES(duration), mission_reset_time=VALUES(mission_reset_time), current_mission_date=VALUES(current_mission_date)"
-                    : "INSERT OR REPLACE INTO " + prefix + "season_data (id, end_date, duration, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?)";
-
             Connection conn = null;
             boolean shouldClose = isMySQL;
 
             try {
                 conn = getConnection();
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, endDate != null ? endDate.toString() : LocalDateTime.now().plusDays(duration).toString());
-                    ps.setInt(2, duration);
-                    ps.setString(3, missionResetTime != null ? missionResetTime.toString() : "");
-                    ps.setString(4, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
-                    ps.executeUpdate();
+                boolean exists = false;
+                try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM " + prefix + "season_data WHERE id = 1")) {
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) exists = true;
+                    }
                 }
+
+                if (exists) {
+                    try (PreparedStatement ps = conn.prepareStatement("UPDATE " + prefix + "season_data SET end_date = ?, mission_reset_time = ?, current_mission_date = ? WHERE id = 1")) {
+                        ps.setString(1, endDate != null ? endDate.toString() : "");
+                        ps.setString(2, missionResetTime != null ? missionResetTime.toString() : "");
+                        ps.setString(3, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
+                        ps.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement ps = conn.prepareStatement("INSERT INTO " + prefix + "season_data (id, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?)")) {
+                        ps.setString(1, endDate != null ? endDate.toString() : "");
+                        ps.setString(2, missionResetTime != null ? missionResetTime.toString() : "");
+                        ps.setString(3, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
+                        ps.executeUpdate();
+                    }
+                }
+
             } catch (SQLException e) {
                 e.printStackTrace();
             } finally {
@@ -408,9 +441,23 @@ public class DatabaseManager {
 
             try {
                 conn = getConnection();
-                try (PreparedStatement ps = conn.prepareStatement("UPDATE " + prefix + "season_data SET next_coins_distribution = ? WHERE id = 1")) {
-                    ps.setString(1, nextDistribution.toString());
-                    ps.executeUpdate();
+                boolean exists = false;
+                try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM " + prefix + "season_data WHERE id = 1")) {
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) exists = true;
+                    }
+                }
+
+                if (exists) {
+                    try (PreparedStatement ps = conn.prepareStatement("UPDATE " + prefix + "season_data SET next_coins_distribution = ? WHERE id = 1")) {
+                        ps.setString(1, nextDistribution.toString());
+                        ps.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement ps = conn.prepareStatement("INSERT INTO " + prefix + "season_data (id, next_coins_distribution) VALUES (1, ?)")) {
+                        ps.setString(1, nextDistribution.toString());
+                        ps.executeUpdate();
+                    }
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -461,19 +508,40 @@ public class DatabaseManager {
                 try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + prefix + "season_data WHERE id = 1")) {
                     try (ResultSet rs = ps.executeQuery()) {
                         if (rs.next()) {
-                            data.put("endDate", LocalDateTime.parse(rs.getString("end_date")));
-                            data.put("duration", rs.getInt("duration"));
+                            // Safe parsing for End Date
+                            String endDateStr = rs.getString("end_date");
+                            if (endDateStr != null && !endDateStr.isEmpty()) {
+                                try {
+                                    data.put("endDate", LocalDateTime.parse(endDateStr));
+                                } catch (Exception e) {
+                                    plugin.getLogger().warning("Invalid season end date in DB: " + endDateStr);
+                                }
+                            }
+
+                            // Safe parsing for Mission Reset Time
                             String resetTimeStr = rs.getString("mission_reset_time");
                             if (resetTimeStr != null && !resetTimeStr.isEmpty()) {
-                                data.put("missionResetTime", LocalDateTime.parse(resetTimeStr));
+                                try {
+                                    data.put("missionResetTime", LocalDateTime.parse(resetTimeStr));
+                                } catch (Exception e) {
+                                    plugin.getLogger().warning("Invalid mission reset time in DB: " + resetTimeStr);
+                                }
                             }
+
+                            // Current Mission Date (String)
                             String currentMissionDate = rs.getString("current_mission_date");
                             if (currentMissionDate != null && !currentMissionDate.isEmpty()) {
                                 data.put("currentMissionDate", currentMissionDate);
                             }
+
+                            // Safe parsing for Next Coins Distribution
                             String coinsDistStr = rs.getString("next_coins_distribution");
                             if (coinsDistStr != null && !coinsDistStr.isEmpty()) {
-                                data.put("nextCoinsDistribution", LocalDateTime.parse(coinsDistStr));
+                                try {
+                                    data.put("nextCoinsDistribution", LocalDateTime.parse(coinsDistStr));
+                                } catch (Exception e) {
+                                    plugin.getLogger().warning("Invalid coins distribution time in DB: " + coinsDistStr);
+                                }
                             }
                         }
                     }
