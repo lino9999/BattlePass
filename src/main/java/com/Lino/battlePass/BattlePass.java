@@ -93,6 +93,8 @@ public class BattlePass extends JavaPlugin {
                                 coinsDistributionTask = new CoinsDistributionTask(BattlePass.this);
                                 if (nextDist != null) {
                                     coinsDistributionTask.setNextDistribution(nextDist);
+                                } else {
+                                    coinsDistributionTask.resetDistributionTime();
                                 }
                                 coinsDistributionTask.runTaskTimer(BattlePass.this, 200L, 1200L);
                             });
