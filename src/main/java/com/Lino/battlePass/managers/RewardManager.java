@@ -228,7 +228,7 @@ public class RewardManager {
         plugin.getPlayerDataManager().markForSave(player.getUniqueId());
     }
 
-    public int countAvailableRewards(Player player, PlayerData data) {
+    public int countAvailableRewards(PlayerData data) {
         int count = 0;
         for (int level : freeRewardsByLevel.keySet()) {
             if (data.level >= level && !data.claimedFreeRewards.contains(level)) {

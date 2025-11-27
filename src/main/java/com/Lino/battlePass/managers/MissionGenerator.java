@@ -3,7 +3,6 @@ package com.Lino.battlePass.managers;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.MissionTemplate;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -16,7 +15,7 @@ public class MissionGenerator {
         this.configManager = configManager;
     }
 
-    public List<Mission> generateDailyMissions(String missionDate) {
+    public List<Mission> generateDailyMissions() {
         ConfigurationSection pools = configManager.getMissionsConfig().getConfigurationSection("mission-pools");
         if (pools == null) {
             return new ArrayList<>();

@@ -208,7 +208,7 @@ public class GuiClickListener implements Listener {
                                 "%level%", String.valueOf(data.level)));
                 player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 
-                int available = plugin.getRewardManager().countAvailableRewards(player, data);
+                int available = plugin.getRewardManager().countAvailableRewards(data);
                 if (available > 0) {
                     player.sendMessage(plugin.getMessageManager().getPrefix() +
                             plugin.getMessageManager().getMessage("messages.new-rewards"));
