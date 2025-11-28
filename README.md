@@ -3,7 +3,6 @@ Bring the excitement of a seasonal progression system to your Minecraft server!
 
 BattlePass is a feature-rich plugin that adds a tier-based reward system similar to popular battle royale games. Engage your players with Daily Missions, unlockable rewards, and a currency system, all manageable through an easy-to-use in-game GUI.
 
-(Replace this with your own image)
 
 ✨ Key Features
 🏆 Seasonal Progression: Players can level up through 54 tiers (configurable) to unlock rewards.
@@ -25,6 +24,7 @@ BattlePass is a feature-rich plugin that adds a tier-based reward system similar
 PlaceholderAPI: Full placeholder support for scoreboards and menus.
 
 MythicMobs: Create missions to kill custom mobs.
+
 
 📥 Installation
 Download the .jar file.
