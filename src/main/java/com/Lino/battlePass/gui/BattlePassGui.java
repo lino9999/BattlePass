@@ -56,6 +56,7 @@ public class BattlePassGui extends BaseGui {
                     .replace("%level%", String.valueOf(playerData.level))
                     .replace("%xp%", String.valueOf(playerData.xp))
                     .replace("%xp_needed%", String.valueOf(plugin.getConfigManager().getXpPerLevel()))
+                    .replace("%max_level%", String.valueOf(maxLevel))
                     .replace("%premium_status%", premiumStatus)
                     .replace("%season_time%", plugin.getMissionManager().getTimeUntilSeasonEnd());
             lore.add(GradientColorParser.parse(processedLine));
@@ -209,8 +210,7 @@ public class BattlePassGui extends BaseGui {
             gui.setItem(45, createNavigationItem(false, page - 1));
         }
 
-        int maxPages = (int) Math.ceil(maxLevel / 9.0);
-        if (page < maxPages) {
+        if (page < plugin.getRewardManager().getMaxPage()) {
             gui.setItem(53, createNavigationItem(true, page + 1));
         }
     }

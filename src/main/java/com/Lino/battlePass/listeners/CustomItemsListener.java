@@ -171,7 +171,7 @@ public class CustomItemsListener implements Listener {
         }
 
         if (levelsGained > 0) {
-            int available = plugin.getRewardManager().countAvailableRewards(player, data);
+            int available = plugin.getRewardManager().countAvailableRewards(data);
             if (available > 0) {
                 player.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.new-rewards"));

@@ -92,6 +92,8 @@ public class BattlePass extends JavaPlugin {
                                 coinsDistributionTask = new CoinsDistributionTask(BattlePass.this);
                                 if (nextDist != null) {
                                     coinsDistributionTask.setNextDistribution(nextDist);
+                                } else {
+                                    coinsDistributionTask.resetDistributionTime();
                                 }
                                 coinsDistributionTask.runTaskTimer(BattlePass.this, 200L, 1200L);
                             });
@@ -99,7 +101,7 @@ public class BattlePass extends JavaPlugin {
                             registerPlaceholders();
                             checkForUpdates();
 
-                            getLogger().info(messageManager.getMessage("messages.plugin-enabled"));
+                            getLogger().info("✓ Battle Pass enabled successfully!");
                             this.cancel();
                         } else if (attempts >= MAX_ATTEMPTS) {
                             getLogger().severe("Failed to initialize MissionManager after 30 seconds!");
@@ -216,7 +218,7 @@ public class BattlePass extends JavaPlugin {
                 boolean isBattlePassGUI = false;
                 int currentPage = 1;
 
-                for (int i = 1; i <= 6; i++) {
+                for (int i = 1; i <= rewardManager.getMaxPage(); i++) {
                     if (title.equals(messageManager.getMessage("gui.battlepass", "%page%", String.valueOf(i)))) {
                         isBattlePassGUI = true;
                         currentPage = i;

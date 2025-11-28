@@ -8,8 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -93,7 +91,7 @@ public class BattlePassExpansion extends PlaceholderExpansion {
             case "available_rewards":
                 if (player.isOnline()) {
                     Player onlinePlayer = player.getPlayer();
-                    return String.valueOf(plugin.getRewardManager().countAvailableRewards(onlinePlayer, data));
+                    return String.valueOf(plugin.getRewardManager().countAvailableRewards(data));
                 }
                 return "0";
 

@@ -10,7 +10,7 @@ import org.bukkit.entity.Player;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 
 public class MissionManager {
 
@@ -82,7 +82,7 @@ public class MissionManager {
                 if (resetHandler.getNextMissionReset() != null && now.isAfter(resetHandler.getNextMissionReset())) {
                     currentMissionDate = now.toLocalDate().toString();
                     databaseManager.clearOldMissionProgress(currentMissionDate);
-                    progressTracker.resetProgress(currentMissionDate);
+                    progressTracker.resetProgress();
                 }
 
                 generateDailyMissions();
@@ -110,7 +110,7 @@ public class MissionManager {
             currentMissionDate = LocalDateTime.now().toLocalDate().toString();
         }
 
-        dailyMissions = new ArrayList<>(missionGenerator.generateDailyMissions(currentMissionDate));
+        dailyMissions = new ArrayList<>(missionGenerator.generateDailyMissions());
     }
 
     public void checkMissionReset() {
@@ -127,7 +127,7 @@ public class MissionManager {
                 player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.reset"));
             }
 
-            progressTracker.resetProgress(currentMissionDate);
+            progressTracker.resetProgress();
             databaseManager.clearOldMissionProgress(currentMissionDate);
         }
     }
@@ -144,7 +144,7 @@ public class MissionManager {
         generateDailyMissions();
         resetHandler.calculateNextReset();
         saveSeasonData();
-        progressTracker.resetProgress(currentMissionDate);
+        progressTracker.resetProgress();
     }
 
     public void forceResetSeason() {
@@ -153,7 +153,7 @@ public class MissionManager {
         generateDailyMissions();
         saveDailyMissions();
         saveSeasonData();
-        progressTracker.resetProgress(currentMissionDate);
+        progressTracker.resetProgress();
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (plugin.getCoinsDistributionTask() != null) {
@@ -180,8 +180,8 @@ public class MissionManager {
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
 
-        progressTracker.resetProgress(currentMissionDate);
-        databaseManager.clearOldMissionProgress(currentMissionDate);
+        progressTracker.resetProgress();
+        databaseManager.clearOldMissionProgress(LocalDateTime.now().plusDays(1).toLocalDate().toString());
     }
 
     public void progressMission(Player player, String type, String target, int amount) {

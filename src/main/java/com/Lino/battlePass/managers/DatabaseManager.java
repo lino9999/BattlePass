@@ -170,13 +170,22 @@ public class DatabaseManager {
                         "name TEXT," +
                         "type TEXT," +
                         "target TEXT," +
+                        "additional_targets TEXT," +
                         "required INTEGER," +
                         "xp_reward INTEGER," +
                         "date TEXT)"
                 );
 
                 if (!isMySQL) {
-                    stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_missions_uuid_date ON " + prefix + "missions(uuid, date)");
+                    try {
+                        stmt.executeUpdate("ALTER TABLE " + prefix + "daily_missions ADD COLUMN additional_targets TEXT");
+                    } catch (SQLException ignored) {
+                    }
+                } else {
+                    try {
+                        stmt.executeUpdate("ALTER TABLE " + prefix + "daily_missions ADD COLUMN additional_targets TEXT DEFAULT ''");
+                    } catch (SQLException ignored) {
+                    }
                 }
             }
         } finally {
@@ -567,8 +576,8 @@ public class DatabaseManager {
             if (missions.isEmpty()) return;
 
             String insertSql = isMySQL
-                    ? "INSERT INTO " + prefix + "daily_missions (name, type, target, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name)"
-                    : "INSERT OR REPLACE INTO " + prefix + "daily_missions (name, type, target, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?)";
+                    ? "INSERT INTO " + prefix + "daily_missions (name, type, target, additional_targets, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name), type=VALUES(type), target=VALUES(target), additional_targets=VALUES(additional_targets), required=VALUES(required), xp_reward=VALUES(xp_reward)"
+                    : "INSERT OR REPLACE INTO " + prefix + "daily_missions (name, type, target, additional_targets, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
             Connection conn = null;
             boolean shouldClose = isMySQL;
@@ -584,9 +593,10 @@ public class DatabaseManager {
                         ps.setString(1, mission.name);
                         ps.setString(2, mission.type);
                         ps.setString(3, mission.target);
-                        ps.setInt(4, mission.required);
-                        ps.setInt(5, mission.xpReward);
-                        ps.setString(6, missionDate);
+                        ps.setString(4, String.join(",", mission.additionalTargets));
+                        ps.setInt(5, mission.required);
+                        ps.setInt(6, mission.xpReward);
+                        ps.setString(7, missionDate);
                         ps.addBatch();
                     }
                     ps.executeBatch();
@@ -616,10 +626,17 @@ public class DatabaseManager {
                     ps.setString(1, missionDate);
                     try (ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) {
+                            String additionalTargetsStr = rs.getString("additional_targets");
+                            List<String> additionalTargets = new ArrayList<>();
+                            if (additionalTargetsStr != null && !additionalTargetsStr.isEmpty()) {
+                                additionalTargets = Arrays.asList(additionalTargetsStr.split(","));
+                            }
+
                             loadedMissions.add(new Mission(
                                     rs.getString("name"),
                                     rs.getString("type"),
                                     rs.getString("target"),
+                                    additionalTargets,
                                     rs.getInt("required"),
                                     rs.getInt("xp_reward")
                             ));

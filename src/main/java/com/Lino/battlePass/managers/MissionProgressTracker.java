@@ -37,7 +37,7 @@ public class MissionProgressTracker {
         for (Mission mission : dailyMissions) {
             if (!mission.type.equals(type)) continue;
 
-            if (!mission.target.equals("ANY") && !mission.target.equals(target)) continue;
+            if (!mission.isValidTarget(target)) continue;
 
             String missionKey = generateMissionKey(mission);
 
@@ -83,7 +83,7 @@ public class MissionProgressTracker {
         return mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
     }
 
-    public void resetProgress(String currentMissionDate) {
+    public void resetProgress() {
         playerCompletedMissions.clear();
         lastActionbarUpdate.clear();
 
@@ -116,7 +116,7 @@ public class MissionProgressTracker {
                     "%level%", String.valueOf(data.level)));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 
-            int available = plugin.getRewardManager().countAvailableRewards(player, data);
+            int available = plugin.getRewardManager().countAvailableRewards(data);
             if (available > 0) {
                 player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.new-rewards"));
             }

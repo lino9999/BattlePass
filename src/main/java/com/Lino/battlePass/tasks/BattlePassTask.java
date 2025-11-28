@@ -44,7 +44,7 @@ public class BattlePassTask extends BukkitRunnable {
             PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
             if (data == null) continue;
 
-            int availableRewards = plugin.getRewardManager().countAvailableRewards(player, data);
+            int availableRewards = plugin.getRewardManager().countAvailableRewards(data);
 
             if (availableRewards > data.lastNotification) {
                 player.sendMessage(plugin.getMessageManager().getPrefix() +
