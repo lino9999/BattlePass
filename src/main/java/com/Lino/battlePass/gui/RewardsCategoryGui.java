@@ -40,7 +40,7 @@ public class RewardsCategoryGui {
                 GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>★ Premium Rewards</gradient> &8- &7Page " + page) :
                 GradientColorParser.parse("<gradient:#4ECDC4:#45B7D1>⚡ Free Rewards</gradient> &8- &7Page " + page);
 
-        Inventory gui = Bukkit.createInventory(null, 54, title);
+        Inventory gui = BaseGui.createInventory(54, title);
 
         int startLevel = (page - 1) * LEVELS_PER_PAGE + 1;
         int endLevel = startLevel + LEVELS_PER_PAGE - 1;
