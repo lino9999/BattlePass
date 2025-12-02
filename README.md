@@ -82,7 +82,8 @@ Add these to your scoreboard or tablist!
 
 ## 📸 Screenshots
 
-*(Add screenshots of your GUIs here to boost engagement!)*
+<img width="927" height="352" alt="image" src="https://github.com/user-attachments/assets/1ed73a90-6776-4746-a52a-7c57d4389cf9" />
+
 
 ---
 
