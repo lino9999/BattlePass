@@ -1,89 +1,92 @@
-⚔️ BattlePass
-Bring the excitement of a seasonal progression system to your Minecraft server!
+# ⚔️ BattlePass - Ultimate Progression Plugin for Minecraft (1.21+)
 
-BattlePass is a feature-rich plugin that adds a tier-based reward system similar to popular battle royale games. Engage your players with Daily Missions, unlockable rewards, and a currency system, all manageable through an easy-to-use in-game GUI.
+> **The most advanced, feature-rich Battle Pass system for Spigot & Paper servers.**
+> Engage your players with Daily Missions, Tiered Rewards, and a custom Currency Shop.
+> **No config editing required** — manage everything via In-Game GUI!
 
+![Java](https://img.shields.io/badge/Java-21-orange) ![Spigot](https://img.shields.io/badge/API-1.21-yellow) ![License](https://img.shields.io/badge/License-MIT-blue)
 
-✨ Key Features
-🏆 Seasonal Progression: Players can level up through 54 tiers (configurable) to unlock rewards.
+---
 
-🔓 Dual Reward Tracks: Support for both Free (for everyone) and Premium (VIP) reward tracks.
+## 🌟 Why Choose BattlePass?
+Unlike other plugins, **BattlePass** focuses on ease of use for admins and engagement for players. It includes a powerful **In-Game Editor**, robust **MySQL Database** support for networks, and deep integrations with popular plugins like **MythicMobs**.
 
-📜 Daily Missions: 7 random missions generated daily (e.g., Mining, Mob Killing, Fishing) to earn XP.
+### 🔥 Key Features
 
-🛠️ In-Game Editor: No config editing required! Modify rewards and create missions directly inside the game using a GUI.
+* **🏆 Seasonal Progression System**
+    * Fully customizable tier system (default 54 levels).
+    * **Dual Reward Tracks**: Free Pass (for everyone) and Premium Pass (VIP/Paid).
+    * Automatic season reset options (Monthly or Duration-based).
 
-💰 Battle Coins Shop: Players earn coins to spend in a custom shop for exclusive items or boosts.
+* **🛠️ In-Game GUI Editor (No YAML needed!)**
+    * **Mission Editor**: Create, edit, or delete daily missions directly inside the game.
+    * **Rewards Editor**: Drag-and-drop items from your inventory to set rewards for any level.
 
-📊 Leaderboards: Competitive top-10 ranking based on Battle Pass levels.
+* **💾 Database & Sync Support**
+    * **SQLite** (Default): Plug and play for single servers.
+    * **MySQL**: Full support for syncing player progress, XP, and rewards across a BungeeCord/Velocity network.
 
-💾 Database Support: Built-in support for SQLite (default) and MySQL for network syncing.
+* **📜 Dynamic Missions**
+    * **7 Daily Missions** generated randomly every day.
+    * **Mission Types**: Mining, Crafting, Fishing, Farming, Killing Mobs, Playtime, Walking Distance, and more!.
 
-🔌 Integrations:
+* **💰 Battle Coins & Shop**
+    * Players earn **Battle Coins** by ranking in the daily leaderboard.
+    * Spend coins in the customizable **Shop GUI** for exclusive items, XP boosts, or commands.
 
-PlaceholderAPI: Full placeholder support for scoreboards and menus.
+* **🔌 Powerful Integrations**
+    * **PlaceholderAPI**: Full support for scoreboards, tabs, and chat.
+    * **MythicMobs**: Create missions to kill specific custom bosses or mobs.
 
-MythicMobs: Create missions to kill custom mobs.
+---
 
+## 📥 Installation
 
-📥 Installation
-Download the .jar file.
+1.  Download `BattlePass.jar`.
+2.  Drop it into your server's `/plugins/` folder.
+3.  (Optional) Install **PlaceholderAPI** for placeholders.
+4.  Restart your server.
+5.  Enjoy! Config files (`config.yml`, `missions.yml`, `shop.yml`) will generate automatically.
 
-Place it in your server's plugins folder.
+---
 
-(Optional) Install PlaceholderAPI for placeholder support.
+## 🎮 Commands & Permissions
 
-Restart your server.
+| Command | Permission | Description |
+| :--- | :--- | :--- |
+| `/bp` or `/battlepass` | `battlepass.use` | Opens the main Battle Pass menu. |
+| `/bp help` | `battlepass.use` | Shows the help menu. |
+| `/bp giveitem <type> <player> <amount>` | `battlepass.admin` | Give special items (Premium Voucher, Coins, XP Boosts). |
+| `/bp addpremium <player>` | `battlepass.admin` | Force unlock Premium Pass for a player. |
+| `/bp addxp <player> <amount>` | `battlepass.admin` | Give XP to a player. |
+| `/bp reset season` | `battlepass.admin` | Force reset the entire season progress. |
+| `/bp reset missions` | `battlepass.admin` | Force generate new daily missions. |
+| `/bp reload` | `battlepass.admin` | Reloads all configuration files. |
 
-Done! The configuration files will generate automatically.
+---
 
-🎮 Commands
-Player Commands
-/bp (or /battlepass) - Opens the main Battle Pass menu.
+## 🧩 Placeholders (PAPI)
 
-/bp help - Shows the help menu.
+Add these to your scoreboard or tablist!
 
-Admin Commands
-/bp giveitem <type> <player> <amount> - Give special items:
+* `%battlepass_level%` - Player's current tier.
+* `%battlepass_xp_progress%` - Formatted XP (e.g., 50/200).
+* `%battlepass_premium_status%` - Returns "Active" or "Inactive".
+* `%battlepass_season_time%` - Time remaining in the current season.
+* `%battlepass_coins%` - Current Battle Coins balance.
+* `%battlepass_daily_reward_available%` - Check if daily reward is ready ("Yes"/"No").
 
-premium - Voucher to unlock the Premium pass.
+*(See `Placeholders.md` for the full list)*
 
-coins - Currency item.
+---
 
-levelboost - Item that grants XP when used.
+## 📸 Screenshots
 
-/bp addxp <player> <amount> - Give XP to a player.
+*(Add screenshots of your GUIs here to boost engagement!)*
 
-/bp addpremium <player> - Force unlock Premium for a player.
+---
 
-/bp reset season - Force reset the entire season (Warning: Clears progress!).
-
-/bp reset missions - Force generate new daily missions.
-
-/bp reload - Reload configuration files.
-
-
-⚙️ Configuration
-The plugin is highly configurable. You can find these files in the /plugins/BattlePass/ folder:
-
-config.yml: General settings (Season duration, database type, XP curve).
-
-missions.yml: Configure the types of missions available (or use the in-game editor!).
-
-shop.yml: Edit items available in the Battle Coin shop.
-
-messages.yml: Translate the plugin into your language.
-
-🧩 Placeholders
-Fully compatible with PlaceholderAPI. Here are a few useful ones:
-
-%battlepass_level% - Player's current level.
-
-%battlepass_xp_progress% - Formatted XP progress (e.g., 50/200).
-
-%battlepass_premium_status% - Returns "Active" or "Inactive".
-
-%battlepass_season_time% - Time remaining in the season.
-
-
-<div align="center"> <p>Made with ❤️ by Lino</p> </div>
+<div align="center">
+  <p>Made with ❤️ by Lino</p>
+  <p>Found a bug? Report it in the Issues tab!</p>
+</div>
