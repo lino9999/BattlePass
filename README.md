@@ -88,6 +88,13 @@ Add these to your scoreboard or tablist!
 ---
 
 <div align="center">
+   <p>I've just launched HytaleServers.it!</p>
+   <p>Are you working on a server? List it now for free and build your audience before launch.​</p>
+</div>
+
+---
+
+<div align="center">
   <p>Made with ❤️ by Lino</p>
   <p>Found a bug? Report it in the Issues tab!</p>
 </div>
