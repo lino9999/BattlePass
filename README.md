@@ -88,7 +88,7 @@ Add these to your scoreboard or tablist!
 ---
 
 <div align="center">
-   <p>I've just launched [HytaleServers.it](https://www.hytaleservers.it/)</p>
+   <p>I've just launched https://www.hytaleservers.it/</p>
    <p>Are you working on a server? List it now for free and build your audience before launch.​</p>
 </div>
 
