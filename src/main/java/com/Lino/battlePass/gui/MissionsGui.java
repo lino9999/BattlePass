@@ -33,7 +33,7 @@ public class MissionsGui extends BaseGui {
 
         if (player.hasPermission("battlepass.admin")) {
             setupAdminResetButton(gui);
-            setupMissionEditorButton(gui); // NEW BUTTON
+            setupMissionEditorButton(gui);
         }
 
         player.openInventory(gui);
@@ -61,7 +61,9 @@ public class MissionsGui extends BaseGui {
 
         for (int i = 0; i < currentMissions.size() && i < slots.length; i++) {
             Mission mission = currentMissions.get(i);
-            String key = mission.type + "_" + mission.target + "_" + mission.required;
+
+            String key = mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
+
             int progress = playerData.missionProgress.getOrDefault(key, 0);
             boolean completed = progress >= mission.required;
 
@@ -104,7 +106,6 @@ public class MissionsGui extends BaseGui {
         gui.setItem(45, resetButton);
     }
 
-    // NEW METHOD
     private void setupMissionEditorButton(Inventory gui) {
         ItemStack editButton = new ItemStack(Material.WRITABLE_BOOK);
         ItemMeta meta = editButton.getItemMeta();

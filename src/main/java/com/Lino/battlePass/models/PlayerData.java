@@ -22,4 +22,22 @@ public class PlayerData {
     public PlayerData(UUID uuid) {
         this.uuid = uuid;
     }
+
+    public PlayerData copy() {
+        PlayerData snapshot = new PlayerData(this.uuid);
+        snapshot.xp = this.xp;
+        snapshot.level = this.level;
+        snapshot.lastNotification = this.lastNotification;
+        snapshot.totalLevels = this.totalLevels;
+        snapshot.hasPremium = this.hasPremium;
+        snapshot.lastDailyReward = this.lastDailyReward;
+        snapshot.battleCoins = this.battleCoins;
+        snapshot.excludeFromTop = this.excludeFromTop;
+
+        snapshot.missionProgress.putAll(this.missionProgress);
+        snapshot.claimedFreeRewards.addAll(this.claimedFreeRewards);
+        snapshot.claimedPremiumRewards.addAll(this.claimedPremiumRewards);
+
+        return snapshot;
+    }
 }

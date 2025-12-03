@@ -168,7 +168,10 @@ public class BattlePassExpansion extends PlaceholderExpansion {
 
             if (missionIndex >= 0 && missionIndex < missions.size()) {
                 Mission mission = missions.get(missionIndex);
-                String key = mission.type + "_" + mission.target + "_" + mission.required;
+
+                // FIX: Added .hashCode() to match MissionProgressTracker
+                String key = mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
+
                 int progress = data.missionProgress.getOrDefault(key, 0);
 
                 if (missionIdentifier.startsWith("progress_")) {

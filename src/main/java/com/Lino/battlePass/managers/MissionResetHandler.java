@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 
 public class MissionResetHandler {
 
@@ -57,10 +58,16 @@ public class MissionResetHandler {
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
         }
 
-        plugin.getDatabaseManager().resetSeason();
-        plugin.getPlayerDataManager().clearCache();
+        plugin.getPlayerDataManager().clearCache(false);
 
-        seasonEndDate = LocalDateTime.now().plusDays(plugin.getConfigManager().getSeasonDuration());
+        plugin.getDatabaseManager().resetSeason().thenRun(() -> {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    plugin.getPlayerDataManager().loadPlayer(player.getUniqueId());
+                }
+                calculateSeasonEndDate();
+            });
+        });
     }
 
     public void forceResetSeason() {
@@ -71,13 +78,12 @@ public class MissionResetHandler {
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
         }
 
-        plugin.getPlayerDataManager().saveAllPlayers();
+        plugin.getPlayerDataManager().clearCache(false);
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             plugin.getDatabaseManager().resetSeason().thenRun(() -> {
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    plugin.getPlayerDataManager().clearCache();
-                    seasonEndDate = LocalDateTime.now().plusDays(plugin.getConfigManager().getSeasonDuration());
+                    calculateSeasonEndDate();
                     calculateNextReset();
 
                     for (Player player : Bukkit.getOnlinePlayers()) {
@@ -108,6 +114,16 @@ public class MissionResetHandler {
                 data.missionProgress.clear();
                 plugin.getPlayerDataManager().markForSave(player.getUniqueId());
             }
+        }
+    }
+
+    public void calculateSeasonEndDate() {
+        String resetType = plugin.getConfigManager().getSeasonResetType();
+
+        if (resetType.equalsIgnoreCase("MONTH_START")) {
+            seasonEndDate = LocalDateTime.now().plusMonths(1).with(TemporalAdjusters.firstDayOfMonth()).withHour(0).withMinute(0).withSecond(0);
+        } else {
+            seasonEndDate = LocalDateTime.now().plusDays(plugin.getConfigManager().getSeasonDuration());
         }
     }
 

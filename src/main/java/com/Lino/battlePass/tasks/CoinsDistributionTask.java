@@ -73,7 +73,7 @@ public class CoinsDistributionTask extends BukkitRunnable {
                                         "%amount%", String.valueOf(coins)));
                         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
                     } else {
-                        plugin.getDatabaseManager().savePlayerData(topPlayer.uuid, topPlayer);
+                        plugin.getDatabaseManager().updatePlayerCoins(topPlayer.uuid, topPlayer.battleCoins);
                     }
                 }
             });

@@ -79,7 +79,8 @@ public class MissionProgressTracker {
     }
 
     private String generateMissionKey(Mission mission) {
-        return mission.type + "_" + mission.target + "_" + mission.required;
+        // Updated to include mission name to avoid collisions
+        return mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
     }
 
     public void resetProgress() {
