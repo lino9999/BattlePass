@@ -27,8 +27,6 @@ public class MissionEditorListener implements Listener {
     @EventHandler
     public void onChat(AsyncPlayerChatEvent event) {
         if (plugin.getMissionEditorManager().isEditing(event.getPlayer().getUniqueId())) {
-            // Se sta modificando il tipo, la chat non deve essere intercettata (perché sta usando la GUI)
-            // Ma per sicurezza lasciamo il controllo
             MissionEditorManager.EditorState state = plugin.getMissionEditorManager().getEditingState(event.getPlayer().getUniqueId());
             if (state != null && state.type != MissionEditorManager.EditType.TYPE) {
                 event.setCancelled(true);
@@ -49,40 +47,49 @@ public class MissionEditorListener implements Listener {
         if (title == null) return;
 
         if (title.startsWith("Mission Editor")) {
+            if (!title.contains("Page ")) return;
             event.setCancelled(true);
             handleEditorClick(player, event, title);
         } else if (title.startsWith("Select Mission Type")) {
+            if (event.getView().getTopInventory().getSize() != 54) return;
+            ItemStack back = event.getView().getTopInventory().getItem(53);
+            if (back == null || back.getType() != Material.BARRIER) return;
+
             event.setCancelled(true);
             handleTypeSelectionClick(player, event);
         } else if (title.startsWith("Editing: ")) {
-            event.setCancelled(true);
             String missionKey = title.replace("Editing: ", "").trim();
+            if (!plugin.getConfigManager().getMissionsConfig().contains("mission-pools." + missionKey)) return;
+
+            event.setCancelled(true);
             handleDetailsClick(player, event, missionKey);
         }
     }
 
     private void handleEditorClick(Player player, InventoryClickEvent event, String title) {
-        int page = Integer.parseInt(title.split("Page ")[1]);
-        ItemStack clicked = event.getCurrentItem();
-        if (clicked == null || clicked.getType() == Material.AIR) return;
+        try {
+            int page = Integer.parseInt(title.split("Page ")[1]);
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || clicked.getType() == Material.AIR) return;
 
-        if (clicked.getType() == Material.ARROW) {
-            if (event.getSlot() == 45) plugin.getMissionEditorManager().openMissionEditor(player, page - 1);
-            if (event.getSlot() == 53) plugin.getMissionEditorManager().openMissionEditor(player, page + 1);
-        } else if (clicked.getType() == Material.EMERALD) {
-            plugin.getMissionEditorManager().openMissionTypeSelector(player);
-        } else if (clicked.getType() == Material.BARRIER) {
-            plugin.getGuiManager().openMissionsGUI(player);
-        } else if (clicked.getType() == Material.PAPER) {
-            ItemMeta meta = clicked.getItemMeta();
-            String key = ChatColor.stripColor(meta.getDisplayName());
+            if (clicked.getType() == Material.ARROW) {
+                if (event.getSlot() == 45) plugin.getMissionEditorManager().openMissionEditor(player, page - 1);
+                if (event.getSlot() == 53) plugin.getMissionEditorManager().openMissionEditor(player, page + 1);
+            } else if (clicked.getType() == Material.EMERALD) {
+                plugin.getMissionEditorManager().openMissionTypeSelector(player);
+            } else if (clicked.getType() == Material.BARRIER) {
+                plugin.getGuiManager().openMissionsGUI(player);
+            } else if (clicked.getType() == Material.PAPER) {
+                ItemMeta meta = clicked.getItemMeta();
+                String key = ChatColor.stripColor(meta.getDisplayName());
 
-            if (event.getClick() == ClickType.RIGHT) {
-                plugin.getMissionEditorManager().deleteMission(player, key);
-            } else {
-                plugin.getMissionEditorManager().openMissionDetails(player, key);
+                if (event.getClick() == ClickType.RIGHT) {
+                    plugin.getMissionEditorManager().deleteMission(player, key);
+                } else {
+                    plugin.getMissionEditorManager().openMissionDetails(player, key);
+                }
             }
-        }
+        } catch (Exception ignored) {}
     }
 
     private void handleTypeSelectionClick(Player player, InventoryClickEvent event) {

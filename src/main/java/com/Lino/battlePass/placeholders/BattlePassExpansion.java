@@ -8,8 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -170,7 +168,10 @@ public class BattlePassExpansion extends PlaceholderExpansion {
 
             if (missionIndex >= 0 && missionIndex < missions.size()) {
                 Mission mission = missions.get(missionIndex);
-                String key = mission.type + "_" + mission.target + "_" + mission.required;
+
+                // FIX: Added .hashCode() to match MissionProgressTracker
+                String key = mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
+
                 int progress = data.missionProgress.getOrDefault(key, 0);
 
                 if (missionIdentifier.startsWith("progress_")) {

@@ -8,10 +8,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.UUID;
 
 public class CoinsDistributionTask extends BukkitRunnable {
 
@@ -75,7 +73,7 @@ public class CoinsDistributionTask extends BukkitRunnable {
                                         "%amount%", String.valueOf(coins)));
                         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
                     } else {
-                        plugin.getDatabaseManager().savePlayerData(topPlayer.uuid, topPlayer);
+                        plugin.getDatabaseManager().updatePlayerCoins(topPlayer.uuid, topPlayer.battleCoins);
                     }
                 }
             });
