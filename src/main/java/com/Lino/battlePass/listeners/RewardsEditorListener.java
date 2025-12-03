@@ -60,6 +60,8 @@ public class RewardsEditorListener implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
+        if (!BaseHolder.isBattlePassInventory(event.getView().getTopInventory())) return;
+
         if (!(event.getWhoClicked() instanceof Player)) return;
 
         String title = ChatColor.stripColor(event.getView().getTitle());
