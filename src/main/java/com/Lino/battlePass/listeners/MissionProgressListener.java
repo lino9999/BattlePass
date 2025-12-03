@@ -161,10 +161,9 @@ public class MissionProgressListener implements Listener {
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         Entity trueDamager = getTrueDamager(event.getDamager());
         if (trueDamager instanceof Player player) {
-            int amount = (int) event.getFinalDamage();
-            for (String type : enumerateDamageTypes(event)) {
-                plugin.getMissionManager().progressMission(player, "DAMAGE_DEALT", type, amount);
-            }
+            int amount = (int) Math.round(event.getFinalDamage());
+            String victimType = safeName(event.getEntity().getType().name());
+            plugin.getMissionManager().progressMission(player, "DAMAGE_DEALT", victimType, amount);
         }
     }
 
