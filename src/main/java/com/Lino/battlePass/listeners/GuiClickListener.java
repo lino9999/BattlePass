@@ -85,8 +85,7 @@ public class GuiClickListener implements Listener {
                 String action = meta.getPersistentDataContainer().get(plugin.getEventManager().getNavigationKey(), PersistentDataType.STRING);
 
                 // Calcolo dinamico delle pagine massime
-                int maxLevel = plugin.getRewardManager().getMaxLevel();
-                int maxPages = (int) Math.ceil(maxLevel / 9.0);
+                int maxPages = plugin.getRewardManager().getMaxPage();
                 if (maxPages < 1) maxPages = 1;
 
                 if ("previous".equals(action) && currentPage > 1) {
@@ -197,21 +196,19 @@ public class GuiClickListener implements Listener {
             data.lastDailyReward = now;
 
             int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
-            boolean leveled = false;
             int maxLevel = plugin.getRewardManager().getMaxLevel();
 
             while (data.xp >= xpPerLevel && data.level < maxLevel) {
                 data.xp -= xpPerLevel;
                 data.level++;
                 data.totalLevels++;
-                leveled = true;
 
                 player.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.level-up",
                                 "%level%", String.valueOf(data.level)));
                 player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 
-                int available = plugin.getRewardManager().countAvailableRewards(player, data);
+                int available = plugin.getRewardManager().countAvailableRewards(data);
                 if (available > 0) {
                     player.sendMessage(plugin.getMessageManager().getPrefix() +
                             plugin.getMessageManager().getMessage("messages.new-rewards"));

@@ -303,7 +303,7 @@ public class BattlePassCommand implements CommandExecutor {
                 totalXP = Math.max(0, totalXP - amount);
 
                 int newLevel = 1;
-                while (totalXP >= xpPerLevel && newLevel < 54) {
+                while (totalXP >= xpPerLevel && newLevel < plugin.getRewardManager().getMaxLevel()) {
                     totalXP -= xpPerLevel;
                     newLevel++;
                 }
@@ -516,7 +516,7 @@ public class BattlePassCommand implements CommandExecutor {
     private void checkLevelUp(Player player, PlayerData data, int xpPerLevel) {
         boolean leveled = false;
 
-        while (data.xp >= xpPerLevel && data.level < 54) {
+        while (data.xp >= xpPerLevel && data.level < plugin.getRewardManager().getMaxLevel()) {
             data.xp -= xpPerLevel;
             data.level++;
             data.totalLevels++;
@@ -527,7 +527,7 @@ public class BattlePassCommand implements CommandExecutor {
                             "%level%", String.valueOf(data.level)));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 
-            int available = plugin.getRewardManager().countAvailableRewards(player, data);
+            int available = plugin.getRewardManager().countAvailableRewards(data);
             if (available > 0) {
                 player.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.new-rewards"));

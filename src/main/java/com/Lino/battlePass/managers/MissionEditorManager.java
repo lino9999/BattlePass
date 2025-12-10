@@ -203,19 +203,10 @@ public class MissionEditorManager {
     }
 
     public boolean isTargetRequired(String type) {
-        switch (type) {
-            case "WALK_DISTANCE":
-            case "PLAY_TIME":
-            case "GAIN_XP":
-            case "DAMAGE_DEALT":
-            case "DAMAGE_TAKEN":
-            case "DEATH":
-            case "TRADE_VILLAGER":
-            case "ENCHANT_ITEM":
-                return false;
-            default:
-                return true;
-        }
+        return switch (type) {
+            case "PLAY_TIME", "GAIN_XP" -> false;
+            default -> true;
+        };
     }
 
     public boolean isEditing(UUID uuid) {

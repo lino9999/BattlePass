@@ -11,7 +11,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +44,7 @@ public class PlayerConnectionListener implements Listener {
 
                 PlayerData data = plugin.getPlayerDataManager().getPlayerData(uuid);
                 if (data != null) {
-                    int available = plugin.getRewardManager().countAvailableRewards(player, data);
+                    int available = plugin.getRewardManager().countAvailableRewards(data);
                     if (available > 0) {
                         player.sendMessage(plugin.getMessageManager().getPrefix() +
                                 plugin.getMessageManager().getMessage("messages.rewards-available",

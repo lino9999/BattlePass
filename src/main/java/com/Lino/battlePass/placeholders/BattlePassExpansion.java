@@ -91,7 +91,7 @@ public class BattlePassExpansion extends PlaceholderExpansion {
             case "available_rewards":
                 if (player.isOnline()) {
                     Player onlinePlayer = player.getPlayer();
-                    return String.valueOf(plugin.getRewardManager().countAvailableRewards(onlinePlayer, data));
+                    return String.valueOf(plugin.getRewardManager().countAvailableRewards(data));
                 }
                 return "0";
 
