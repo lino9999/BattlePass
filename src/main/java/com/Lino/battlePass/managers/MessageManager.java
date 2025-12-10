@@ -29,7 +29,9 @@ public class MessageManager {
 
         if (replacements.length > 0 && replacements.length % 2 == 0) {
             for (int i = 0; i < replacements.length; i += 2) {
-                message = message.replace(replacements[i].toString(), replacements[i + 1].toString());
+                String target = replacements[i] != null ? replacements[i].toString() : "null";
+                String replacement = replacements[i + 1] != null ? replacements[i + 1].toString() : "null";
+                message = message.replace(target, replacement);
             }
         }
 
@@ -44,7 +46,9 @@ public class MessageManager {
             String processedLine = message;
             if (replacements.length > 0 && replacements.length % 2 == 0) {
                 for (int i = 0; i < replacements.length; i += 2) {
-                    processedLine = processedLine.replace(replacements[i].toString(), replacements[i + 1].toString());
+                    String target = replacements[i] != null ? replacements[i].toString() : "null";
+                    String replacement = replacements[i + 1] != null ? replacements[i + 1].toString() : "null";
+                    processedLine = processedLine.replace(target, replacement);
                 }
             }
             processedMessages.add(GradientColorParser.parse(processedLine));

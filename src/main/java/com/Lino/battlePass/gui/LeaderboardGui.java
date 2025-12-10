@@ -5,6 +5,7 @@ import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -66,11 +67,17 @@ public class LeaderboardGui extends BaseGui {
 
                 for (int i = 0; i < topPlayers.size() && i < 10; i++) {
                     PlayerData topPlayer = topPlayers.get(i);
-                    String playerName = Bukkit.getOfflinePlayer(topPlayer.uuid).getName();
+                    OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(topPlayer.uuid);
+
+                    // FIX: Controllo se il nome è null per evitare il crash
+                    String playerName = offlinePlayer.getName();
+                    if (playerName == null) {
+                        playerName = "Unknown";
+                    }
 
                     ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
                     SkullMeta skullMeta = (SkullMeta) skull.getItemMeta();
-                    skullMeta.setOwningPlayer(Bukkit.getOfflinePlayer(topPlayer.uuid));
+                    skullMeta.setOwningPlayer(offlinePlayer);
 
                     String rank;
                     if (i == 0) rank = plugin.getMessageManager().getMessage("items.leaderboard-rank.first");

@@ -20,6 +20,11 @@ messages:
     add-coins: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass addcoins <player> <amount>"
     remove-coins: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass removecoins <player> <amount>"
     giveitem: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass giveitem <type> <player> <amount>"
+    reset-player: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass resetplayer <player>"
+
+  reset-player:
+    sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Successfully reset battle pass progress for <gradient:#FFD93D:#FF6B6B>%player%</gradient>"
+    target: "<gradient:#FF6B6B:#FF0000>⚠</gradient> Your Battle Pass progress has been reset by an admin!"
 
   help:
     header: "<gradient:#FFD93D:#FF6B6B>⚡ BATTLE PASS COMMANDS ⚡</gradient>"
@@ -28,6 +33,7 @@ messages:
     reload: "<gradient:#4ECDC4:#45B7D1>/bp reload</gradient> &7- Reload the configuration"
     reset-season: "<gradient:#4ECDC4:#45B7D1>/bp reset season</gradient> &7- Force reset the season"
     reset-missions: "<gradient:#4ECDC4:#45B7D1>/bp reset missions</gradient> &7- Force reset daily missions"
+    reset-player: "<gradient:#4ECDC4:#45B7D1>/bp resetplayer <player></gradient> &7- Reset battle pass progress for a player"
     add-premium: "<gradient:#4ECDC4:#45B7D1>/bp addpremium <player></gradient> &7- Give premium pass"
     remove-premium: "<gradient:#4ECDC4:#45B7D1>/bp removepremium <player></gradient> &7- Remove premium pass"
     add-xp: "<gradient:#4ECDC4:#45B7D1>/bp addxp <player> <amount></gradient> &7- Add XP to a player"

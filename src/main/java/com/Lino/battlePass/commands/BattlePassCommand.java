@@ -58,6 +58,42 @@ public class BattlePassCommand implements CommandExecutor {
                 }
                 return true;
 
+            case "resetplayer":
+                if (!sender.hasPermission("battlepass.admin")) {
+                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                            plugin.getMessageManager().getMessage("messages.no-permission"));
+                    return true;
+                }
+
+                if (args.length < 2) {
+                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                            plugin.getMessageManager().getMessage("messages.usage.reset-player"));
+                    return true;
+                }
+
+                Player targetReset = Bukkit.getPlayer(args[1]);
+                if (targetReset == null) {
+                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                            plugin.getMessageManager().getMessage("messages.player-not-found"));
+                    return true;
+                }
+
+                PlayerData dataReset = plugin.getPlayerDataManager().getPlayerData(targetReset.getUniqueId());
+                dataReset.level = 1;
+                dataReset.xp = 0;
+                dataReset.claimedFreeRewards.clear();
+                dataReset.claimedPremiumRewards.clear();
+                dataReset.missionProgress.clear();
+
+                plugin.getPlayerDataManager().markForSave(targetReset.getUniqueId());
+
+                sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.reset-player.sender",
+                                "%player%", targetReset.getName()));
+                targetReset.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.reset-player.target"));
+                return true;
+
             case "addpremium":
                 return handlePremiumCommand(sender, args, true);
 
@@ -102,6 +138,7 @@ public class BattlePassCommand implements CommandExecutor {
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.reload"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.reset-season"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.reset-missions"));
+            sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.reset-player"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.add-premium"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.remove-premium"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.add-xp"));
@@ -381,7 +418,6 @@ public class BattlePassCommand implements CommandExecutor {
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
         data.excludeFromTop = exclude;
 
-        // Marcalo come dirty E salva immediatamente per aggiornare il DB per la query della leaderboard
         plugin.getPlayerDataManager().markForSave(target.getUniqueId());
         plugin.getPlayerDataManager().savePlayer(target.getUniqueId());
 

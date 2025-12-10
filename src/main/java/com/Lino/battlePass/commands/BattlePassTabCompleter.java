@@ -22,6 +22,7 @@ public class BattlePassTabCompleter implements TabCompleter {
             if (sender.hasPermission("battlepass.admin")) {
                 completions.add("reload");
                 completions.add("reset");
+                completions.add("resetplayer");
                 completions.add("addpremium");
                 completions.add("removepremium");
                 completions.add("addxp");
@@ -47,7 +48,8 @@ public class BattlePassTabCompleter implements TabCompleter {
                 if (subCommand.equals("addpremium") || subCommand.equals("removepremium") ||
                         subCommand.equals("addxp") || subCommand.equals("removexp") ||
                         subCommand.equals("addcoins") || subCommand.equals("removecoins") ||
-                        subCommand.equals("excludefromtop") || subCommand.equals("includetop")) {
+                        subCommand.equals("excludefromtop") || subCommand.equals("includetop") ||
+                        subCommand.equals("resetplayer")) {
 
                     return Bukkit.getOnlinePlayers().stream()
                             .map(Player::getName)
