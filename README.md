@@ -61,6 +61,7 @@ Unlike other plugins, **BattlePass** focuses on ease of use for admins and engag
 | `/bp addxp <player> <amount>` | `battlepass.admin` | Give XP to a player. |
 | `/bp reset season` | `battlepass.admin` | Force reset the entire season progress. |
 | `/bp reset missions` | `battlepass.admin` | Force generate new daily missions. |
+| `/bp resetplayer <name>` | `battlepass.admin` | Reset battle pass progress for a player. |
 | `/bp reload` | `battlepass.admin` | Reloads all configuration files. |
 
 ---
