@@ -21,6 +21,7 @@ messages:
     remove-coins: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass removecoins <player> <amount>"
     giveitem: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass giveitem <type> <player> <amount>"
     reset-player: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass resetplayer <player>"
+    edit-rewards-season: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass edit rewards season <number>"
 
   reset-player:
     sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Successfully reset battle pass progress for <gradient:#FFD93D:#FF6B6B>%player%</gradient>"
@@ -43,6 +44,7 @@ messages:
     giveitem: "<gradient:#4ECDC4:#45B7D1>/bp giveitem <type> <player> <amount></gradient> &7- Give custom items"
     exclude-top: "<gradient:#4ECDC4:#45B7D1>/bp excludefromtop <player></gradient> &7- Hide player from leaderboard"
     include-top: "<gradient:#4ECDC4:#45B7D1>/bp includetop <player></gradient> &7- Show player in leaderboard"
+    edit-rewards-season: "<gradient:#4ECDC4:#45B7D1>/bp edit rewards season <number></gradient> &7- Edit rewards for a specific season"
 
   premium:
     given-sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Premium pass given to <gradient:#FFD93D:#FF6B6B>%target%</gradient>"
@@ -81,6 +83,10 @@ messages:
     ends-in: "&7Season ends in: <gradient:#FFD93D:#FF6B6B>%season_time%</gradient>"
     achievement: "<gradient:#FFD93D:#FF6B6B>%player%</gradient> has completed the entire Battle Pass!"
     premium-achievement: "<gradient:#FFD93D:#FF6B6B>%player%</gradient> has become a <gradient:#FF00FF:#00FFFF>LEGEND</gradient> by completing the Premium Battle Pass!"
+    new-season: "<gradient:#FFD93D:#FF6B6B>Season %season% has begun!</gradient>"
+    rotation-disabled: "<gradient:#FF6B6B:#FF0000>✗ Season rotation is not enabled in config!</gradient>"
+    invalid-season: "<gradient:#FF6B6B:#FF0000>✗ Invalid season number! Must be between 1 and %max%.</gradient>"
+    editing-season: "<gradient:#00FF88:#00D4FF>✓</gradient> Editing rewards for <gradient:#FFD93D:#FF6B6B>Season %season%</gradient>. Changes save directly to the season folder."
 
   rewards:
     free-claimed: "<gradient:#00FF88:#45B7D1>✓ Free Rewards Claimed!</gradient>"

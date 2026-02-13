@@ -1,6 +1,7 @@
 package com.Lino.battlePass.placeholders;
 
 import com.Lino.battlePass.BattlePass;
+import com.Lino.battlePass.managers.SeasonRotationManager;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.PlayerData;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
@@ -130,6 +131,16 @@ public class BattlePassExpansion extends PlaceholderExpansion {
                 int completed = getCompletedMissionsCount(data);
                 int total = plugin.getMissionManager().getDailyMissions().size();
                 return completed + "/" + total;
+
+            case "current_season":
+                SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+                return rotation.isRotationEnabled() ?
+                        String.valueOf(rotation.getCurrentSeason()) : "1";
+
+            case "total_seasons":
+                SeasonRotationManager rot = plugin.getSeasonRotationManager();
+                return rot.isRotationEnabled() ?
+                        String.valueOf(rot.getTotalSeasons()) : "1";
         }
 
         if (identifier.startsWith("mission_")) {
@@ -169,7 +180,6 @@ public class BattlePassExpansion extends PlaceholderExpansion {
             if (missionIndex >= 0 && missionIndex < missions.size()) {
                 Mission mission = missions.get(missionIndex);
 
-                // FIX: Added .hashCode() to match MissionProgressTracker
                 String key = mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
 
                 int progress = data.missionProgress.getOrDefault(key, 0);

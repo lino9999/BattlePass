@@ -1,6 +1,7 @@
 package com.Lino.battlePass.gui;
 
 import com.Lino.battlePass.BattlePass;
+import com.Lino.battlePass.managers.SeasonRotationManager;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.models.Reward;
 import com.Lino.battlePass.utils.GradientColorParser;
@@ -51,14 +52,24 @@ public class BattlePassGui extends BaseGui {
                 plugin.getMessageManager().getMessage("items.premium-status.active") :
                 plugin.getMessageManager().getMessage("items.premium-status.inactive");
 
+        SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+        String currentSeason = rotation.isRotationEnabled() ?
+                String.valueOf(rotation.getCurrentSeason()) : "1";
+
         for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.progress.lore")) {
             String processedLine = line
                     .replace("%level%", String.valueOf(playerData.level))
                     .replace("%xp%", String.valueOf(playerData.xp))
                     .replace("%xp_needed%", String.valueOf(plugin.getConfigManager().getXpPerLevel()))
                     .replace("%premium_status%", premiumStatus)
-                    .replace("%season_time%", plugin.getMissionManager().getTimeUntilSeasonEnd());
+                    .replace("%season_time%", plugin.getMissionManager().getTimeUntilSeasonEnd())
+                    .replace("%current_season%", currentSeason);
             lore.add(GradientColorParser.parse(processedLine));
+
+            if (line.contains("%season_time%")) {
+                lore.add(GradientColorParser.parse(
+                        "&8▸ &7Current Season: <gradient:#FFD93D:#FF6B6B>" + currentSeason + "</gradient>"));
+            }
         }
 
         meta.setLore(lore);
@@ -205,34 +216,23 @@ public class BattlePassGui extends BaseGui {
     }
 
     private void setupNavigationButtons(Inventory gui) {
+        int maxPages = (int) Math.ceil(maxLevel / 9.0);
+        if (maxPages < 1) maxPages = 1;
+
         if (page > 1) {
-            gui.setItem(45, createNavigationItem(false, page - 1));
+            gui.setItem(36, createNavigationButton("previous", page - 1));
         }
 
-        int maxPages = (int) Math.ceil(maxLevel / 9.0);
         if (page < maxPages) {
-            gui.setItem(53, createNavigationItem(true, page + 1));
+            gui.setItem(44, createNavigationButton("next", page + 1));
         }
     }
 
-    private ItemStack createNavigationItem(boolean next, int targetPage) {
+    private ItemStack createNavigationButton(String direction, int targetPage) {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
 
-        if (next) {
-            meta.setDisplayName(plugin.getMessageManager().getMessage("items.next-page.name"));
-            List<String> lore = new ArrayList<>();
-            for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.next-page.lore")) {
-                String processedLine = line.replace("%page%", String.valueOf(targetPage));
-                lore.add(GradientColorParser.parse(processedLine));
-            }
-            meta.setLore(lore);
-            meta.getPersistentDataContainer().set(
-                    plugin.getEventManager().getNavigationKey(),
-                    PersistentDataType.STRING,
-                    "next"
-            );
-        } else {
+        if (direction.equals("previous")) {
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.previous-page.name"));
             List<String> lore = new ArrayList<>();
             for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.previous-page.lore")) {
@@ -244,6 +244,19 @@ public class BattlePassGui extends BaseGui {
                     plugin.getEventManager().getNavigationKey(),
                     PersistentDataType.STRING,
                     "previous"
+            );
+        } else {
+            meta.setDisplayName(plugin.getMessageManager().getMessage("items.next-page.name"));
+            List<String> lore = new ArrayList<>();
+            for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.next-page.lore")) {
+                String processedLine = line.replace("%page%", String.valueOf(targetPage));
+                lore.add(GradientColorParser.parse(processedLine));
+            }
+            meta.setLore(lore);
+            meta.getPersistentDataContainer().set(
+                    plugin.getEventManager().getNavigationKey(),
+                    PersistentDataType.STRING,
+                    "next"
             );
         }
 
@@ -316,21 +329,18 @@ public class BattlePassGui extends BaseGui {
         gui.setItem(50, dailyReward);
 
         if (player.hasPermission("battlepass.admin")) {
-            ItemStack rewardsEditor = new ItemStack(Material.COMMAND_BLOCK);
-            ItemMeta editorMeta = rewardsEditor.getItemMeta();
-            editorMeta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>⚙ Rewards Editor</gradient>"));
-
-            List<String> editorLore = new ArrayList<>();
-            editorLore.add("");
-            editorLore.add(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Admin Only</gradient>"));
-            editorLore.add(GradientColorParser.parse("&7Edit battle pass rewards"));
-            editorLore.add(GradientColorParser.parse("&7for all levels"));
-            editorLore.add("");
-            editorLore.add(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>▶ CLICK TO OPEN</gradient>"));
-
-            editorMeta.setLore(editorLore);
-            rewardsEditor.setItemMeta(editorMeta);
-            gui.setItem(46, rewardsEditor);
+            ItemStack editRewards = new ItemStack(Material.COMMAND_BLOCK);
+            ItemMeta editMeta = editRewards.getItemMeta();
+            editMeta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>⚙ Edit Rewards</gradient>"));
+            List<String> editLore = new ArrayList<>();
+            editLore.add("");
+            editLore.add(GradientColorParser.parse("&7Open the rewards editor"));
+            editLore.add(GradientColorParser.parse("&7to modify battle pass rewards"));
+            editLore.add("");
+            editLore.add(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>▶ CLICK TO EDIT</gradient>"));
+            editMeta.setLore(editLore);
+            editRewards.setItemMeta(editMeta);
+            gui.setItem(46, editRewards);
         }
     }
 }

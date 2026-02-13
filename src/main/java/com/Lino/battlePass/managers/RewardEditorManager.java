@@ -13,7 +13,9 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RewardEditorManager {
@@ -21,11 +23,13 @@ public class RewardEditorManager {
     private final BattlePass plugin;
     private final Map<UUID, LevelRewardEditGui> activeEditors;
     private final Map<UUID, CommandInputState> commandInputStates;
+    private final Map<UUID, Integer> seasonEditingContext;
 
     public RewardEditorManager(BattlePass plugin) {
         this.plugin = plugin;
         this.activeEditors = new ConcurrentHashMap<>();
         this.commandInputStates = new ConcurrentHashMap<>();
+        this.seasonEditingContext = new ConcurrentHashMap<>();
     }
 
     public void openLevelEditor(Player player, int level, boolean isPremium) {
@@ -40,6 +44,22 @@ public class RewardEditorManager {
 
     public void removeActiveEditor(UUID uuid) {
         activeEditors.remove(uuid);
+    }
+
+    public void setSeasonEditingContext(UUID uuid, int seasonNumber) {
+        seasonEditingContext.put(uuid, seasonNumber);
+    }
+
+    public void clearSeasonEditingContext(UUID uuid) {
+        seasonEditingContext.remove(uuid);
+    }
+
+    public int getSeasonEditingContext(UUID uuid) {
+        return seasonEditingContext.getOrDefault(uuid, -1);
+    }
+
+    public boolean isEditingSeason(UUID uuid) {
+        return seasonEditingContext.containsKey(uuid);
     }
 
     public void startCommandInput(Player player, int level, boolean isPremium) {
@@ -107,17 +127,27 @@ public class RewardEditorManager {
     }
 
     public void saveRewards(Player player, int level, boolean isPremium, List<EditableReward> rewards) {
-        String fileName = isPremium ? "BattlePassPREMIUM.yml" : "BattlePassFREE.yml";
-        File file = new File(plugin.getDataFolder(), fileName);
+        int editingSeason = getSeasonEditingContext(player.getUniqueId());
+        File file;
+
+        if (editingSeason > 0) {
+            file = plugin.getSeasonRotationManager().getSeasonRewardFile(editingSeason, isPremium);
+        } else {
+            String fileName = isPremium ? "BattlePassPREMIUM.yml" : "BattlePassFREE.yml";
+            file = new File(plugin.getDataFolder(), fileName);
+        }
+
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-
         String levelPath = "level-" + level;
-
         config.set(levelPath, null);
 
         if (rewards.isEmpty()) {
             saveConfig(file, config);
-            plugin.reload(); // RELOAD AUTOMATICO
+            if (editingSeason > 0) {
+                syncSeasonIfActive(editingSeason, player);
+            } else {
+                plugin.reload();
+            }
             player.sendMessage(GradientColorParser.parse(
                     plugin.getMessageManager().getPrefix() +
                             "<gradient:#00FF88:#45B7D1>✓ Level " + level + " rewards cleared!</gradient>"));
@@ -153,19 +183,43 @@ public class RewardEditorManager {
         }
 
         saveConfig(file, config);
-        plugin.reload(); // RELOAD AUTOMATICO
+
+        if (editingSeason > 0) {
+            syncSeasonIfActive(editingSeason, player);
+        } else {
+            plugin.reload();
+        }
 
         player.sendMessage(GradientColorParser.parse(
                 plugin.getMessageManager().getPrefix() +
-                        "<gradient:#00FF88:#45B7D1>✓ Level " + level + " rewards saved!</gradient>"));
+                        "<gradient:#00FF88:#45B7D1>✓ Level " + level + " rewards saved!" +
+                        (editingSeason > 0 ? " (Season " + editingSeason + ")" : "") +
+                        "</gradient>"));
+    }
+
+    private void syncSeasonIfActive(int editingSeason, Player player) {
+        SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+        if (rotation.getCurrentSeason() == editingSeason) {
+            rotation.reapplyCurrentSeason();
+            plugin.getConfigManager().reload();
+            plugin.getRewardManager().loadRewards();
+            plugin.getGuiManager().clearCache();
+        }
     }
 
     public void saveAllRewards(Player player) {
-        plugin.reload();
-
-        player.sendMessage(GradientColorParser.parse(
-                plugin.getMessageManager().getPrefix() +
-                        "<gradient:#00FF88:#45B7D1>✓ All rewards saved and plugin reloaded!</gradient>"));
+        if (isEditingSeason(player.getUniqueId())) {
+            int editingSeason = getSeasonEditingContext(player.getUniqueId());
+            syncSeasonIfActive(editingSeason, player);
+            player.sendMessage(GradientColorParser.parse(
+                    plugin.getMessageManager().getPrefix() +
+                            "<gradient:#00FF88:#45B7D1>✓ Season " + editingSeason + " rewards saved!</gradient>"));
+        } else {
+            plugin.reload();
+            player.sendMessage(GradientColorParser.parse(
+                    plugin.getMessageManager().getPrefix() +
+                            "<gradient:#00FF88:#45B7D1>✓ All rewards saved and plugin reloaded!</gradient>"));
+        }
 
         for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
             if (!onlinePlayer.equals(player)) {

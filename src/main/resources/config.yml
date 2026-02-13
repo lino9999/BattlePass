@@ -8,6 +8,13 @@ season:
   duration: 30
   # Whether to reset battle coins when season ends
   reset-coins-on-season-end: true
+  # Season Rotation - automatically cycle through different reward sets
+  # When enabled, each season reset will load the next set of rewards from the /seasons/ folder
+  # Seasons loop: season-1 -> season-2 -> season-3 -> season-1 -> ...
+  rotation:
+    enabled: false
+    # How many seasons to cycle through (must match the number of folders in /seasons/)
+    total-seasons: 3
 
 # Database configuration
 # type: SQLITE (default) or MYSQL

@@ -1,6 +1,8 @@
 package com.Lino.battlePass.commands;
 
 import com.Lino.battlePass.BattlePass;
+import com.Lino.battlePass.gui.RewardsEditorGui;
+import com.Lino.battlePass.managers.SeasonRotationManager;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.Bukkit;
@@ -57,6 +59,9 @@ public class BattlePassCommand implements CommandExecutor {
                     plugin.getGuiManager().openBattlePassGUI((Player) sender, 1);
                 }
                 return true;
+
+            case "edit":
+                return handleEditCommand(sender, args);
 
             case "resetplayer":
                 if (!sender.hasPermission("battlepass.admin")) {
@@ -129,6 +134,64 @@ public class BattlePassCommand implements CommandExecutor {
         }
     }
 
+    private boolean handleEditCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("battlepass.admin")) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.no-permission"));
+            return true;
+        }
+
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.player-only"));
+            return true;
+        }
+
+        Player player = (Player) sender;
+
+        if (args.length < 2 || !args[1].equalsIgnoreCase("rewards")) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.usage.edit-rewards-season"));
+            return true;
+        }
+
+        if (args.length >= 4 && args[2].equalsIgnoreCase("season")) {
+            SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+            if (!rotation.isRotationEnabled()) {
+                sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.season.rotation-disabled"));
+                return true;
+            }
+
+            try {
+                int seasonNum = Integer.parseInt(args[3]);
+                if (!rotation.isValidSeason(seasonNum)) {
+                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                            plugin.getMessageManager().getMessage("messages.season.invalid-season",
+                                    "%max%", String.valueOf(rotation.getTotalSeasons())));
+                    return true;
+                }
+
+                plugin.getRewardEditorManager().setSeasonEditingContext(player.getUniqueId(), seasonNum);
+
+                sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.season.editing-season",
+                                "%season%", String.valueOf(seasonNum)));
+
+                new RewardsEditorGui(plugin, player).open();
+
+            } catch (NumberFormatException e) {
+                sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.invalid-amount"));
+            }
+        } else {
+            plugin.getRewardEditorManager().clearSeasonEditingContext(player.getUniqueId());
+            new RewardsEditorGui(plugin, player).open();
+        }
+
+        return true;
+    }
+
     private void sendHelpMessage(CommandSender sender) {
         sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.header"));
         sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.battlepass"));
@@ -148,6 +211,7 @@ public class BattlePassCommand implements CommandExecutor {
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.giveitem"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.exclude-top"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.include-top"));
+            sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.edit-rewards-season"));
         }
     }
 

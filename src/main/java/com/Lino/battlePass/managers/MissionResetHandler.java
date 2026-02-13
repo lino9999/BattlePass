@@ -58,6 +58,8 @@ public class MissionResetHandler {
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
         }
 
+        broadcastNewSeason();
+
         plugin.getPlayerDataManager().clearCache(false);
 
         plugin.getDatabaseManager().resetSeason().thenRun(() -> {
@@ -77,6 +79,8 @@ public class MissionResetHandler {
             player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.season.forced-reset"));
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
         }
+
+        broadcastNewSeason();
 
         plugin.getPlayerDataManager().clearCache(false);
 
@@ -98,6 +102,18 @@ public class MissionResetHandler {
                 });
             });
         }, 20L);
+    }
+
+    private void broadcastNewSeason() {
+        SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+        if (rotation != null && rotation.isRotationEnabled()) {
+            MessageManager messageManager = plugin.getMessageManager();
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.sendMessage(messageManager.getPrefix() +
+                        messageManager.getMessage("messages.season.new-season",
+                                "%season%", String.valueOf(rotation.getCurrentSeason())));
+            }
+        }
     }
 
     public void forceResetMissions() {

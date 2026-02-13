@@ -32,12 +32,15 @@ public class BattlePassTabCompleter implements TabCompleter {
                 completions.add("giveitem");
                 completions.add("excludefromtop");
                 completions.add("includetop");
+                completions.add("edit");
             }
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("reset") && sender.hasPermission("battlepass.admin")) {
                 completions.add("season");
                 completions.add("mission");
                 completions.add("missions");
+            } else if (args[0].equalsIgnoreCase("edit") && sender.hasPermission("battlepass.admin")) {
+                completions.add("rewards");
             } else if (args[0].equalsIgnoreCase("giveitem") && sender.hasPermission("battlepass.admin")) {
                 completions.add("premium");
                 completions.add("coins");
@@ -59,7 +62,9 @@ public class BattlePassTabCompleter implements TabCompleter {
         } else if (args.length == 3 && sender.hasPermission("battlepass.admin")) {
             String subCommand = args[0].toLowerCase();
 
-            if (subCommand.equals("giveitem")) {
+            if (subCommand.equals("edit") && args[1].equalsIgnoreCase("rewards")) {
+                completions.add("season");
+            } else if (subCommand.equals("giveitem")) {
                 return Bukkit.getOnlinePlayers().stream()
                         .map(Player::getName)
                         .collect(Collectors.toList());
@@ -75,7 +80,11 @@ public class BattlePassTabCompleter implements TabCompleter {
         } else if (args.length == 4 && sender.hasPermission("battlepass.admin")) {
             String subCommand = args[0].toLowerCase();
 
-            if (subCommand.equals("giveitem")) {
+            if (subCommand.equals("edit") && args[1].equalsIgnoreCase("rewards") && args[2].equalsIgnoreCase("season")) {
+                completions.add("1");
+                completions.add("2");
+                completions.add("3");
+            } else if (subCommand.equals("giveitem")) {
                 completions.add("1");
                 completions.add("5");
                 completions.add("10");
