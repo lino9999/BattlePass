@@ -5,6 +5,7 @@ import com.Lino.battlePass.models.EditableReward;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.models.Reward;
 import com.Lino.battlePass.utils.ItemSerializer;
+import com.Lino.battlePass.utils.MaterialNameResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -111,7 +112,7 @@ public class RewardManager {
     private Reward loadSingleReward(FileConfiguration config, String path, int level, boolean isFree) {
         if (config.contains(path + ".command")) {
             String command = config.getString(path + ".command");
-            String displayName = config.getString(path + ".display", "Mystery Reward");
+            String displayName = config.getString(path + ".display", "Тайная награда");
             return new Reward(level, command, displayName, isFree);
         } else if (config.contains(path + ".material")) {
             String material = config.getString(path + ".material", "DIRT");
@@ -119,11 +120,12 @@ public class RewardManager {
 
             try {
                 Material mat = Material.valueOf(material.toUpperCase());
-                String displayName = config.getString(path + ".display", amount + "x " + formatMaterial(mat));
+                String displayName = config.getString(path + ".display",
+                        amount + "x " + MaterialNameResolver.resolve(mat, getCurrentLanguage()));
                 return new Reward(level, mat, displayName, amount, isFree);
             } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("Invalid material for " + (isFree ? "free" : "premium") +
-                        " level " + level + ": " + material);
+                plugin.getLogger().warning("Неверный материал для " + (isFree ? "бесплатной" : "премиум") +
+                        " уровня " + level + ": " + material);
                 return null;
             }
         }
@@ -137,7 +139,7 @@ public class RewardManager {
         try {
             dbClaimedData = plugin.getDatabaseManager().getClaimedRewards(player.getUniqueId()).join();
         } catch (Exception e) {
-            player.sendMessage(plugin.getMessageManager().getPrefix() + "§cError while claiming reward. Please try again.");
+            player.sendMessage(plugin.getMessageManager().getPrefix() + "§cОшибка при получении награды. Попробуйте снова.");
             e.printStackTrace();
             return;
         }
@@ -254,10 +256,6 @@ public class RewardManager {
         return count;
     }
 
-    private String formatMaterial(Material material) {
-        return material.name().toLowerCase().replace("_", " ");
-    }
-
     public Map<Integer, List<Reward>> getFreeRewardsByLevel() {
         return freeRewardsByLevel;
     }
@@ -288,7 +286,7 @@ public class RewardManager {
 
         if (levelSection.contains("command")) {
             String command = levelSection.getString("command");
-            String display = levelSection.getString("display", "Mystery Reward");
+            String display = levelSection.getString("display", "Тайная награда");
             editableRewards.add(new EditableReward(command, display));
         } else if (levelSection.contains("material")) {
             ItemStack item = ItemSerializer.loadItemFromConfig(levelSection);
@@ -303,7 +301,7 @@ public class RewardManager {
                     if (itemSection != null) {
                         if (itemSection.contains("command")) {
                             String command = itemSection.getString("command");
-                            String display = itemSection.getString("display", "Mystery Reward");
+                            String display = itemSection.getString("display", "Тайная награда");
                             editableRewards.add(new EditableReward(command, display));
                         } else {
                             ItemStack item = ItemSerializer.loadItemFromConfig(itemSection);
@@ -317,5 +315,12 @@ public class RewardManager {
         }
 
         return editableRewards;
+    }
+
+    private String getCurrentLanguage() {
+        if (plugin.getConfigManager() == null) {
+            return "RU";
+        }
+        return plugin.getConfigManager().getLanguage();
     }
 }

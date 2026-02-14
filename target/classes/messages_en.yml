@@ -1,0 +1,169 @@
+prefix: "&6[BattlePass] &8» &r"
+
+messages:
+  plugin-enabled: "&aBattle Pass enabled."
+  config-reloaded: "&aConfiguration reloaded."
+
+  player-only: "&cThis command can only be used by players."
+  no-permission: "&cYou do not have permission."
+  player-not-found: "&cPlayer not found."
+  invalid-amount: "&cInvalid number."
+  amount-must-be-positive: "&cAmount must be greater than zero."
+  invalid-item-type: "&cInvalid item type. Use: premium, coins, levelboost."
+
+  usage:
+    battlepass: "&eUsage: &f/battlepass"
+    add-premium: "&eUsage: &f/battlepass addpremium <player>"
+    remove-premium: "&eUsage: &f/battlepass removepremium <player>"
+    add-xp: "&eUsage: &f/battlepass addxp <player> <amount>"
+    remove-xp: "&eUsage: &f/battlepass removexp <player> <amount>"
+    add-coins: "&eUsage: &f/battlepass addcoins <player> <amount>"
+    remove-coins: "&eUsage: &f/battlepass removecoins <player> <amount>"
+    giveitem: "&eUsage: &f/battlepass giveitem <type> <player> <amount>"
+    reset-player: "&eUsage: &f/battlepass resetplayer <player>"
+    edit-rewards-season: "&eUsage: &f/battlepass edit rewards season <number>"
+
+  reset-player:
+    sender: "&aBattle Pass progress for &e%player% &ahas been reset."
+    target: "&cYour Battle Pass progress was reset by an administrator."
+
+  help:
+    header: "&6Battle Pass Commands"
+    battlepass: "&b/battlepass &7- Open Battle Pass GUI"
+    help: "&b/bp help &7- Show this help"
+    reload: "&b/bp reload &7- Reload plugin configuration"
+    reset-season: "&b/bp reset season &7- Force season reset"
+    reset-missions: "&b/bp reset missions &7- Force daily mission reset"
+    reset-player: "&b/bp resetplayer <player> &7- Reset player's Battle Pass progress"
+    add-premium: "&b/bp addpremium <player> &7- Grant Premium Pass"
+    remove-premium: "&b/bp removepremium <player> &7- Remove Premium Pass"
+    add-xp: "&b/bp addxp <player> <amount> &7- Add XP"
+    remove-xp: "&b/bp removexp <player> <amount> &7- Remove XP"
+    add-coins: "&b/bp addcoins <player> <amount> &7- Add Battle Coins"
+    remove-coins: "&b/bp removecoins <player> <amount> &7- Remove Battle Coins"
+    giveitem: "&b/bp giveitem <type> <player> <amount> &7- Give custom item"
+    exclude-top: "&b/bp excludefromtop <player> &7- Hide player from leaderboard"
+    include-top: "&b/bp includetop <player> &7- Return player to leaderboard"
+    edit-rewards-season: "&b/bp edit rewards season <number> &7- Edit selected season rewards"
+
+  premium:
+    given-sender: "&aPremium Pass granted to &e%target%&a."
+    given-target: "&aYou have received Premium Battle Pass."
+    removed-sender: "&cPremium Pass removed from &e%target%&c."
+    removed-target: "&cYour Premium Battle Pass has been removed."
+    required: "&cPremium Pass is required for this reward."
+
+  xp:
+    added-sender: "&aAdded &e%amount% XP &ato &e%target%&a."
+    added-target: "&a+%amount% XP"
+    removed-sender: "&cRemoved &e%amount% XP &cfrom &e%target%&c."
+    removed-target: "&c-%amount% XP"
+
+  level-up: "&aLevel up! New level: &e%level%"
+  new-rewards: "&aNew rewards are available."
+
+  rewards-available: "&aYou have &e%amount% &aavailable rewards."
+  rewards-notification: "&aYou have &e%amount% &anew rewards to claim."
+
+  mission:
+    completed: "&aMission completed: &f%mission% &7(+%reward_xp% XP)"
+    reset: "&eDaily missions have been reset."
+    forced-reset: "&eDaily missions were reset by an administrator."
+    reset-complete: "&aMissions reset complete."
+    reset-admin: "&e%admin% forced a mission reset."
+    admin-reset: "&eDaily missions were reset."
+    actionbar-progress: "&c%mission%: &7%current%&f/&8%required%"
+    actionbar-completed: "&aCompleted: &f%mission%"
+
+  season:
+    reset: "&cSeason ended. Starting a new season."
+    forced-reset: "&cSeason was force-reset by administrator."
+    reset-warning: "&cSeason will reset in 2 seconds. All progress will be lost."
+    reset-complete: "&aSeason reset complete."
+    reset-admin: "&cSeason was reset by %admin%."
+    ends-in: "&7Season ends in: &f%season_time%"
+    achievement: "&e%player% &7has fully completed the Battle Pass."
+    premium-achievement: "&e%player% &7has completed Premium Battle Pass."
+    new-season: "&aSeason %season% has started."
+    rotation-disabled: "&cSeason rotation is disabled in config."
+    invalid-season: "&cInvalid season number. Allowed: 1..%max%."
+    editing-season: "&aEditing rewards for season &e%season%&a."
+
+  rewards:
+    free-claimed: "&aFree rewards claimed."
+    premium-claimed: "&aPremium rewards claimed."
+    already-claimed: "&cThis reward is already claimed."
+    cannot-claim: "&cYou cannot claim this reward yet."
+    locked: "&cLOCKED &7(Level %level% required)"
+    item-reward: "&7• &f%amount%x %item%"
+    item-reward-dropped: "&7• &f%amount%x %item% &e(dropped on ground)"
+    command-reward: "&7• %reward%"
+    already-claimed-error: "&cThis reward was already claimed."
+
+  daily-reward:
+    claimed: "&aDaily reward claimed: &e%amount% XP"
+    already-claimed: "&cYou already claimed the daily reward."
+
+  coins:
+    distribution-announcement: "&6Battle Coins payout for top-10 players."
+    distribution-player: "&e#%rank% %player% &7received &6%amount% Battle Coins"
+    received: "&a+%amount% Battle Coins"
+    balance: "&7Your Battle Coins: &e%amount%"
+    added-sender: "&aAdded &e%amount% Battle Coins &ato &e%target%&a."
+    added-target: "&a+%amount% Battle Coins"
+    removed-sender: "&cRemoved &e%amount% Battle Coins &cfrom &e%target%&c."
+    removed-target: "&c-%amount% Battle Coins"
+    insufficient-remove: "&c%target% only has %current% Battle Coins."
+
+  shop:
+    insufficient-coins: "&cNot enough Battle Coins. Need: %required%, have: %current%."
+    purchase-success: "&aPurchase successful: %item% for %price% Battle Coins."
+    shop-title: "&6Battle Pass Shop"
+
+  items:
+    given: "&aGiven &e%amount%x %item% &ato &e%target%&a."
+    given-dropped: "&aGiven &e%amount%x %item% &ato &e%target% &e(some items dropped)."
+    received: "&aYou received &e%amount%x %item%&a."
+    already-have-premium: "&cYou already have Premium Battle Pass."
+    premium-activated: "&aPremium Battle Pass activated."
+    coins-redeemed: "&aRedeemed %amount% Battle Coins."
+    max-level-reached: "&cYou already reached max level."
+    xp-boost-used: "&aUsed %items% XP boosters for %amount% XP."
+    names:
+      premium-pass: "Premium Pass Voucher"
+      battle-coin: "Battle Coin Token"
+      level-boost: "XP Boost Elixir"
+
+  top:
+    usage: "&eUsage: /battlepass %command% <player>"
+    updated: "&aPlayer %player% is now %status% leaderboard."
+    excluded-status: "excluded from"
+    included-status: "included in"
+
+time:
+  days-hours: "%days%d %hours%h"
+  hours-minutes: "%hours%h %minutes%m"
+  day: "day"
+  days: "days"
+  hour: "hour"
+  hours: "hours"
+  minute: "minute"
+  minutes: "minutes"
+  available-now: "&aAvailable now!"
+  unknown: "Unknown"
+
+reward-types:
+  free: "&bFree"
+  premium: "&6Premium"
+
+placeholders:
+  loading: "Loading..."
+  yes: "Yes"
+  no: "No"
+  active: "Active"
+  inactive: "Inactive"
+  unknown: "Unknown"
+  outside-top: "Outside top"
+  mission-completed: "Completed"
+  mission-in-progress: "In progress"
+  empty: "Empty"

@@ -46,12 +46,10 @@ public abstract class BaseGui {
     protected ItemStack createBackButton() {
         ItemStack back = new ItemStack(Material.BARRIER);
         ItemMeta meta = back.getItemMeta();
-        meta.setDisplayName(plugin.getMessageManager().getMessage("items.back-button.name"));
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.back-button.name"));
 
         List<String> lore = new ArrayList<>();
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.back-button.lore")) {
-            lore.add(GradientColorParser.parse(line));
-        }
+        lore.addAll(plugin.getMessageManager().getGuiMessages("items.back-button.lore"));
         meta.setLore(lore);
         back.setItemMeta(meta);
 

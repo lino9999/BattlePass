@@ -2,7 +2,6 @@ package com.Lino.battlePass.gui;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.PlayerData;
-import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -20,7 +19,7 @@ public class LeaderboardGui extends BaseGui {
     private final Player player;
 
     public LeaderboardGui(BattlePass plugin, Player player) {
-        super(plugin, plugin.getMessageManager().getMessage("gui.leaderboard"), 54);
+        super(plugin, plugin.getMessageManager().getGuiMessage("gui.leaderboard"), 54);
         this.player = player;
     }
 
@@ -35,101 +34,93 @@ public class LeaderboardGui extends BaseGui {
         }
 
         gui.setItem(49, createBackButton());
-
         player.openInventory(gui);
     }
 
     private void setupTitleItem(Inventory gui) {
         ItemStack titleItem = new ItemStack(Material.GOLDEN_HELMET);
         ItemMeta meta = titleItem.getItemMeta();
-        meta.setDisplayName(plugin.getMessageManager().getMessage("items.leaderboard-title.name"));
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.leaderboard-title.name"));
 
-        List<String> lore = new ArrayList<>();
-        String coinsTime = plugin.getCoinsDistributionTask() != null ?
-                plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
+        String coinsTime = plugin.getCoinsDistributionTask() != null
+                ? plugin.getCoinsDistributionTask().getTimeUntilNextDistribution()
+                : plugin.getMessageManager().getMessage("time.unknown");
 
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.leaderboard-title.lore")) {
-            String processedLine = line
-                    .replace("%season_time%", plugin.getMissionManager().getTimeUntilSeasonEnd())
-                    .replace("%coins_time%", coinsTime);
-            lore.add(GradientColorParser.parse(processedLine));
-        }
+        meta.setLore(plugin.getMessageManager().getGuiMessages("items.leaderboard-title.lore",
+                "%season_time%", plugin.getMissionManager().getTimeUntilSeasonEnd(),
+                "%coins_time%", coinsTime));
 
-        meta.setLore(lore);
         titleItem.setItemMeta(meta);
         gui.setItem(4, titleItem);
     }
 
     private void setupLeaderboard(Inventory gui) {
-        plugin.getDatabaseManager().getTop10Players().thenAccept(topPlayers -> {
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
+        plugin.getDatabaseManager().getTop10Players().thenAccept(topPlayers ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
 
-                for (int i = 0; i < topPlayers.size() && i < 10; i++) {
-                    PlayerData topPlayer = topPlayers.get(i);
-                    OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(topPlayer.uuid);
+                    for (int i = 0; i < topPlayers.size() && i < 10; i++) {
+                        PlayerData topPlayer = topPlayers.get(i);
+                        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(topPlayer.uuid);
 
-                    // FIX: Controllo se il nome è null per evitare il crash
-                    String playerName = offlinePlayer.getName();
-                    if (playerName == null) {
-                        playerName = "Unknown";
+                        String playerName = offlinePlayer.getName();
+                        if (playerName == null) {
+                            playerName = plugin.getMessageManager().getMessage("time.unknown");
+                        }
+
+                        ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
+                        SkullMeta skullMeta = (SkullMeta) skull.getItemMeta();
+                        skullMeta.setOwningPlayer(offlinePlayer);
+
+                        String rank;
+                        if (i == 0) {
+                            rank = plugin.getMessageManager().getGuiMessage("items.leaderboard-rank.first");
+                        } else if (i == 1) {
+                            rank = plugin.getMessageManager().getGuiMessage("items.leaderboard-rank.second");
+                        } else if (i == 2) {
+                            rank = plugin.getMessageManager().getGuiMessage("items.leaderboard-rank.third");
+                        } else {
+                            rank = plugin.getMessageManager().getGuiMessage("items.leaderboard-rank.other", "%rank%", String.valueOf(i + 1));
+                        }
+
+                        skullMeta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.leaderboard-player.name",
+                                "%rank%", rank,
+                                "%player%", playerName));
+
+                        String status = topPlayer.uuid.equals(player.getUniqueId())
+                                ? plugin.getMessageManager().getGuiMessage("items.leaderboard-status.you")
+                                : plugin.getMessageManager().getGuiMessage("items.leaderboard-status.other");
+
+                        List<String> lore = new ArrayList<>(plugin.getMessageManager().getGuiMessages("items.leaderboard-player.lore",
+                                "%level%", String.valueOf(topPlayer.level),
+                                "%total_levels%", String.valueOf(topPlayer.totalLevels),
+                                "%xp%", String.valueOf(topPlayer.xp),
+                                "%coins%", String.valueOf(topPlayer.battleCoins),
+                                "%status%", status));
+
+                        skullMeta.setLore(lore);
+                        skull.setItemMeta(skullMeta);
+                        gui.setItem(slots[i], skull);
                     }
 
-                    ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
-                    SkullMeta skullMeta = (SkullMeta) skull.getItemMeta();
-                    skullMeta.setOwningPlayer(offlinePlayer);
-
-                    String rank;
-                    if (i == 0) rank = plugin.getMessageManager().getMessage("items.leaderboard-rank.first");
-                    else if (i == 1) rank = plugin.getMessageManager().getMessage("items.leaderboard-rank.second");
-                    else if (i == 2) rank = plugin.getMessageManager().getMessage("items.leaderboard-rank.third");
-                    else rank = plugin.getMessageManager().getMessage("items.leaderboard-rank.other", "%rank%", String.valueOf(i + 1));
-
-                    skullMeta.setDisplayName(plugin.getMessageManager().getMessage("items.leaderboard-player.name",
-                            "%rank%", rank, "%player%", playerName));
-
-                    String status = topPlayer.uuid.equals(player.getUniqueId()) ?
-                            plugin.getMessageManager().getMessage("items.leaderboard-status.you") :
-                            plugin.getMessageManager().getMessage("items.leaderboard-status.other");
-
-                    List<String> lore = new ArrayList<>();
-                    for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.leaderboard-player.lore")) {
-                        String processedLine = line
-                                .replace("%level%", String.valueOf(topPlayer.level))
-                                .replace("%total_levels%", String.valueOf(topPlayer.totalLevels))
-                                .replace("%xp%", String.valueOf(topPlayer.xp))
-                                .replace("%coins%", String.valueOf(topPlayer.battleCoins))
-                                .replace("%status%", status);
-                        lore.add(GradientColorParser.parse(processedLine));
+                    if (player.getOpenInventory().getTitle().equals(title)) {
+                        player.updateInventory();
                     }
-
-                    skullMeta.setLore(lore);
-                    skull.setItemMeta(skullMeta);
-                    gui.setItem(slots[i], skull);
-                }
-
-                if (player.getOpenInventory().getTitle().equals(title)) {
-                    player.updateInventory();
-                }
-            });
-        });
+                }));
     }
 
     private void setupCoinsInfo(Inventory gui) {
         ItemStack coinsInfo = new ItemStack(Material.GOLD_BLOCK);
         ItemMeta meta = coinsInfo.getItemMeta();
-        meta.setDisplayName(plugin.getMessageManager().getMessage("items.coins-info.name"));
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.coins-info.name"));
 
-        List<String> lore = new ArrayList<>();
-        String nextDistTime = plugin.getCoinsDistributionTask() != null ?
-                plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
+        String nextDistTime = plugin.getCoinsDistributionTask() != null
+                ? plugin.getCoinsDistributionTask().getTimeUntilNextDistribution()
+                : plugin.getMessageManager().getMessage("time.unknown");
 
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.coins-info.lore")) {
-            String processedLine = line.replace("%time%", nextDistTime);
-            lore.add(GradientColorParser.parse(processedLine));
-        }
+        meta.setLore(plugin.getMessageManager().getGuiMessages("items.coins-info.lore",
+                "%time%", nextDistTime));
 
-        meta.setLore(lore);
         coinsInfo.setItemMeta(meta);
         gui.setItem(40, coinsInfo);
     }

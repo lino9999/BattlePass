@@ -131,7 +131,7 @@ public class MissionProgressTracker {
         try {
             player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
         } catch (Exception e) {
-            player.sendMessage("§7[§6Progress§7] " + message);
+            player.sendMessage("§7[§6Прогресс§7] " + message);
         }
     }
 

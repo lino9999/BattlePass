@@ -468,7 +468,9 @@ public class BattlePassCommand implements CommandExecutor {
         }
 
         if (args.length < 2) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() + "Usage: /battlepass " + (exclude ? "excludefromtop" : "includetop") + " <player>");
+            String commandName = exclude ? "excludefromtop" : "includetop";
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.top.usage", "%command%", commandName));
             return true;
         }
 
@@ -485,8 +487,13 @@ public class BattlePassCommand implements CommandExecutor {
         plugin.getPlayerDataManager().markForSave(target.getUniqueId());
         plugin.getPlayerDataManager().savePlayer(target.getUniqueId());
 
-        String status = exclude ? "excluded from" : "included in";
-        sender.sendMessage(plugin.getMessageManager().getPrefix() + "Player " + target.getName() + " is now " + status + " the top leaderboard.");
+        String status = exclude
+                ? plugin.getMessageManager().getMessage("messages.top.excluded-status")
+                : plugin.getMessageManager().getMessage("messages.top.included-status");
+        sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                plugin.getMessageManager().getMessage("messages.top.updated",
+                        "%player%", target.getName(),
+                        "%status%", status));
 
         return true;
     }
@@ -527,15 +534,15 @@ public class BattlePassCommand implements CommandExecutor {
             switch (itemType) {
                 case "premium":
                     item = plugin.getCustomItemManager().createPremiumPassItem(amount);
-                    itemName = "Premium Pass Voucher";
+                    itemName = plugin.getMessageManager().getMessage("messages.items.names.premium-pass");
                     break;
                 case "coins":
                     item = plugin.getCustomItemManager().createBattleCoinsItem(amount);
-                    itemName = "Battle Coin Token";
+                    itemName = plugin.getMessageManager().getMessage("messages.items.names.battle-coin");
                     break;
                 case "levelboost":
                     item = plugin.getCustomItemManager().createLevelBoostItem(amount);
-                    itemName = "Experience Boost Elixir";
+                    itemName = plugin.getMessageManager().getMessage("messages.items.names.level-boost");
                     break;
                 default:
                     sender.sendMessage(plugin.getMessageManager().getPrefix() +

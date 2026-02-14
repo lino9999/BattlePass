@@ -145,7 +145,7 @@ public class MissionResetHandler {
 
     public String getTimeUntilReset() {
         if (nextMissionReset == null) {
-            return "Unknown";
+            return plugin.getMessageManager().getMessage("time.unknown");
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -153,16 +153,13 @@ public class MissionResetHandler {
         long minutes = ChronoUnit.MINUTES.between(now, nextMissionReset) % 60;
 
         MessageManager messageManager = plugin.getMessageManager();
-        String hourStr = hours == 1 ? messageManager.getMessage("time.hour") : messageManager.getMessage("time.hours");
-        String minuteStr = minutes == 1 ? messageManager.getMessage("time.minute") : messageManager.getMessage("time.minutes");
-
         return messageManager.getMessage("time.hours-minutes", "%hours%", String.valueOf(hours),
                 "%minutes%", String.valueOf(minutes));
     }
 
     public String getTimeUntilSeasonEnd() {
         if (seasonEndDate == null) {
-            return "Unknown";
+            return plugin.getMessageManager().getMessage("time.unknown");
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -170,9 +167,6 @@ public class MissionResetHandler {
         long hours = ChronoUnit.HOURS.between(now, seasonEndDate) % 24;
 
         MessageManager messageManager = plugin.getMessageManager();
-        String dayStr = days == 1 ? messageManager.getMessage("time.day") : messageManager.getMessage("time.days");
-        String hourStr = hours == 1 ? messageManager.getMessage("time.hour") : messageManager.getMessage("time.hours");
-
         return messageManager.getMessage("time.days-hours", "%days%", String.valueOf(days),
                 "%hours%", String.valueOf(hours));
     }
@@ -190,9 +184,6 @@ public class MissionResetHandler {
         long minutes = ChronoUnit.MINUTES.between(now, nextAvailable) % 60;
 
         MessageManager messageManager = plugin.getMessageManager();
-        String hourStr = hours == 1 ? messageManager.getMessage("time.hour") : messageManager.getMessage("time.hours");
-        String minuteStr = minutes == 1 ? messageManager.getMessage("time.minute") : messageManager.getMessage("time.minutes");
-
         return messageManager.getMessage("time.hours-minutes", "%hours%", String.valueOf(hours),
                 "%minutes%", String.valueOf(minutes));
     }

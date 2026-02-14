@@ -1,0 +1,420 @@
+prefix: "&6[BattlePass] &8» &r"
+
+messages:
+  plugin-enabled: "<gradient:#00FF88:#00D4FF>✓ Battle Pass успешно включен!</gradient>"
+  config-reloaded: "<gradient:#00FF88:#00D4FF>✓ Конфигурация перезагружена!</gradient>"
+
+  player-only: "<gradient:#FF0000:#FF6B6B>✗ Эту команду может использовать только игрок!</gradient>"
+  no-permission: "<gradient:#FF0000:#FF6B6B>✗ У вас нет прав на использование этой команды!</gradient>"
+  player-not-found: "<gradient:#FF0000:#FF6B6B>✗ Игрок не найден!</gradient>"
+  invalid-amount: "<gradient:#FF0000:#FF6B6B>✗ Некорректное число! Введите число.</gradient>"
+  amount-must-be-positive: "<gradient:#FF0000:#FF6B6B>✗ Значение должно быть больше нуля!</gradient>"
+  invalid-item-type: "<gradient:#FF0000:#FF6B6B>✗ Неверный тип предмета! Используйте 'premium', 'coins' или 'levelboost'.</gradient>"
+
+  top:
+    usage: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass %command% <игрок>"
+    updated: "<gradient:#00FF88:#45B7D1>✓</gradient> Игрок %player% теперь %status% таблицу лидеров."
+    excluded-status: "исключен из"
+    included-status: "включен в"
+
+  usage:
+    battlepass: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass"
+    add-premium: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass addpremium <игрок>"
+    remove-premium: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass removepremium <игрок>"
+    add-xp: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass addxp <игрок> <кол-во>"
+    remove-xp: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass removexp <игрок> <кол-во>"
+    add-coins: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass addcoins <игрок> <кол-во>"
+    remove-coins: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass removecoins <игрок> <кол-во>"
+    giveitem: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass giveitem <тип> <игрок> <кол-во>"
+    reset-player: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass resetplayer <игрок>"
+    edit-rewards-season: "<gradient:#FFE66D:#FF6B6B>Использование:</gradient> &f/battlepass edit rewards season <номер>"
+
+  reset-player:
+    sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Прогресс Battle Pass игрока <gradient:#FFD93D:#FF6B6B>%player%</gradient> успешно сброшен"
+    target: "<gradient:#FF6B6B:#FF0000>⚠</gradient> Ваш прогресс Battle Pass был сброшен администратором!"
+
+  help:
+    header: "<gradient:#FFD93D:#FF6B6B>⚡ КОМАНДЫ BATTLE PASS ⚡</gradient>"
+    battlepass: "<gradient:#4ECDC4:#45B7D1>/battlepass</gradient> &7- Открыть GUI Battle Pass"
+    help: "<gradient:#4ECDC4:#45B7D1>/bp help</gradient> &7- Показать это меню помощи"
+    reload: "<gradient:#4ECDC4:#45B7D1>/bp reload</gradient> &7- Перезагрузить конфигурацию"
+    reset-season: "<gradient:#4ECDC4:#45B7D1>/bp reset season</gradient> &7- Принудительно сбросить сезон"
+    reset-missions: "<gradient:#4ECDC4:#45B7D1>/bp reset missions</gradient> &7- Принудительно сбросить ежедневные миссии"
+    reset-player: "<gradient:#4ECDC4:#45B7D1>/bp resetplayer <игрок></gradient> &7- Сбросить прогресс Battle Pass игрока"
+    add-premium: "<gradient:#4ECDC4:#45B7D1>/bp addpremium <игрок></gradient> &7- Выдать Premium Pass"
+    remove-premium: "<gradient:#4ECDC4:#45B7D1>/bp removepremium <игрок></gradient> &7- Убрать Premium Pass"
+    add-xp: "<gradient:#4ECDC4:#45B7D1>/bp addxp <игрок> <кол-во></gradient> &7- Добавить XP игроку"
+    remove-xp: "<gradient:#4ECDC4:#45B7D1>/bp removexp <игрок> <кол-во></gradient> &7- Убрать XP у игрока"
+    add-coins: "<gradient:#4ECDC4:#45B7D1>/bp addcoins <игрок> <кол-во></gradient> &7- Добавить Battle Coins"
+    remove-coins: "<gradient:#4ECDC4:#45B7D1>/bp removecoins <игрок> <кол-во></gradient> &7- Убрать Battle Coins"
+    giveitem: "<gradient:#4ECDC4:#45B7D1>/bp giveitem <тип> <игрок> <кол-во></gradient> &7- Выдать особые предметы"
+    exclude-top: "<gradient:#4ECDC4:#45B7D1>/bp excludefromtop <игрок></gradient> &7- Скрыть игрока из топа"
+    include-top: "<gradient:#4ECDC4:#45B7D1>/bp includetop <игрок></gradient> &7- Вернуть игрока в топ"
+    edit-rewards-season: "<gradient:#4ECDC4:#45B7D1>/bp edit rewards season <номер></gradient> &7- Редактировать награды выбранного сезона"
+
+  premium:
+    given-sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Premium Pass выдан игроку <gradient:#FFD93D:#FF6B6B>%target%</gradient>"
+    given-target: "<gradient:#FFD93D:#FF6B6B>★ ПОЗДРАВЛЯЕМ ★</gradient>\n<gradient:#F7B731:#FC4A1A>У вас теперь есть Premium Battle Pass!</gradient>"
+    removed-sender: "<gradient:#FF6B6B:#FF0000>✗</gradient> Premium Pass удален у %target%"
+    removed-target: "<gradient:#FF6B6B:#FF0000>Ваш Premium Battle Pass был удален!</gradient>"
+    required: "<gradient:#FF0000:#FF6B6B>⚠ Для получения этой награды нужен Premium Pass!</gradient>"
+
+  xp:
+    added-sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Добавлено <gradient:#FFD93D:#FF6B6B>%amount% XP</gradient> игроку %target%"
+    added-target: "<gradient:#00FF88:#45B7D1>+ %amount% XP</gradient>"
+    removed-sender: "<gradient:#FF6B6B:#FF0000>✗</gradient> Убрано %amount% XP у %target%"
+    removed-target: "<gradient:#FF6B6B:#FF0000>- %amount% XP</gradient>"
+
+  level-up: "<gradient:#FFD93D:#FF6B6B>⬆ НОВЫЙ УРОВЕНЬ!</gradient> <gradient:#4ECDC4:#45B7D1>Теперь ваш уровень: %level%</gradient>"
+  new-rewards: "<gradient:#00FF88:#45B7D1>НОВЫЕ НАГРАДЫ!</gradient> &fВам доступны новые награды!"
+
+  rewards-available: "<gradient:#4ECDC4:#45B7D1>С возвращением!</gradient> &fУ вас доступно <gradient:#FFD93D:#FF6B6B>%amount% наград</gradient>!"
+  rewards-notification: "У вас есть <gradient:#FFD93D:#FF6B6B>%amount% новых наград</gradient> к получению!"
+
+  mission:
+    completed: "<gradient:#00FF88:#45B7D1>✓ МИССИЯ ВЫПОЛНЕНА:</gradient> &a%mission% <gradient:#FFD93D:#FF6B6B>(+%reward_xp% XP)</gradient>"
+    reset: "<gradient:#FF6B6B:#4ECDC4>⟳ Ежедневные миссии были сброшены!</gradient>"
+    forced-reset: "<gradient:#FF6B6B:#4ECDC4>⟳ Администратор сбросил ежедневные миссии!</gradient>"
+    reset-complete: "<gradient:#00FF88:#00D4FF>✓ Миссии успешно сброшены!</gradient>"
+    reset-admin: "<gradient:#FF6B6B:#4ECDC4>⟳ %admin% принудительно сбросил ежедневные миссии!</gradient>"
+    actionbar-progress: "&c%mission%: &7%current%&f/&8%required%"
+    actionbar-completed: "<gradient:#00FF88:#45B7D1>✓ ВЫПОЛНЕНО:</gradient> &a&l%mission%"
+
+  season:
+    reset: "<gradient:#FF0000:#FFD93D>СБРОС СЕЗОНА</gradient>\n<gradient:#4ECDC4:#45B7D1>Сезон Battle Pass завершен! Новый сезон начинается прямо сейчас!</gradient>"
+    forced-reset: "<gradient:#FF0000:#FFD93D>ПРИНУДИТЕЛЬНЫЙ СБРОС СЕЗОНА</gradient>\n<gradient:#4ECDC4:#45B7D1>Администратор сбросил сезон Battle Pass!</gradient>"
+    reset-warning: "<gradient:#FFD93D:#FF6B6B>⚠ ВНИМАНИЕ:</gradient> &fСезон будет сброшен через 2 секунды. Прогресс всех игроков будет утерян!"
+    reset-complete: "<gradient:#00FF88:#00D4FF>✓ Сезон успешно сброшен!</gradient>"
+    reset-admin: "<gradient:#FF0000:#FFD93D>СБРОС СЕЗОНА</gradient>\n<gradient:#4ECDC4:#45B7D1>%admin% принудительно сбросил сезон Battle Pass!</gradient>"
+    ends-in: "&7До конца сезона: <gradient:#FFD93D:#FF6B6B>%season_time%</gradient>"
+    achievement: "<gradient:#FFD93D:#FF6B6B>%player%</gradient> полностью завершил Battle Pass!"
+    premium-achievement: "<gradient:#FFD93D:#FF6B6B>%player%</gradient> стал <gradient:#FF00FF:#00FFFF>ЛЕГЕНДОЙ</gradient>, завершив Premium Battle Pass!"
+    new-season: "<gradient:#FFD93D:#FF6B6B>Начался сезон %season%!</gradient>"
+    rotation-disabled: "<gradient:#FF6B6B:#FF0000>✗ Ротация сезонов отключена в конфиге!</gradient>"
+    invalid-season: "<gradient:#FF6B6B:#FF0000>✗ Неверный номер сезона! Допустимо от 1 до %max%.</gradient>"
+    editing-season: "<gradient:#00FF88:#00D4FF>✓</gradient> Редактирование наград для <gradient:#FFD93D:#FF6B6B>сезона %season%</gradient>. Изменения сохраняются напрямую в папку сезона."
+
+  rewards:
+    free-claimed: "<gradient:#00FF88:#45B7D1>✓ Бесплатные награды получены!</gradient>"
+    premium-claimed: "<gradient:#FFD93D:#FF6B6B>★ Премиум-награды получены!</gradient>"
+    already-claimed: "<gradient:#FF6B6B:#FF0000>✗ Вы уже получили эту награду!</gradient>"
+    cannot-claim: "<gradient:#FF6B6B:#FF0000>✗ Вы не можете получить эту награду!</gradient>"
+    locked: "<gradient:#FF0000:#FF6B6B>ЗАКРЫТО</gradient> &7(Нужен уровень %level%)"
+    item-reward: "&7• &f%amount%x <gradient:#4ECDC4:#45B7D1>%item%</gradient>"
+    item-reward-dropped: "&7• &f%amount%x <gradient:#4ECDC4:#45B7D1>%item%</gradient> <gradient:#FFD93D:#FF6B6B>(Выброшено на землю)</gradient>"
+    command-reward: "&7• <gradient:#FFD93D:#FF6B6B>%reward%</gradient>"
+    already-claimed-error: "<gradient:#FF6B6B:#FF0000>✗ Эта награда уже получена! Если это ошибка, обратитесь к администрации.</gradient>"
+
+  daily-reward:
+    claimed: "<gradient:#00FF88:#45B7D1>✓ Ежедневная награда получена!</gradient> &fВы получили <gradient:#FFD93D:#FF6B6B>%amount% XP</gradient>"
+    already-claimed: "<gradient:#FF6B6B:#FF0000>✗ Вы уже забрали ежедневную награду!</gradient>"
+
+  coins:
+    distribution-announcement: "<gradient:#FFD93D:#FF6B6B>BATTLE COINS</gradient> <gradient:#4ECDC4:#45B7D1>Топ-10 игроков получают ежедневные Battle Coins!</gradient>"
+    distribution-player: "<gradient:#FFD93D:#FF6B6B>#%rank%</gradient> <gradient:#4ECDC4:#45B7D1>%player%</gradient> &7получил <gradient:#FFD93D:#FF6B6B>%amount% Battle Coins</gradient>"
+    received: "<gradient:#00FF88:#45B7D1>+ %amount% Battle Coins!</gradient>"
+    balance: "&7Ваши Battle Coins: <gradient:#FFD93D:#FF6B6B>%amount%</gradient>"
+    added-sender: "<gradient:#00FF88:#45B7D1>✓</gradient> Добавлено <gradient:#FFD93D:#FF6B6B>%amount% Battle Coins</gradient> игроку %target%"
+    added-target: "<gradient:#00FF88:#45B7D1>+ %amount% Battle Coins!</gradient>"
+    removed-sender: "<gradient:#FF6B6B:#FF0000>✗</gradient> Убрано %amount% Battle Coins у %target%"
+    removed-target: "<gradient:#FF6B6B:#FF0000>- %amount% Battle Coins!</gradient>"
+    insufficient-remove: "<gradient:#FF6B6B:#FF0000>✗</gradient> У %target% только %current% Battle Coins!"
+
+  shop:
+    insufficient-coins: "<gradient:#FF6B6B:#FF0000>✗ Недостаточно Battle Coins!</gradient> &7Нужно: <gradient:#4ECDC4:#45B7D1>%required%</gradient> &7Есть: <gradient:#4ECDC4:#45B7D1>%current%</gradient>"
+    purchase-success: "<gradient:#00FF88:#45B7D1>✓ Покупка успешна!</gradient> &fКуплено %item% &fза <gradient:#FFD93D:#FF6B6B>%price% Battle Coins</gradient>"
+    shop-title: "<gradient:#FFD93D:#FF6B6B>Магазин Battle Pass</gradient>"
+
+  items:
+    given: "<gradient:#00FF88:#45B7D1>✓</gradient> Выдано <gradient:#FFD93D:#FF6B6B>%amount%x %item%</gradient> игроку %target%"
+    given-dropped: "<gradient:#00FF88:#45B7D1>✓</gradient> Выдано <gradient:#FFD93D:#FF6B6B>%amount%x %item%</gradient> игроку %target% <gradient:#FFE66D:#FF6B6B>(Часть предметов выпала)</gradient>"
+    received: "<gradient:#00FF88:#45B7D1>✓</gradient> Вы получили <gradient:#FFD93D:#FF6B6B>%amount%x %item%</gradient>"
+    already-have-premium: "<gradient:#FF6B6B:#FF0000>✗ У вас уже есть Premium Battle Pass!</gradient>"
+    premium-activated: "<gradient:#FFD93D:#FF6B6B>★ PREMIUM АКТИВИРОВАН ★</gradient>\n<gradient:#F7B731:#FC4A1A>Теперь вам доступны все премиум-награды!</gradient>"
+    coins-redeemed: "<gradient:#00FF88:#45B7D1>✓ Вы использовали %amount% Battle Coins!</gradient>"
+    max-level-reached: "<gradient:#FF6B6B:#FF0000>✗ Вы уже достигли максимального уровня!</gradient>"
+    xp-boost-used: "<gradient:#00FF88:#45B7D1>★ XP-БУСТ!</gradient>\n<gradient:#4ECDC4:#45B7D1>Использовано %items% эликсиров и получено %amount% XP!</gradient>"
+    names:
+      premium-pass: "Ваучер Premium Pass"
+      battle-coin: "Жетон Battle Coin"
+      level-boost: "Эликсир ускорения опыта"
+
+gui:
+  battlepass: "&6Battle Pass &8| &7Страница %page%"
+  missions: "&6Ежедневные миссии"
+  leaderboard: "&6Топ игроков"
+  shop: "&6Магазин Battle Pass"
+
+items:
+  progress:
+    name: "&eВаш прогресс"
+    lore:
+      - "&7"
+      - "&8▪ &7Уровень: <gradient:#4ECDC4:#45B7D1>%level%</gradient>&7/<gradient:#4ECDC4:#45B7D1>54</gradient>"
+      - "&8▪ &7XP: <gradient:#FFD93D:#FF6B6B>%xp%</gradient>&7/<gradient:#FFD93D:#FF6B6B>%xp_needed%</gradient>"
+      - "&7"
+      - "&8▪ &7Премиум пропуск: %premium_status%"
+      - "&8▪ &7До конца сезона: <gradient:#FF6B6B:#FFD93D>%season_time%</gradient>"
+      - "&7"
+      - "&7Выполняйте миссии, чтобы получать XP"
+      - "&7и открывать крутые награды!"
+
+  premium-status:
+    active: "&aАктивен"
+    inactive: "&cНе активен"
+
+  separator:
+    name: " "
+
+  previous-page:
+    name: "&e← Предыдущая страница"
+    lore:
+      - "&7Нажмите, чтобы перейти на страницу %page%"
+
+  next-page:
+    name: "&eСледующая страница →"
+    lore:
+      - "&7Нажмите, чтобы перейти на страницу %page%"
+
+  missions-button:
+    name: "&eЕжедневные миссии"
+    lore:
+      - "&7"
+      - "&7Выполняйте ежедневные миссии"
+      - "&7и получайте бонусный XP!"
+      - "&7"
+      - "&8▪ &7Сброс через: <gradient:#FFD93D:#FF6B6B>%reset_time%</gradient>"
+      - "&7"
+      - "<gradient:#4ECDC4:#45B7D1>▶ НАЖМИТЕ ДЛЯ ПРОСМОТРА</gradient>"
+
+  leaderboard-button:
+    name: "&eТаблица лидеров"
+    lore:
+      - "&7"
+      - "&7Посмотрите топ-10 игроков"
+      - "&7с наивысшими уровнями Battle Pass!"
+      - "&7"
+      - "&8▪ &7Следующие монеты: <gradient:#FFD93D:#FF6B6B>%coins_time%</gradient>"
+      - "&7"
+      - "<gradient:#FFD93D:#FF6B6B>▶ НАЖМИТЕ ДЛЯ ПРОСМОТРА</gradient>"
+
+  shop-button:
+    name: "&eМагазин Battle Pass"
+    lore:
+      - "&7"
+      - "&7Тратьте Battle Coins на"
+      - "&7эксклюзивные награды и предметы!"
+      - "&7"
+      - "&8▪ &7Ваши монеты: <gradient:#FFD93D:#FF6B6B>%coins%</gradient>"
+      - "&7"
+      - "<gradient:#FFD93D:#FF6B6B>▶ НАЖМИТЕ, ЧТОБЫ ОТКРЫТЬ</gradient>"
+
+  daily-reward:
+    name: "&eЕжедневная награда"
+    lore-available:
+      - "&7"
+      - "&7Заберите ежедневный бонус XP!"
+      - "&7"
+      - "&8▪ &7Награда: <gradient:#FFD93D:#FF6B6B>%xp% XP</gradient>"
+      - "&7"
+      - "<gradient:#00FF88:#45B7D1>▶ НАЖМИТЕ, ЧТОБЫ ЗАБРАТЬ!</gradient>"
+    lore-cooldown:
+      - "&7"
+      - "&7Вы уже забрали"
+      - "&7свою ежедневную награду!"
+      - "&7"
+      - "&8▪ &7Награда: <gradient:#FFD93D:#FF6B6B>%xp% XP</gradient>"
+      - "&8▪ &7Следующий сбор: <gradient:#FF6B6B:#FF0000>%time%</gradient>"
+      - "&7"
+      - "<gradient:#FF6B6B:#FF0000>⏰ ПЕРЕЗАРЯДКА</gradient>"
+
+  reward-available:
+    name: "&aНаграда уровня %level%"
+    lore-header:
+      - "&7"
+      - "<gradient:#4ECDC4:#45B7D1>▼ Награды ▼</gradient>"
+    lore-footer:
+      - "&7"
+      - "&8▪ &7Требуемый уровень: <gradient:#FFD93D:#FF6B6B>%level%</gradient>"
+      - "&7"
+      - "<gradient:#00FF88:#45B7D1>▶ НАЖМИТЕ, ЧТОБЫ ЗАБРАТЬ!</gradient>"
+
+  reward-claimed:
+    name: "&8Награда уровня %level%"
+    lore-header:
+      - "&7"
+      - "&8▼ Награды ▼"
+    lore-footer:
+      - "&7"
+      - "&8▪ &7Требуемый уровень: &8%level%"
+      - "&7"
+      - "&8✓ УЖЕ ПОЛУЧЕНО"
+
+  reward-premium-locked:
+    name: "&6Премиум-награда уровня %level%"
+    lore-header:
+      - "&7"
+      - "<gradient:#FFD93D:#FF6B6B>▼ Награды ▼</gradient>"
+    lore-footer:
+      - "&7"
+      - "&8▪ &7Требуемый уровень: <gradient:#FFD93D:#FF6B6B>%level%</gradient>"
+      - "&7"
+      - "<gradient:#FFD93D:#FF6B6B>⭐ ТОЛЬКО PREMIUM</gradient>"
+
+  reward-level-locked:
+    name: "&cНаграда уровня %level%"
+    lore-header:
+      - "&7"
+      - "&8▼ Награды ▼"
+    lore-footer:
+      - "&7"
+      - "&8▪ &7Требуемый уровень: <gradient:#FF6B6B:#FF0000>%level%</gradient>"
+      - "&7"
+      - "<gradient:#FF6B6B:#FF0000>ЗАКРЫТО</gradient>"
+
+  mission-timer:
+    name: "&eСброс миссий"
+    lore:
+      - "&7"
+      - "&7Миссии сбросятся через:"
+      - "<gradient:#FFD93D:#FF6B6B>%reset_time%</gradient>"
+      - "&7"
+      - "&7Выполните миссии до"
+      - "&7сброса, чтобы получить XP!"
+
+  mission-completed:
+    name: "&a%mission%"
+    lore:
+      - "&7"
+      - "&8▪ &7Прогресс: <gradient:#00FF88:#45B7D1>%progress%/%required%</gradient>"
+      - "&8▪ &7Награда: <gradient:#FFD93D:#FF6B6B>%reward_xp% XP</gradient>"
+      - "&7"
+      - "&8▪ &7Сброс через: <gradient:#FFD93D:#FF6B6B>%reset_time%</gradient>"
+      - "&7"
+      - "<gradient:#00FF88:#45B7D1>✓ ВЫПОЛНЕНО</gradient>"
+
+  mission-in-progress:
+    name: "&e%mission%"
+    lore:
+      - "&7"
+      - "&8▪ &7Прогресс: <gradient:#FFE66D:#FF6B6B>%progress%/%required%</gradient>"
+      - "&8▪ &7Награда: <gradient:#FFD93D:#FF6B6B>%reward_xp% XP</gradient>"
+      - "&7"
+      - "&8▪ &7Сброс через: <gradient:#FFD93D:#FF6B6B>%reset_time%</gradient>"
+      - "&7"
+      - "<gradient:#FFE66D:#FF6B6B>⚡ В ПРОЦЕССЕ</gradient>"
+
+  leaderboard-title:
+    name: "&eТоп 10 игроков"
+    lore:
+      - "&7"
+      - "&8▪ &7До конца сезона: <gradient:#FFD93D:#FF6B6B>%season_time%</gradient>"
+      - "&8▪ &7Следующие монеты: <gradient:#4ECDC4:#45B7D1>%coins_time%</gradient>"
+      - "&7"
+      - "&7Соревнуйтесь за первые места"
+      - "&7и получайте Battle Coins ежедневно!"
+
+  leaderboard-player:
+    name: "%rank% <gradient:#4ECDC4:#45B7D1>%player%</gradient>"
+    lore:
+      - "&7"
+      - "&8▪ &7Уровень: <gradient:#4ECDC4:#45B7D1>%level%</gradient>"
+      - "&8▪ &7Всего уровней: <gradient:#FFD93D:#FF6B6B>%total_levels%</gradient>"
+      - "&8▪ &7XP: <gradient:#4ECDC4:#45B7D1>%xp%</gradient>"
+      - "&8▪ &7Battle Coins: <gradient:#FFD93D:#FF6B6B>%coins%</gradient>"
+      - "&7"
+      - "%status%"
+
+  leaderboard-rank:
+    first: "<gradient:#FFD700:#FFA500>#1</gradient>"
+    second: "<gradient:#C0C0C0:#808080>#2</gradient>"
+    third: "<gradient:#CD7F32:#8B4513>#3</gradient>"
+    other: "&7#%rank%"
+
+  leaderboard-status:
+    you: "<gradient:#00FF88:#45B7D1>★ ЭТО ВЫ! ★</gradient>"
+    other: "&7Прокачивайтесь, чтобы обогнать их!"
+
+  coins-info:
+    name: "&eBattle Coins"
+    lore:
+      - "&7"
+      - "&7Battle Coins — это особая валюта,"
+      - "&7которую ежедневно получают лучшие игроки!"
+      - "&7"
+      - "<gradient:#4ECDC4:#45B7D1>▼ Как получить ▼</gradient>"
+      - "&7• Быть в топ-10 таблицы лидеров"
+      - "&7• #1 получает 10 монет"
+      - "&7• #2 получает 9 монет"
+      - "&7• ... и так далее"
+      - "&7"
+      - "<gradient:#FFD93D:#FF6B6B>▼ Для чего нужны ▼</gradient>"
+      - "&7• Покупка эксклюзивных предметов"
+      - "&7• Получение особых бонусов"
+      - "&7• Демонстрация вашего прогресса!"
+      - "&7"
+      - "&8▪ &7Следующая выдача: <gradient:#FFD93D:#FF6B6B>%time%</gradient>"
+
+  back-button:
+    name: "&c← Назад"
+    lore:
+      - "&7Вернуться в Battle Pass"
+
+  shop-balance:
+    name: "&eВаш баланс"
+    lore:
+      - "&7"
+      - "&8▪ &7Battle Coins: <gradient:#FFD93D:#FF6B6B>%coins%</gradient>"
+      - "&7"
+      - "&7Получайте больше монет,"
+      - "&7удерживаясь в топ-10!"
+
+time:
+  days-hours: "%days%д %hours%ч"
+  hours-minutes: "%hours%ч %minutes%м"
+  day: "день"
+  days: "дней"
+  hour: "час"
+  hours: "часов"
+  minute: "минута"
+  minutes: "минут"
+  available-now: "<gradient:#00FF88:#45B7D1>Доступно сейчас!</gradient>"
+  unknown: "Неизвестно"
+
+reward-types:
+  free: "<gradient:#4ECDC4:#45B7D1>Бесплатно</gradient>"
+  premium: "<gradient:#FFD93D:#FF6B6B>Премиум</gradient>"
+
+placeholders:
+  loading: "Загрузка..."
+  yes: "Да"
+  no: "Нет"
+  active: "Активен"
+  inactive: "Неактивен"
+  unknown: "Неизвестно"
+  outside-top: "Вне топа"
+  mission-completed: "Выполнена"
+  mission-in-progress: "В процессе"
+  empty: "Пусто"
+
+reward-level-locked:
+  name: "<gradient:#FF6B6B:#FF0000>Награда уровня %level%</gradient>"
+  lore-header:
+    - "&7"
+    - "&8▼ Награды ▼"
+  lore-footer:
+    - "&7"
+    - "&8▪ &7Требуемый уровень: <gradient:#FF6B6B:#FF0000>%level%</gradient>"
+    - "&7"
+    - "<gradient:#FF6B6B:#FF0000>ЗАКРЫТО</gradient>"
+
+reward-claimed:
+  name: "&8Награда %type% уровня %level%"
+  lore-header:
+    - "&7"
+    - "&8▼ Награды ▼"
+  lore-footer:
+    - "&7"
+    - "&8▪ &7Требуемый уровень: &8%level%"
+    - "&7"
+    - "&8✓ УЖЕ ПОЛУЧЕНО"

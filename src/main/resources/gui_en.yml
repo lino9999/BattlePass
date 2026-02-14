@@ -1,0 +1,192 @@
+gui:
+  battlepass: "&6Battle Pass &8| &7Page %page%"
+  missions: "&6Daily Missions"
+  leaderboard: "&6Leaderboard"
+  shop: "&6BattlePass Shop"
+
+items:
+  progress:
+    name: "&#00D4FFYour Progress"
+    lore:
+      - "&7Level: &f%level%"
+      - "&7XP: &f%xp%&7/&f%xp_needed%"
+      - "&7Premium: %premium_status%"
+      - "&7Season: &f%current_season%"
+      - "&7Season reset in: &f%season_time%"
+
+  premium-status:
+    active: "&aActive"
+    inactive: "&cInactive"
+
+  separator:
+    name: " "
+
+  previous-page:
+    name: "&e← Previous Page"
+    lore:
+      - "&7Open page %page%"
+
+  next-page:
+    name: "&eNext Page →"
+    lore:
+      - "&7Open page %page%"
+
+  missions-button:
+    name: "&eMissions"
+    lore:
+      - "&7Complete missions"
+      - "&7and earn XP."
+      - "&7Resets in: &f%reset_time%"
+
+  leaderboard-button:
+    name: "&eLeaderboard"
+    lore:
+      - "&7Top players by progress."
+      - "&7Next coin payout: &f%coins_time%"
+
+  shop-button:
+    name: "&eShop"
+    lore:
+      - "&7Buy items for coins."
+      - "&7Your coins: &f%coins%"
+
+  daily-reward:
+    name: "&eDaily Reward"
+    lore-available:
+      - "&7Reward: &f%xp% XP"
+      - "&aClick to claim"
+    lore-cooldown:
+      - "&7Reward: &f%xp% XP"
+      - "&7Available in: &f%time%"
+
+  reward-available:
+    name: "&a%type% Reward • Level %level%"
+    lore-header:
+      - "&7Rewards:"
+    lore-footer:
+      - "&7"
+      - "&aClick to claim"
+
+  reward-claimed:
+    name: "&8%type% Reward • Level %level%"
+    lore-header:
+      - "&7Rewards:"
+    lore-footer:
+      - "&7"
+      - "&8Already claimed"
+
+  reward-premium-locked:
+    name: "&6Premium Reward • Level %level%"
+    lore-header:
+      - "&7Rewards:"
+    lore-footer:
+      - "&7"
+      - "&6Premium required"
+
+  reward-level-locked:
+    name: "&c%type% Reward • Level %level%"
+    lore-header:
+      - "&7Rewards:"
+    lore-footer:
+      - "&7"
+      - "&cInsufficient level"
+
+  mission-timer:
+    name: "&eMission Reset"
+    lore:
+      - "&7Resets in: &f%reset_time%"
+
+  mission-completed:
+    name: "&a%mission%"
+    lore:
+      - "&7Progress: &f%progress%/%required%"
+      - "&7Reward: &f%reward_xp% XP"
+      - "&7Resets in: &f%reset_time%"
+      - "&aCompleted"
+
+  mission-in-progress:
+    name: "&e%mission%"
+    lore:
+      - "&7Progress: &f%progress%/%required%"
+      - "&7Reward: &f%reward_xp% XP"
+      - "&7Resets in: &f%reset_time%"
+      - "&eIn progress"
+
+  leaderboard-title:
+    name: "&eTop 10 Players"
+    lore:
+      - "&7Season ends in: &f%season_time%"
+      - "&7Next coin payout: &f%coins_time%"
+
+  leaderboard-player:
+    name: "%rank% &b%player%"
+    lore:
+      - "&7Level: &f%level%"
+      - "&7Total Levels: &f%total_levels%"
+      - "&7XP: &f%xp%"
+      - "&7Coins: &f%coins%"
+      - "&7%status%"
+
+  leaderboard-rank:
+    first: "&6#1"
+    second: "&f#2"
+    third: "&c#3"
+    other: "&7#%rank%"
+
+  leaderboard-status:
+    you: "&aYou"
+    other: "&7Keep grinding"
+
+  coins-info:
+    name: "&eBattle Coins"
+    lore:
+      - "&7Coins are paid to top-10 players."
+      - "&7Next payout: &f%time%"
+
+  back-button:
+    name: "&c← Back"
+    lore:
+      - "&7Return"
+
+  shop-balance:
+    name: "&eYour Balance"
+    lore:
+      - "&7Battle Coins: &f%coins%"
+
+  admin-rewards-editor:
+    name: "&6Rewards Editor"
+    lore:
+      - "&7Open rewards editor."
+
+  admin-missions-reset:
+    name: "&cReset Missions"
+    lore:
+      - "&7Admin only."
+      - "&cClick to reset"
+
+  admin-missions-editor:
+    name: "&6Mission Editor"
+    lore:
+      - "&7Create and edit missions."
+
+custom-items:
+  premium-pass:
+    name: "&#FF66FF★ Premium Battle Pass Voucher ★"
+    lore:
+      - "&7Unlocks the Premium reward track."
+      - "&7Valid until the end of current season."
+      - "&aRight-click to activate"
+
+  battle-coin:
+    name: "&#FFD54F✦ Battle Coin Token ✦"
+    lore:
+      - "&7Adds 1 Battle Coin."
+      - "&7Can be stacked."
+      - "&aRight-click to use"
+
+  level-boost:
+    name: "&#66FFCC✧ XP Boost Elixir ✧"
+    lore:
+      - "&7Gives +100 Battle Pass XP."
+      - "&7Can be used in batches."
+      - "&aRight-click to use"

@@ -27,7 +27,7 @@ public class MissionEditorGui {
     }
 
     public void open() {
-        Inventory gui = Bukkit.createInventory(null, 54, GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Mission Editor - Page " + page + "</gradient>"));
+        Inventory gui = Bukkit.createInventory(null, 54, GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Редактор миссий - Страница " + page + "</gradient>"));
 
         ConfigurationSection pools = plugin.getConfigManager().getMissionsConfig().getConfigurationSection("mission-pools");
         List<String> keys = pools != null ? new ArrayList<>(pools.getKeys(false)) : new ArrayList<>();
@@ -42,17 +42,17 @@ public class MissionEditorGui {
         }
 
         if (page > 1) {
-            ItemStack prev = createButton(Material.ARROW, "&ePrevious Page");
+            ItemStack prev = createButton(Material.ARROW, "&eПредыдущая страница");
             gui.setItem(45, prev);
         }
 
         if (end < keys.size()) {
-            ItemStack next = createButton(Material.ARROW, "&eNext Page");
+            ItemStack next = createButton(Material.ARROW, "&eСледующая страница");
             gui.setItem(53, next);
         }
 
-        gui.setItem(49, createButton(Material.EMERALD, "&a+ Create New Mission"));
-        gui.setItem(48, createButton(Material.BARRIER, "&cBack to Menu"));
+        gui.setItem(49, createButton(Material.EMERALD, "&a+ Создать новую миссию"));
+        gui.setItem(48, createButton(Material.BARRIER, "&cНазад в меню"));
 
         player.openInventory(gui);
     }
@@ -63,12 +63,12 @@ public class MissionEditorGui {
         meta.setDisplayName(GradientColorParser.parse("&e" + key));
 
         List<String> lore = new ArrayList<>();
-        lore.add(GradientColorParser.parse("&7Type: &f" + section.getString("type")));
-        lore.add(GradientColorParser.parse("&7Target: &f" + section.getString("target")));
-        lore.add(GradientColorParser.parse("&7Display: &f" + section.getString("display-name")));
+        lore.add(GradientColorParser.parse("&7Тип: &f" + section.getString("type")));
+        lore.add(GradientColorParser.parse("&7Цель: &f" + section.getString("target")));
+        lore.add(GradientColorParser.parse("&7Название: &f" + section.getString("display-name")));
         lore.add("");
-        lore.add(GradientColorParser.parse("&eLeft-Click to Edit"));
-        lore.add(GradientColorParser.parse("&cRight-Click to Delete"));
+        lore.add(GradientColorParser.parse("&eЛКМ - редактировать"));
+        lore.add(GradientColorParser.parse("&cПКМ - удалить"));
 
         meta.setLore(lore);
         // Store key in persistent data

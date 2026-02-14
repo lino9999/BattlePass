@@ -29,6 +29,8 @@ public class ConfigManager {
     private int coinsDistributionHours = 24;
     private int missionResetHours = 24;
     private boolean customItemSoundsEnabled = true;
+    private boolean cleanUiMode = true;
+    private String language = "RU";
 
     private Material guiFreeLockedMaterial = Material.GRAY_STAINED_GLASS;
     private Material guiPremiumLockedMaterial = Material.GRAY_STAINED_GLASS;
@@ -65,6 +67,8 @@ public class ConfigManager {
         coinsDistributionHours = config.getInt("battle-coins.distribution-hours", 24);
         missionResetHours = config.getInt("missions.reset-hours", 24);
         customItemSoundsEnabled = config.getBoolean("custom-items.sounds-enabled", true);
+        cleanUiMode = config.getBoolean("ui.clean-mode", true);
+        language = normalizeLanguage(config.getString("language", "RU"));
 
         databaseType = config.getString("database.type", "SQLITE");
         dbHost = config.getString("database.host", "localhost");
@@ -137,6 +141,18 @@ public class ConfigManager {
         }
     }
 
+    private String normalizeLanguage(String value) {
+        if (value == null) {
+            return "RU";
+        }
+
+        String normalized = value.trim().toUpperCase();
+        if ("EN".equals(normalized) || "ENG".equals(normalized) || "ENGLISH".equals(normalized)) {
+            return "EN";
+        }
+        return "RU";
+    }
+
     public FileConfiguration getConfig() {
         return config;
     }
@@ -199,6 +215,14 @@ public class ConfigManager {
 
     public boolean isCustomItemSoundsEnabled() {
         return customItemSoundsEnabled;
+    }
+
+    public boolean isCleanUiMode() {
+        return cleanUiMode;
+    }
+
+    public String getLanguage() {
+        return language;
     }
 
     public Material getGuiFreeLockedMaterial() {

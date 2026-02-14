@@ -3,14 +3,12 @@ package com.Lino.battlePass.gui;
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.PlayerData;
-import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MissionsGui extends BaseGui {
@@ -19,7 +17,7 @@ public class MissionsGui extends BaseGui {
     private final PlayerData playerData;
 
     public MissionsGui(BattlePass plugin, Player player) {
-        super(plugin, plugin.getMessageManager().getMessage("gui.missions"), 54);
+        super(plugin, plugin.getMessageManager().getGuiMessage("gui.missions"), 54);
         this.player = player;
         this.playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
     }
@@ -42,15 +40,10 @@ public class MissionsGui extends BaseGui {
     private void setupTimerItem(Inventory gui) {
         ItemStack timer = new ItemStack(Material.CLOCK);
         ItemMeta meta = timer.getItemMeta();
-        meta.setDisplayName(plugin.getMessageManager().getMessage("items.mission-timer.name"));
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.mission-timer.name"));
+        meta.setLore(plugin.getMessageManager().getGuiMessages("items.mission-timer.lore",
+                "%reset_time%", plugin.getMissionManager().getTimeUntilReset()));
 
-        List<String> lore = new ArrayList<>();
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.mission-timer.lore")) {
-            String processedLine = line.replace("%reset_time%", plugin.getMissionManager().getTimeUntilReset());
-            lore.add(GradientColorParser.parse(processedLine));
-        }
-
-        meta.setLore(lore);
         timer.setItemMeta(meta);
         gui.setItem(4, timer);
     }
@@ -61,7 +54,6 @@ public class MissionsGui extends BaseGui {
 
         for (int i = 0; i < currentMissions.size() && i < slots.length; i++) {
             Mission mission = currentMissions.get(i);
-
             String key = mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
 
             int progress = playerData.missionProgress.getOrDefault(key, 0);
@@ -70,19 +62,16 @@ public class MissionsGui extends BaseGui {
             ItemStack missionItem = new ItemStack(completed ? Material.LIME_DYE : Material.GRAY_DYE);
             ItemMeta meta = missionItem.getItemMeta();
 
-            String itemNamePath = completed ? "items.mission-completed.name" : "items.mission-in-progress.name";
-            String itemLorePath = completed ? "items.mission-completed.lore" : "items.mission-in-progress.lore";
+            String namePath = completed ? "items.mission-completed.name" : "items.mission-in-progress.name";
+            String lorePath = completed ? "items.mission-completed.lore" : "items.mission-in-progress.lore";
 
-            meta.setDisplayName(plugin.getMessageManager().getMessage(itemNamePath, "%mission%", mission.name));
-
-            List<String> lore = plugin.getMessageManager().getMessages(itemLorePath,
+            meta.setDisplayName(plugin.getMessageManager().getGuiMessage(namePath, "%mission%", mission.name));
+            meta.setLore(plugin.getMessageManager().getGuiMessages(lorePath,
                     "%progress%", String.valueOf(progress),
                     "%required%", String.valueOf(mission.required),
                     "%reward_xp%", String.valueOf(mission.xpReward),
-                    "%reset_time%", plugin.getMissionManager().getTimeUntilReset()
-            );
+                    "%reset_time%", plugin.getMissionManager().getTimeUntilReset()));
 
-            meta.setLore(lore);
             missionItem.setItemMeta(meta);
             gui.setItem(slots[i], missionItem);
         }
@@ -91,17 +80,8 @@ public class MissionsGui extends BaseGui {
     private void setupAdminResetButton(Inventory gui) {
         ItemStack resetButton = new ItemStack(Material.TNT);
         ItemMeta meta = resetButton.getItemMeta();
-
-        meta.setDisplayName(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>Force Reset Missions</gradient>"));
-
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>Admin Only</gradient>"));
-        lore.add(GradientColorParser.parse("&7Force reset all daily missions"));
-        lore.add("");
-        lore.add(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>▶ CLICK TO RESET</gradient>"));
-
-        meta.setLore(lore);
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.admin-missions-reset.name"));
+        meta.setLore(plugin.getMessageManager().getGuiMessages("items.admin-missions-reset.lore"));
         resetButton.setItemMeta(meta);
         gui.setItem(45, resetButton);
     }
@@ -109,18 +89,8 @@ public class MissionsGui extends BaseGui {
     private void setupMissionEditorButton(Inventory gui) {
         ItemStack editButton = new ItemStack(Material.WRITABLE_BOOK);
         ItemMeta meta = editButton.getItemMeta();
-
-        meta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FFA500>Mission Editor</gradient>"));
-
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add(GradientColorParser.parse("<gradient:#FFD700:#FFA500>Admin Only</gradient>"));
-        lore.add(GradientColorParser.parse("&7Create, Edit or Delete"));
-        lore.add(GradientColorParser.parse("&7mission templates."));
-        lore.add("");
-        lore.add(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>▶ CLICK TO EDIT</gradient>"));
-
-        meta.setLore(lore);
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.admin-missions-editor.name"));
+        meta.setLore(plugin.getMessageManager().getGuiMessages("items.admin-missions-editor.lore"));
         editButton.setItemMeta(meta);
         gui.setItem(53, editButton);
     }
