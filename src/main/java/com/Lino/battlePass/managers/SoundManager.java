@@ -48,7 +48,7 @@ public class SoundManager {
                     player.playSound(player.getLocation(), Sound.BLOCK_BEACON_AMBIENT, 0.3f, pitch);
 
                     if (tickCounter % 40 == 0) {
-                        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.2f, 1.2f);
+                        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.2f, 1.2f);
                     }
 
                     if (tickCounter % 60 == 0) {
@@ -65,7 +65,7 @@ public class SoundManager {
                     }
 
                     if (tickCounter % 15 == 5) {
-                        player.playSound(player.getLocation(), Sound.ENTITY_GLOW_SQUID_AMBIENT, 0.1f, 2.0f);
+                        player.playSound(player.getLocation(), Sound.ENTITY_SQUID_AMBIENT, 0.1f, 2.0f);
                     }
 
                 } else if (customItemManager.isLevelBoostItem(itemInHand)) {

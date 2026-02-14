@@ -44,7 +44,12 @@ public class ShopManager {
                 if (item == null) continue;
 
                 int slot = item.getInt("slot");
-                Material material = Material.valueOf(item.getString("material", "STONE"));
+                String materialName = item.getString("material", "STONE");
+                Material material = parseMaterial(materialName);
+                if (material == null) {
+                    plugin.getLogger().warning("Skipping shop item '" + key + "': invalid material '" + materialName + "'");
+                    continue;
+                }
                 String displayName = item.getString("display-name", "Shop Item");
                 List<String> lore = item.getStringList("lore");
                 int price = item.getInt("price", 0);
@@ -54,14 +59,39 @@ public class ShopManager {
                 if (item.contains("items")) {
                     List<Map<?, ?>> itemMaps = item.getMapList("items");
                     for (Map<?, ?> map : itemMaps) {
-                        Material mat = Material.valueOf((String) map.get("material"));
-                        int amount = (Integer) map.get("amount");
+                        Object nestedMaterialRaw = map.get("material");
+                        Material mat = nestedMaterialRaw == null ? null : parseMaterial(nestedMaterialRaw.toString());
+                        if (mat == null) {
+                            plugin.getLogger().warning("Skipping nested shop reward material in '" + key + "': " + nestedMaterialRaw);
+                            continue;
+                        }
+
+                        int amount = 1;
+                        Object amountRaw = map.get("amount");
+                        if (amountRaw instanceof Number) {
+                            amount = ((Number) amountRaw).intValue();
+                        }
+                        if (amount <= 0) {
+                            amount = 1;
+                        }
+
                         itemsList.add(new ItemStack(mat, amount));
                     }
                 }
 
                 shopItems.put(slot, new ShopItem(slot, material, displayName, lore, price, commands, itemsList));
             }
+        }
+    }
+
+    private Material parseMaterial(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Material.valueOf(name.trim().toUpperCase());
+        } catch (IllegalArgumentException ignored) {
+            return null;
         }
     }
 

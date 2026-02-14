@@ -51,7 +51,7 @@ public class MissionTypeSelectionGui {
     }
 
     public void open() {
-        Inventory gui = Bukkit.createInventory(null, 54, GradientColorParser.parse("<gradient:#FFD700:#FFA500>Select Mission Type</gradient>"));
+        Inventory gui = Bukkit.createInventory(null, 54, GradientColorParser.parse("<gradient:#FFD700:#FFA500>Выберите тип миссии</gradient>"));
 
         int slot = 0;
         for (Map.Entry<String, Material> entry : MISSION_TYPES.entrySet()) {
@@ -62,7 +62,7 @@ public class MissionTypeSelectionGui {
 
         ItemStack back = new ItemStack(Material.BARRIER);
         ItemMeta meta = back.getItemMeta();
-        meta.setDisplayName(GradientColorParser.parse("&cBack to Editor"));
+        meta.setDisplayName(GradientColorParser.parse("&cНазад в редактор"));
         back.setItemMeta(meta);
         gui.setItem(53, back);
 
@@ -76,8 +76,8 @@ public class MissionTypeSelectionGui {
 
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add(GradientColorParser.parse("&7Click to create a new"));
-        lore.add(GradientColorParser.parse("&7mission of this type."));
+        lore.add(GradientColorParser.parse("&7Нажмите, чтобы создать новую"));
+        lore.add(GradientColorParser.parse("&7миссию этого типа."));
 
         meta.setLore(lore);
         meta.getPersistentDataContainer().set(plugin.getCustomItemManager().getPremiumItemKey(), PersistentDataType.STRING, type);

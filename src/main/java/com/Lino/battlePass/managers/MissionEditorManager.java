@@ -27,7 +27,7 @@ public class MissionEditorManager {
     }
 
     public void openMissionEditor(Player player, int page) {
-        editingStates.remove(player.getUniqueId()); // Pulisce stati precedenti
+        editingStates.remove(player.getUniqueId());
         new MissionEditorGui(plugin, player, page).open();
     }
 
@@ -36,7 +36,7 @@ public class MissionEditorManager {
     }
 
     public void openMissionDetails(Player player, String missionKey) {
-        editingStates.remove(player.getUniqueId()); // Pulisce stati precedenti
+        editingStates.remove(player.getUniqueId());
         new MissionDetailsGui(plugin, player, missionKey).open();
     }
 
@@ -58,7 +58,7 @@ public class MissionEditorManager {
 
         saveConfig(file, config);
 
-        player.sendMessage(plugin.getMessageManager().getPrefix() + "§aMission created: " + uniqueId);
+        player.sendMessage(plugin.getMessageManager().getPrefix() + "§aМиссия создана: " + uniqueId);
         openMissionDetails(player, uniqueId);
     }
 
@@ -72,16 +72,14 @@ public class MissionEditorManager {
 
         config.set(path + ".type", newType);
 
-        // Se il nuovo tipo non richiede target, lo impostiamo su ANY automaticamente
         if (!isTargetRequired(newType)) {
             config.set(path + ".target", "ANY");
         } else {
-            // Imposta un target di default valido per evitare configurazioni rotte
             config.set(path + ".target", getDefaultTarget(newType));
         }
 
         saveConfig(file, config);
-        player.sendMessage(plugin.getMessageManager().getPrefix() + "§aMission type updated to " + newType);
+        player.sendMessage(plugin.getMessageManager().getPrefix() + "§aТип миссии изменен на " + newType);
         openMissionDetails(player, state.missionKey);
     }
 
@@ -92,7 +90,7 @@ public class MissionEditorManager {
         config.set("mission-pools." + missionKey, null);
         saveConfig(file, config);
 
-        player.sendMessage(plugin.getMessageManager().getPrefix() + "§aMission deleted successfully!");
+        player.sendMessage(plugin.getMessageManager().getPrefix() + "§aМиссия успешно удалена!");
         openMissionEditor(player, 1);
     }
 
@@ -106,16 +104,16 @@ public class MissionEditorManager {
 
         player.closeInventory();
         player.sendMessage(GradientColorParser.parse(plugin.getMessageManager().getPrefix() +
-                "<gradient:#FFD700:#FF6B6B>Editing " + type.name() + "</gradient>"));
-        player.sendMessage(GradientColorParser.parse("&7Enter the new value in chat."));
-        player.sendMessage(GradientColorParser.parse("&7Type &c'cancel' &7to cancel."));
+                "<gradient:#FFD700:#FF6B6B>Редактирование: " + type.name() + "</gradient>"));
+        player.sendMessage(GradientColorParser.parse("&7Введите новое значение в чат."));
+        player.sendMessage(GradientColorParser.parse("&7Введите &c'cancel' &7или &c'отмена' &7для отмены."));
     }
 
     public void handleChatInput(Player player, String message) {
         EditorState state = editingStates.remove(player.getUniqueId());
         if (state == null) return;
 
-        if (message.equalsIgnoreCase("cancel")) {
+        if (message.equalsIgnoreCase("cancel") || message.equalsIgnoreCase("отмена")) {
             openMissionDetails(player, state.missionKey);
             return;
         }
@@ -150,8 +148,9 @@ public class MissionEditorManager {
                 default:
                     break;
             }
+
             saveConfig(file, config);
-            player.sendMessage(plugin.getMessageManager().getPrefix() + "§aValue updated!");
+            player.sendMessage(plugin.getMessageManager().getPrefix() + "§aЗначение обновлено!");
 
             new BukkitRunnable() {
                 @Override
@@ -161,15 +160,13 @@ public class MissionEditorManager {
             }.runTask(plugin);
 
         } catch (NumberFormatException e) {
-            player.sendMessage(plugin.getMessageManager().getPrefix() + "§cInvalid number format!");
-            editingStates.put(player.getUniqueId(), state); // Restore state
+            player.sendMessage(plugin.getMessageManager().getPrefix() + "§cНеверный числовой формат!");
+            editingStates.put(player.getUniqueId(), state);
         } catch (Exception e) {
-            player.sendMessage(plugin.getMessageManager().getPrefix() + "§cError updating value!");
+            player.sendMessage(plugin.getMessageManager().getPrefix() + "§cОшибка при обновлении значения!");
             e.printStackTrace();
         }
     }
-
-    // --- Helpers ---
 
     private void saveConfig(File file, FileConfiguration config) {
         try {
@@ -187,18 +184,28 @@ public class MissionEditorManager {
     }
 
     private String formatDisplayName(String type) {
-        String readable = type.toLowerCase().replace("_", " ");
-        return Character.toUpperCase(readable.charAt(0)) + readable.substring(1) + " <amount>";
+        return "Новая миссия <amount>";
     }
 
     private String getDefaultTarget(String type) {
         switch (type) {
-            case "KILL_MOB": return "ZOMBIE";
-            case "MINE_BLOCK": case "BREAK_BLOCK": case "PLACE_BLOCK": return "STONE";
-            case "CRAFT_ITEM": case "EAT_ITEM": return "BREAD";
-            case "FISH_ITEM": return "COD";
-            case "BREED_ANIMAL": case "TAME_ANIMAL": case "SHEAR_SHEEP": return "SHEEP";
-            default: return "ANY";
+            case "KILL_MOB":
+                return "ZOMBIE";
+            case "MINE_BLOCK":
+            case "BREAK_BLOCK":
+            case "PLACE_BLOCK":
+                return "STONE";
+            case "CRAFT_ITEM":
+            case "EAT_ITEM":
+                return "BREAD";
+            case "FISH_ITEM":
+                return "COD";
+            case "BREED_ANIMAL":
+            case "TAME_ANIMAL":
+            case "SHEAR_SHEEP":
+                return "SHEEP";
+            default:
+                return "ANY";
         }
     }
 

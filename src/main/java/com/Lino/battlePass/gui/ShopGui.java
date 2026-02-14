@@ -19,7 +19,7 @@ public class ShopGui extends BaseGui {
     private final PlayerData playerData;
 
     public ShopGui(BattlePass plugin, Player player) {
-        super(plugin, plugin.getMessageManager().getMessage("gui.shop"), 54);
+        super(plugin, plugin.getMessageManager().getGuiMessage("gui.shop"), 54);
         this.player = player;
         this.playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
     }
@@ -37,15 +37,10 @@ public class ShopGui extends BaseGui {
     private void setupBalanceItem(Inventory gui) {
         ItemStack balance = new ItemStack(Material.GOLD_INGOT);
         ItemMeta meta = balance.getItemMeta();
-        meta.setDisplayName(plugin.getMessageManager().getMessage("items.shop-balance.name"));
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.shop-balance.name"));
+        meta.setLore(plugin.getMessageManager().getGuiMessages("items.shop-balance.lore",
+                "%coins%", String.valueOf(playerData.battleCoins)));
 
-        List<String> lore = new ArrayList<>();
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.shop-balance.lore")) {
-            String processedLine = line.replace("%coins%", String.valueOf(playerData.battleCoins));
-            lore.add(GradientColorParser.parse(processedLine));
-        }
-
-        meta.setLore(lore);
         balance.setItemMeta(meta);
         gui.setItem(4, balance);
     }

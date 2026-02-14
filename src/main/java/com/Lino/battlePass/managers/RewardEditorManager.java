@@ -68,11 +68,11 @@ public class RewardEditorManager {
         player.closeInventory();
         player.sendMessage(GradientColorParser.parse(
                 plugin.getMessageManager().getPrefix() +
-                        "<gradient:#FFD700:#FF6B6B>Enter command reward format:</gradient>"));
+                        "<gradient:#FFD700:#FF6B6B>Введите формат награды-команды:</gradient>"));
         player.sendMessage(GradientColorParser.parse(
-                "&7Example: &e$1000 | eco give <player> 1000"));
+                "&7Пример: &e$1000 | eco give <player> 1000"));
         player.sendMessage(GradientColorParser.parse(
-                "&7Type &c'cancel' &7to cancel"));
+                "&7Введите &c'cancel' &7или &c'отмена' &7для отмены"));
     }
 
     public boolean handleCommandInput(Player player, String message) {
@@ -83,10 +83,10 @@ public class RewardEditorManager {
 
         commandInputStates.remove(player.getUniqueId());
 
-        if (message.equalsIgnoreCase("cancel")) {
+        if (message.equalsIgnoreCase("cancel") || message.equalsIgnoreCase("отмена")) {
             player.sendMessage(GradientColorParser.parse(
                     plugin.getMessageManager().getPrefix() +
-                            "<gradient:#FF6B6B:#FF0000>Command input cancelled</gradient>"));
+                            "<gradient:#FF6B6B:#FF0000>Ввод команды отменен</gradient>"));
             openLevelEditor(player, state.level, state.isPremium);
             return true;
         }
@@ -95,7 +95,7 @@ public class RewardEditorManager {
         if (parts.length != 2) {
             player.sendMessage(GradientColorParser.parse(
                     plugin.getMessageManager().getPrefix() +
-                            "<gradient:#FF6B6B:#FF0000>Invalid format! Use: display | command</gradient>"));
+                            "<gradient:#FF6B6B:#FF0000>Неверный формат! Используйте: название | команда</gradient>"));
             openLevelEditor(player, state.level, state.isPremium);
             return true;
         }
@@ -113,7 +113,7 @@ public class RewardEditorManager {
 
         player.sendMessage(GradientColorParser.parse(
                 plugin.getMessageManager().getPrefix() +
-                        "<gradient:#00FF88:#45B7D1>✓ Command reward added!</gradient>"));
+                        "<gradient:#00FF88:#45B7D1>✓ Награда-команда добавлена!</gradient>"));
 
         final LevelRewardEditGui finalEditor = editor;
         new BukkitRunnable() {
@@ -150,7 +150,7 @@ public class RewardEditorManager {
             }
             player.sendMessage(GradientColorParser.parse(
                     plugin.getMessageManager().getPrefix() +
-                            "<gradient:#00FF88:#45B7D1>✓ Level " + level + " rewards cleared!</gradient>"));
+                            "<gradient:#00FF88:#45B7D1>✓ Награды уровня " + level + " очищены!</gradient>"));
             return;
         }
 
@@ -192,8 +192,8 @@ public class RewardEditorManager {
 
         player.sendMessage(GradientColorParser.parse(
                 plugin.getMessageManager().getPrefix() +
-                        "<gradient:#00FF88:#45B7D1>✓ Level " + level + " rewards saved!" +
-                        (editingSeason > 0 ? " (Season " + editingSeason + ")" : "") +
+                        "<gradient:#00FF88:#45B7D1>✓ Награды уровня " + level + " сохранены!" +
+                        (editingSeason > 0 ? " (Сезон " + editingSeason + ")" : "") +
                         "</gradient>"));
     }
 
@@ -213,19 +213,19 @@ public class RewardEditorManager {
             syncSeasonIfActive(editingSeason, player);
             player.sendMessage(GradientColorParser.parse(
                     plugin.getMessageManager().getPrefix() +
-                            "<gradient:#00FF88:#45B7D1>✓ Season " + editingSeason + " rewards saved!</gradient>"));
+                            "<gradient:#00FF88:#45B7D1>✓ Награды сезона " + editingSeason + " сохранены!</gradient>"));
         } else {
             plugin.reload();
             player.sendMessage(GradientColorParser.parse(
                     plugin.getMessageManager().getPrefix() +
-                            "<gradient:#00FF88:#45B7D1>✓ All rewards saved and plugin reloaded!</gradient>"));
+                            "<gradient:#00FF88:#45B7D1>✓ Все награды сохранены, плагин перезагружен!</gradient>"));
         }
 
         for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
             if (!onlinePlayer.equals(player)) {
                 onlinePlayer.sendMessage(GradientColorParser.parse(
                         plugin.getMessageManager().getPrefix() +
-                                "<gradient:#FFD700:#FF6B6B>Battle Pass rewards have been updated by an admin!</gradient>"));
+                                "<gradient:#FFD700:#FF6B6B>Награды Battle Pass обновлены администратором!</gradient>"));
             }
         }
     }
@@ -234,7 +234,7 @@ public class RewardEditorManager {
         try {
             config.save(file);
         } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save rewards configuration: " + e.getMessage());
+            plugin.getLogger().severe("Не удалось сохранить конфигурацию наград: " + e.getMessage());
         }
     }
 

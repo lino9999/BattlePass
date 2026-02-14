@@ -11,6 +11,7 @@ import com.Lino.battlePass.commands.BattlePassCommand;
 import com.Lino.battlePass.listeners.EventManager;
 import com.Lino.battlePass.tasks.BattlePassTask;
 import com.Lino.battlePass.tasks.CoinsDistributionTask;
+import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.BufferedReader;
@@ -39,6 +40,7 @@ public class BattlePass extends JavaPlugin {
     private BattlePassExpansion placeholderExpansion;
     private MissionEditorManager missionEditorManager;
     private SeasonRotationManager seasonRotationManager;
+    private ConfigValidator configValidator;
 
     private boolean updateAvailable = false;
     private String latestVersion = "";
@@ -49,6 +51,10 @@ public class BattlePass extends JavaPlugin {
         saveDefaultConfig();
         saveResourceIfNotExists("missions.yml");
         saveResourceIfNotExists("messages.yml");
+        saveResourceIfNotExists("messages_ru.yml");
+        saveResourceIfNotExists("messages_en.yml");
+        saveResourceIfNotExists("gui_ru.yml");
+        saveResourceIfNotExists("gui_en.yml");
         saveResourceIfNotExists("BattlePassFREE.yml");
         saveResourceIfNotExists("BattlePassPREMIUM.yml");
         saveResourceIfNotExists("shop.yml");
@@ -60,6 +66,7 @@ public class BattlePass extends JavaPlugin {
         seasonRotationManager.createDefaultSeasonFolders();
 
         configManager.reload();
+        GradientColorParser.setCleanMode(configManager.isCleanUiMode());
 
         databaseManager = new DatabaseManager(this);
         playerDataManager = new PlayerDataManager(this, databaseManager);
@@ -71,7 +78,8 @@ public class BattlePass extends JavaPlugin {
         guiManager = new GuiManager(this, playerDataManager, missionManager, rewardManager, messageManager, configManager);
         rewardEditorManager = new RewardEditorManager(this);
         missionEditorManager = new MissionEditorManager(this);
-        rewardEditorManager = new RewardEditorManager(this);
+        configValidator = new ConfigValidator(this);
+        configValidator.validateAll();
 
         databaseManager.initialize().thenRun(() -> {
             getServer().getScheduler().runTask(this, () -> {
@@ -212,9 +220,13 @@ public class BattlePass extends JavaPlugin {
         reloadConfig();
         seasonRotationManager.reload();
         configManager.reload();
+        GradientColorParser.setCleanMode(configManager.isCleanUiMode());
         messageManager.reload();
         rewardManager.loadRewards();
         shopManager.reload();
+        if (configValidator != null) {
+            configValidator.validateAll();
+        }
         guiManager.clearCache();
         missionManager.recalculateResetTimeOnReload();
 
@@ -225,7 +237,7 @@ public class BattlePass extends JavaPlugin {
                 int currentPage = 1;
 
                 for (int i = 1; i <= 6; i++) {
-                    if (title.equals(messageManager.getMessage("gui.battlepass", "%page%", String.valueOf(i)))) {
+                    if (title.equals(messageManager.getGuiMessage("gui.battlepass", "%page%", String.valueOf(i)))) {
                         isBattlePassGUI = true;
                         currentPage = i;
                         break;
@@ -238,17 +250,17 @@ public class BattlePass extends JavaPlugin {
                     Bukkit.getScheduler().runTaskLater(this, () -> {
                         guiManager.openBattlePassGUI(player, page);
                     }, 1L);
-                } else if (title.equals(messageManager.getMessage("gui.leaderboard"))) {
+                } else if (title.equals(messageManager.getGuiMessage("gui.leaderboard"))) {
                     player.closeInventory();
                     Bukkit.getScheduler().runTaskLater(this, () -> {
                         guiManager.openLeaderboardGUI(player);
                     }, 1L);
-                } else if (title.equals(messageManager.getMessage("gui.missions"))) {
+                } else if (title.equals(messageManager.getGuiMessage("gui.missions"))) {
                     player.closeInventory();
                     Bukkit.getScheduler().runTaskLater(this, () -> {
                         guiManager.openMissionsGUI(player);
                     }, 1L);
-                } else if (title.equals(messageManager.getMessage("gui.shop"))) {
+                } else if (title.equals(messageManager.getGuiMessage("gui.shop"))) {
                     player.closeInventory();
                     Bukkit.getScheduler().runTaskLater(this, () -> {
                         guiManager.openShopGUI(player);

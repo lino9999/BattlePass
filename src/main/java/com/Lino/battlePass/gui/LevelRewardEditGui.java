@@ -2,9 +2,7 @@ package com.Lino.battlePass.gui;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.EditableReward;
-import com.Lino.battlePass.models.Reward;
 import com.Lino.battlePass.utils.GradientColorParser;
-import com.Lino.battlePass.utils.ItemSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -39,14 +37,14 @@ public class LevelRewardEditGui {
                 currentRewards.addAll(rewards);
             }
         } catch (Exception e) {
-            // Se il metodo non esiste, lascia la lista vuota
+            // Keep editor open even if reward loading fails.
         }
     }
 
     public void open() {
         if (!player.hasPermission("battlepass.admin")) {
             player.sendMessage(plugin.getMessageManager().getPrefix() +
-                    GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>✗ You don't have permission to access this!</gradient>"));
+                    GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>✗ У вас нет прав для доступа к этому!</gradient>"));
             return;
         }
 
@@ -54,8 +52,8 @@ public class LevelRewardEditGui {
                 "<gradient:#FFD700:#FF6B6B>" :
                 "<gradient:#4ECDC4:#45B7D1>";
 
-        String title = GradientColorParser.parse(gradient + "Edit Level " + level + " " +
-                (isPremium ? "Premium" : "Free") + " Rewards</gradient>");
+        String title = GradientColorParser.parse(gradient + "Редактирование уровня " + level + " " +
+                (isPremium ? "премиум" : "бесплатных") + " наград</gradient>");
 
         Inventory gui = Bukkit.createInventory(null, 54, title);
 
@@ -66,14 +64,14 @@ public class LevelRewardEditGui {
             if (reward.isCommand()) {
                 ItemStack commandItem = new ItemStack(Material.COMMAND_BLOCK);
                 ItemMeta meta = commandItem.getItemMeta();
-                meta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Command Reward</gradient>"));
+                meta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Награда-команда</gradient>"));
 
                 List<String> lore = new ArrayList<>();
                 lore.add("");
-                lore.add(GradientColorParser.parse("&7Display: &f" + reward.getDisplayName()));
-                lore.add(GradientColorParser.parse("&7Command: &f" + reward.getCommand()));
+                lore.add(GradientColorParser.parse("&7Отображение: &f" + reward.getDisplayName()));
+                lore.add(GradientColorParser.parse("&7Команда: &f" + reward.getCommand()));
                 lore.add("");
-                lore.add(GradientColorParser.parse("<gradient:#FF6B6B:#FF0000>▶ CLICK TO REMOVE</gradient>"));
+                lore.add(GradientColorParser.parse("<gradient:#FF6B6B:#FF0000>▶ НАЖМИТЕ, ЧТОБЫ УДАЛИТЬ</gradient>"));
 
                 meta.setLore(lore);
                 commandItem.setItemMeta(meta);
@@ -85,7 +83,7 @@ public class LevelRewardEditGui {
 
                 List<String> newLore = new ArrayList<>(originalLore);
                 newLore.add("");
-                newLore.add(GradientColorParser.parse("<gradient:#FF6B6B:#FF0000>▶ CLICK TO REMOVE</gradient>"));
+                newLore.add(GradientColorParser.parse("<gradient:#FF6B6B:#FF0000>▶ НАЖМИТЕ, ЧТОБЫ УДАЛИТЬ</gradient>"));
 
                 meta.setLore(newLore);
                 item.setItemMeta(meta);
@@ -96,18 +94,18 @@ public class LevelRewardEditGui {
 
         ItemStack addItem = new ItemStack(Material.LIME_DYE);
         ItemMeta addMeta = addItem.getItemMeta();
-        addMeta.setDisplayName(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>+ Add Item Reward</gradient>"));
+        addMeta.setDisplayName(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>+ Добавить предмет-награду</gradient>"));
 
         List<String> addLore = new ArrayList<>();
         addLore.add("");
-        addLore.add(GradientColorParser.parse("&7Drag items from your inventory"));
-        addLore.add(GradientColorParser.parse("&7to the empty slots above to add"));
-        addLore.add(GradientColorParser.parse("&7them as rewards for this level"));
+        addLore.add(GradientColorParser.parse("&7Перетащите предметы из инвентаря"));
+        addLore.add(GradientColorParser.parse("&7в свободные слоты сверху, чтобы добавить"));
+        addLore.add(GradientColorParser.parse("&7их как награды для этого уровня"));
         addLore.add("");
-        addLore.add(GradientColorParser.parse("&7Supports all item types including:"));
-        addLore.add(GradientColorParser.parse("&8• &7Custom items with NBT"));
-        addLore.add(GradientColorParser.parse("&8• &7Items with lore"));
-        addLore.add(GradientColorParser.parse("&8• &7Enchanted items"));
+        addLore.add(GradientColorParser.parse("&7Поддерживаются все типы предметов, включая:"));
+        addLore.add(GradientColorParser.parse("&8• &7Кастомные предметы с NBT"));
+        addLore.add(GradientColorParser.parse("&8• &7Предметы с описанием"));
+        addLore.add(GradientColorParser.parse("&8• &7Зачарованные предметы"));
 
         addMeta.setLore(addLore);
         addItem.setItemMeta(addMeta);
@@ -115,18 +113,18 @@ public class LevelRewardEditGui {
 
         ItemStack addCommand = new ItemStack(Material.COMMAND_BLOCK);
         ItemMeta cmdMeta = addCommand.getItemMeta();
-        cmdMeta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>+ Add Command Reward</gradient>"));
+        cmdMeta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>+ Добавить награду-команду</gradient>"));
 
         List<String> cmdLore = new ArrayList<>();
         cmdLore.add("");
-        cmdLore.add(GradientColorParser.parse("&7Add a command reward"));
-        cmdLore.add(GradientColorParser.parse("&7Type in chat after clicking:"));
+        cmdLore.add(GradientColorParser.parse("&7Добавьте награду-команду"));
+        cmdLore.add(GradientColorParser.parse("&7После нажатия введите в чат:"));
         cmdLore.add(GradientColorParser.parse("&e/cmdreward <display> | <command>"));
         cmdLore.add("");
-        cmdLore.add(GradientColorParser.parse("&7Example:"));
+        cmdLore.add(GradientColorParser.parse("&7Пример:"));
         cmdLore.add(GradientColorParser.parse("&e/cmdreward $1000 | eco give <player> 1000"));
         cmdLore.add("");
-        cmdLore.add(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>▶ CLICK TO ADD COMMAND</gradient>"));
+        cmdLore.add(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>▶ НАЖМИТЕ, ЧТОБЫ ДОБАВИТЬ КОМАНДУ</gradient>"));
 
         cmdMeta.setLore(cmdLore);
         addCommand.setItemMeta(cmdMeta);
@@ -134,14 +132,14 @@ public class LevelRewardEditGui {
 
         ItemStack saveButton = new ItemStack(Material.EMERALD);
         ItemMeta saveMeta = saveButton.getItemMeta();
-        saveMeta.setDisplayName(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>✓ Save Changes</gradient>"));
+        saveMeta.setDisplayName(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>✓ Сохранить изменения</gradient>"));
 
         List<String> saveLore = new ArrayList<>();
         saveLore.add("");
-        saveLore.add(GradientColorParser.parse("&7Save changes for this level"));
-        saveLore.add(GradientColorParser.parse("&7and return to level selection"));
+        saveLore.add(GradientColorParser.parse("&7Сохранить изменения для этого уровня"));
+        saveLore.add(GradientColorParser.parse("&7и вернуться к выбору уровней"));
         saveLore.add("");
-        saveLore.add(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>▶ CLICK TO SAVE</gradient>"));
+        saveLore.add(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>▶ НАЖМИТЕ, ЧТОБЫ СОХРАНИТЬ</gradient>"));
 
         saveMeta.setLore(saveLore);
         saveButton.setItemMeta(saveMeta);
@@ -149,12 +147,12 @@ public class LevelRewardEditGui {
 
         ItemStack cancelButton = new ItemStack(Material.BARRIER);
         ItemMeta cancelMeta = cancelButton.getItemMeta();
-        cancelMeta.setDisplayName(GradientColorParser.parse("<gradient:#FF6B6B:#FF0000>✗ Cancel</gradient>"));
+        cancelMeta.setDisplayName(GradientColorParser.parse("<gradient:#FF6B6B:#FF0000>✗ Отмена</gradient>"));
 
         List<String> cancelLore = new ArrayList<>();
         cancelLore.add("");
-        cancelLore.add(GradientColorParser.parse("&7Discard changes and return"));
-        cancelLore.add(GradientColorParser.parse("&7to level selection"));
+        cancelLore.add(GradientColorParser.parse("&7Отменить изменения и вернуться"));
+        cancelLore.add(GradientColorParser.parse("&7к выбору уровней"));
 
         cancelMeta.setLore(cancelLore);
         cancelButton.setItemMeta(cancelMeta);
@@ -162,14 +160,14 @@ public class LevelRewardEditGui {
 
         ItemStack clearButton = new ItemStack(Material.TNT);
         ItemMeta clearMeta = clearButton.getItemMeta();
-        clearMeta.setDisplayName(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>⚠ Clear All Rewards</gradient>"));
+        clearMeta.setDisplayName(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>⚠ Очистить все награды</gradient>"));
 
         List<String> clearLore = new ArrayList<>();
         clearLore.add("");
-        clearLore.add(GradientColorParser.parse("&7Remove all rewards"));
-        clearLore.add(GradientColorParser.parse("&7from this level"));
+        clearLore.add(GradientColorParser.parse("&7Удалить все награды"));
+        clearLore.add(GradientColorParser.parse("&7с этого уровня"));
         clearLore.add("");
-        clearLore.add(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>⚠ This cannot be undone!</gradient>"));
+        clearLore.add(GradientColorParser.parse("<gradient:#FF0000:#FF6B6B>⚠ Это нельзя отменить!</gradient>"));
 
         clearMeta.setLore(clearLore);
         clearButton.setItemMeta(clearMeta);
@@ -177,15 +175,15 @@ public class LevelRewardEditGui {
 
         ItemStack info = new ItemStack(Material.BOOK);
         ItemMeta infoMeta = info.getItemMeta();
-        infoMeta.setDisplayName(GradientColorParser.parse("<gradient:#FFE66D:#FF6B6B>Level " + level + " Information</gradient>"));
+        infoMeta.setDisplayName(GradientColorParser.parse("<gradient:#FFE66D:#FF6B6B>Информация об уровне " + level + "</gradient>"));
 
         List<String> infoLore = new ArrayList<>();
         infoLore.add("");
-        infoLore.add(GradientColorParser.parse("&7Type: " + (isPremium ? "&6Premium" : "&bFree")));
-        infoLore.add(GradientColorParser.parse("&7Current rewards: &f" + currentRewards.size()));
+        infoLore.add(GradientColorParser.parse("&7Тип: " + (isPremium ? "&6Премиум" : "&bБесплатный")));
+        infoLore.add(GradientColorParser.parse("&7Текущих наград: &f" + currentRewards.size()));
         infoLore.add("");
-        infoLore.add(GradientColorParser.parse("&8Drag items to add"));
-        infoLore.add(GradientColorParser.parse("&8Click items to remove"));
+        infoLore.add(GradientColorParser.parse("&8Перетаскивайте предметы для добавления"));
+        infoLore.add(GradientColorParser.parse("&8Нажимайте на предметы для удаления"));
 
         infoMeta.setLore(infoLore);
         info.setItemMeta(infoMeta);

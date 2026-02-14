@@ -43,19 +43,19 @@ public class MissionEditorListener implements Listener {
 
         if (title == null) return;
 
-        if (title.startsWith("Mission Editor")) {
-            if (!title.contains("Page ")) return;
+        if (title.startsWith("Редактор миссий")) {
+            if (!title.contains("Страница ")) return;
             event.setCancelled(true);
             handleEditorClick(player, event, title);
-        } else if (title.startsWith("Select Mission Type")) {
+        } else if (title.startsWith("Выберите тип миссии")) {
             if (event.getView().getTopInventory().getSize() != 54) return;
             ItemStack back = event.getView().getTopInventory().getItem(53);
             if (back == null || back.getType() != Material.BARRIER) return;
 
             event.setCancelled(true);
             handleTypeSelectionClick(player, event);
-        } else if (title.startsWith("Editing: ")) {
-            String missionKey = title.replace("Editing: ", "").trim();
+        } else if (title.startsWith("Редактирование: ")) {
+            String missionKey = title.replace("Редактирование: ", "").trim();
             if (!plugin.getConfigManager().getMissionsConfig().contains("mission-pools." + missionKey)) return;
 
             event.setCancelled(true);
@@ -65,7 +65,7 @@ public class MissionEditorListener implements Listener {
 
     private void handleEditorClick(Player player, InventoryClickEvent event, String title) {
         try {
-            int page = Integer.parseInt(title.split("Page ")[1]);
+            int page = Integer.parseInt(title.substring(title.lastIndexOf("Страница ") + "Страница ".length()).trim());
             ItemStack clicked = event.getCurrentItem();
             if (clicked == null || clicked.getType() == Material.AIR) return;
 

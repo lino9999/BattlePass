@@ -56,7 +56,7 @@ public class BattlePassExpansion extends PlaceholderExpansion {
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(uuid);
 
         if (data == null) {
-            return "Loading...";
+            return plugin.getMessageManager().getMessage("placeholders.loading");
         }
 
         switch (identifier.toLowerCase()) {
@@ -80,10 +80,14 @@ public class BattlePassExpansion extends PlaceholderExpansion {
                 return String.valueOf(data.totalLevels);
 
             case "premium":
-                return data.hasPremium ? "Yes" : "No";
+                return data.hasPremium
+                        ? plugin.getMessageManager().getMessage("placeholders.yes")
+                        : plugin.getMessageManager().getMessage("placeholders.no");
 
             case "premium_status":
-                return data.hasPremium ? "Active" : "Inactive";
+                return data.hasPremium
+                        ? plugin.getMessageManager().getMessage("placeholders.active")
+                        : plugin.getMessageManager().getMessage("placeholders.inactive");
 
             case "coins":
             case "battlecoins":
@@ -109,7 +113,9 @@ public class BattlePassExpansion extends PlaceholderExpansion {
 
             case "daily_reward_available":
                 long now = System.currentTimeMillis();
-                return (now - data.lastDailyReward >= 24 * 60 * 60 * 1000) ? "Yes" : "No";
+                return (now - data.lastDailyReward >= 24 * 60 * 60 * 1000)
+                        ? plugin.getMessageManager().getMessage("placeholders.yes")
+                        : plugin.getMessageManager().getMessage("placeholders.no");
 
             case "rank":
             case "leaderboard_rank":
@@ -119,7 +125,7 @@ public class BattlePassExpansion extends PlaceholderExpansion {
                 if (plugin.getCoinsDistributionTask() != null) {
                     return plugin.getCoinsDistributionTask().getTimeUntilNextDistribution();
                 }
-                return "Unknown";
+                return plugin.getMessageManager().getMessage("placeholders.unknown");
 
             case "completed_missions":
                 return String.valueOf(getCompletedMissionsCount(data));
@@ -164,7 +170,7 @@ public class BattlePassExpansion extends PlaceholderExpansion {
             }
         }
 
-        return "Unranked";
+        return plugin.getMessageManager().getMessage("placeholders.outside-top");
     }
 
     private int getCompletedMissionsCount(PlayerData data) {
@@ -189,7 +195,9 @@ public class BattlePassExpansion extends PlaceholderExpansion {
                 } else if (missionIdentifier.startsWith("name_")) {
                     return mission.name;
                 } else if (missionIdentifier.startsWith("status_")) {
-                    return progress >= mission.required ? "Completed" : "In Progress";
+                    return progress >= mission.required
+                            ? plugin.getMessageManager().getMessage("placeholders.mission-completed")
+                            : plugin.getMessageManager().getMessage("placeholders.mission-in-progress");
                 }
             }
         } catch (NumberFormatException ignored) {}
@@ -210,7 +218,7 @@ public class BattlePassExpansion extends PlaceholderExpansion {
             List<PlayerData> topPlayers = future.join();
 
             if (position > topPlayers.size()) {
-                return "Empty";
+                return plugin.getMessageManager().getMessage("placeholders.empty");
             }
 
             PlayerData topPlayer = topPlayers.get(position - 1);
@@ -218,7 +226,8 @@ public class BattlePassExpansion extends PlaceholderExpansion {
             if (parts.length > 1) {
                 switch (parts[1].toLowerCase()) {
                     case "name":
-                        return Bukkit.getOfflinePlayer(topPlayer.uuid).getName();
+                        String topName = Bukkit.getOfflinePlayer(topPlayer.uuid).getName();
+                        return topName != null ? topName : plugin.getMessageManager().getMessage("placeholders.unknown");
                     case "level":
                         return String.valueOf(topPlayer.level);
                     case "xp":
@@ -230,7 +239,8 @@ public class BattlePassExpansion extends PlaceholderExpansion {
                 }
             }
 
-            return Bukkit.getOfflinePlayer(topPlayer.uuid).getName();
+            String defaultTopName = Bukkit.getOfflinePlayer(topPlayer.uuid).getName();
+            return defaultTopName != null ? defaultTopName : plugin.getMessageManager().getMessage("placeholders.unknown");
 
         } catch (NumberFormatException ignored) {}
 

@@ -1,7 +1,6 @@
 package com.Lino.battlePass.utils;
 
 import net.md_5.bungee.api.ChatColor;
-import org.bukkit.Bukkit;
 
 import java.awt.Color;
 import java.util.regex.Matcher;
@@ -11,8 +10,11 @@ public class GradientColorParser {
 
     private static final Pattern GRADIENT_PATTERN = Pattern.compile("<gradient:(#[A-Fa-f0-9]{6}):(#[A-Fa-f0-9]{6})>(.*?)</gradient>");
     private static final Pattern HEX_PATTERN = Pattern.compile("&#([A-Fa-f0-9]{6})");
+    private static final Pattern MINI_HEX_PATTERN = Pattern.compile("<#([A-Fa-f0-9]{6})>");
+    private static final Pattern STRIP_GRADIENT_PATTERN = Pattern.compile("<gradient:#[A-Fa-f0-9]{6}:#[A-Fa-f0-9]{6}>(.*?)</gradient>");
 
     private static final boolean SUPPORTS_HEX = checkHexSupport();
+    private static volatile boolean cleanMode = false;
 
     private static boolean checkHexSupport() {
         try {
@@ -25,6 +27,13 @@ public class GradientColorParser {
 
     public static String parse(String message) {
         if (message == null) return null;
+
+        if (cleanMode) {
+            message = STRIP_GRADIENT_PATTERN.matcher(message).replaceAll("$1");
+            message = message.replaceAll("&#[A-Fa-f0-9]{6}", "");
+            message = message.replaceAll("<#[A-Fa-f0-9]{6}>", "");
+            return ChatColor.translateAlternateColorCodes('&', message);
+        }
 
         message = parseGradients(message);
         message = parseHexColors(message);
@@ -55,10 +64,16 @@ public class GradientColorParser {
 
     private static String parseHexColors(String message) {
         if (!SUPPORTS_HEX) {
-            return message.replaceAll("&#[A-Fa-f0-9]{6}", "");
+            message = message.replaceAll("&#[A-Fa-f0-9]{6}", "");
+            return message.replaceAll("<#[A-Fa-f0-9]{6}>", "");
         }
 
-        Matcher matcher = HEX_PATTERN.matcher(message);
+        String parsed = replaceHexPattern(message, HEX_PATTERN);
+        return replaceHexPattern(parsed, MINI_HEX_PATTERN);
+    }
+
+    private static String replaceHexPattern(String message, Pattern pattern) {
+        Matcher matcher = pattern.matcher(message);
         StringBuffer buffer = new StringBuffer();
 
         while (matcher.find()) {
@@ -126,9 +141,14 @@ public class GradientColorParser {
     public static String stripColors(String message) {
         if (message == null) return null;
 
-        message = message.replaceAll("<gradient:#[A-Fa-f0-9]{6}:#[A-Fa-f0-9]{6}>(.*?)</gradient>", "$1");
+        message = STRIP_GRADIENT_PATTERN.matcher(message).replaceAll("$1");
         message = message.replaceAll("&#[A-Fa-f0-9]{6}", "");
+        message = message.replaceAll("<#[A-Fa-f0-9]{6}>", "");
 
         return ChatColor.stripColor(message);
+    }
+
+    public static void setCleanMode(boolean enabled) {
+        cleanMode = enabled;
     }
 }

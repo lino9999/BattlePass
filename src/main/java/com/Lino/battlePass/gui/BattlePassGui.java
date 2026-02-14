@@ -4,7 +4,6 @@ import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.managers.SeasonRotationManager;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.models.Reward;
-import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -12,7 +11,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class BattlePassGui extends BaseGui {
 
@@ -22,7 +23,7 @@ public class BattlePassGui extends BaseGui {
     private final int maxLevel;
 
     public BattlePassGui(BattlePass plugin, Player player, int page) {
-        super(plugin, plugin.getMessageManager().getMessage("gui.battlepass", "%page%", String.valueOf(page)), 54);
+        super(plugin, plugin.getMessageManager().getGuiMessage("gui.battlepass", "%page%", String.valueOf(page)), 54);
         this.player = player;
         this.playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         this.page = page;
@@ -45,34 +46,22 @@ public class BattlePassGui extends BaseGui {
     private void setupProgressItem(Inventory gui) {
         ItemStack info = new ItemStack(Material.NETHER_STAR);
         ItemMeta meta = info.getItemMeta();
-        meta.setDisplayName(plugin.getMessageManager().getMessage("items.progress.name"));
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.progress.name"));
 
-        List<String> lore = new ArrayList<>();
-        String premiumStatus = playerData.hasPremium ?
-                plugin.getMessageManager().getMessage("items.premium-status.active") :
-                plugin.getMessageManager().getMessage("items.premium-status.inactive");
+        String premiumStatus = playerData.hasPremium
+                ? plugin.getMessageManager().getGuiMessage("items.premium-status.active")
+                : plugin.getMessageManager().getGuiMessage("items.premium-status.inactive");
 
         SeasonRotationManager rotation = plugin.getSeasonRotationManager();
-        String currentSeason = rotation.isRotationEnabled() ?
-                String.valueOf(rotation.getCurrentSeason()) : "1";
+        String currentSeason = rotation.isRotationEnabled() ? String.valueOf(rotation.getCurrentSeason()) : "1";
 
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.progress.lore")) {
-            String processedLine = line
-                    .replace("%level%", String.valueOf(playerData.level))
-                    .replace("%xp%", String.valueOf(playerData.xp))
-                    .replace("%xp_needed%", String.valueOf(plugin.getConfigManager().getXpPerLevel()))
-                    .replace("%premium_status%", premiumStatus)
-                    .replace("%season_time%", plugin.getMissionManager().getTimeUntilSeasonEnd())
-                    .replace("%current_season%", currentSeason);
-            lore.add(GradientColorParser.parse(processedLine));
-
-            if (line.contains("%season_time%")) {
-                lore.add(GradientColorParser.parse(
-                        "&8▸ &7Current Season: <gradient:#FFD93D:#FF6B6B>" + currentSeason + "</gradient>"));
-            }
-        }
-
-        meta.setLore(lore);
+        meta.setLore(plugin.getMessageManager().getGuiMessages("items.progress.lore",
+                "%level%", String.valueOf(playerData.level),
+                "%xp%", String.valueOf(playerData.xp),
+                "%xp_needed%", String.valueOf(plugin.getConfigManager().getXpPerLevel()),
+                "%premium_status%", premiumStatus,
+                "%season_time%", plugin.getMissionManager().getTimeUntilSeasonEnd(),
+                "%current_season%", currentSeason));
         info.setItemMeta(meta);
         gui.setItem(4, info);
     }
@@ -84,19 +73,18 @@ public class BattlePassGui extends BaseGui {
 
         for (int i = 0; i <= 8; i++) {
             int level = startLevel + i;
-            if (level > maxLevel) break;
+            if (level > maxLevel) {
+                break;
+            }
 
             List<Reward> premiumLevel = premiumRewards.get(level);
             if (premiumLevel != null && !premiumLevel.isEmpty()) {
                 if (!playerData.claimedPremiumRewards.contains(level)) {
-                    ItemStack premiumItem = createRewardItem(premiumLevel, level, playerData, playerData.hasPremium, true);
-                    gui.setItem(9 + i, premiumItem);
-                } else {
-                    if (!plugin.getConfigManager().shouldHidePremiumClaimedRewards()) {
-                        ItemStack claimedItem = createClaimedRewardItem(premiumLevel, level, true);
-                        if (claimedItem != null) {
-                            gui.setItem(9 + i, claimedItem);
-                        }
+                    gui.setItem(9 + i, createRewardItem(premiumLevel, level, playerData, playerData.hasPremium, true));
+                } else if (!plugin.getConfigManager().shouldHidePremiumClaimedRewards()) {
+                    ItemStack claimed = createClaimedRewardItem(premiumLevel, level, true);
+                    if (claimed != null) {
+                        gui.setItem(9 + i, claimed);
                     }
                 }
             }
@@ -104,14 +92,11 @@ public class BattlePassGui extends BaseGui {
             List<Reward> freeLevel = freeRewards.get(level);
             if (freeLevel != null && !freeLevel.isEmpty()) {
                 if (!playerData.claimedFreeRewards.contains(level)) {
-                    ItemStack freeItem = createRewardItem(freeLevel, level, playerData, true, false);
-                    gui.setItem(27 + i, freeItem);
-                } else {
-                    if (!plugin.getConfigManager().shouldHideFreeClaimedRewards()) {
-                        ItemStack claimedItem = createClaimedRewardItem(freeLevel, level, false);
-                        if (claimedItem != null) {
-                            gui.setItem(27 + i, claimedItem);
-                        }
+                    gui.setItem(27 + i, createRewardItem(freeLevel, level, playerData, true, false));
+                } else if (!plugin.getConfigManager().shouldHideFreeClaimedRewards()) {
+                    ItemStack claimed = createClaimedRewardItem(freeLevel, level, false);
+                    if (claimed != null) {
+                        gui.setItem(27 + i, claimed);
                     }
                 }
             }
@@ -124,48 +109,42 @@ public class BattlePassGui extends BaseGui {
         if (data.level >= level && hasAccess) {
             ItemStack item = new ItemStack(plugin.getConfigManager().getGuiRewardAvailableMaterial());
             ItemMeta meta = item.getItemMeta();
-            meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-available.name",
+            meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.reward-available.name",
                     "%level%", String.valueOf(level),
                     "%type%", rewardType));
-
-            List<String> lore = createRewardLore(rewards, "items.reward-available");
-            meta.setLore(lore);
-            item.setItemMeta(meta);
-            return item;
-
-        } else if (!hasAccess && isPremium) {
-            ItemStack item = new ItemStack(plugin.getConfigManager().getGuiPremiumNoPassMaterial());
-            ItemMeta meta = item.getItemMeta();
-            meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-premium-locked.name",
-                    "%level%", String.valueOf(level)));
-
-            List<String> lore = createRewardLore(rewards, "items.reward-premium-locked");
-            meta.setLore(lore);
-            item.setItemMeta(meta);
-            return item;
-
-        } else {
-            Material lockedMaterial = isPremium ?
-                    plugin.getConfigManager().getGuiPremiumLockedMaterial() :
-                    plugin.getConfigManager().getGuiFreeLockedMaterial();
-
-            ItemStack item = new ItemStack(lockedMaterial);
-            ItemMeta meta = item.getItemMeta();
-            meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-level-locked.name",
-                    "%level%", String.valueOf(level),
-                    "%type%", rewardType));
-
-            List<String> lore = createRewardLore(rewards, "items.reward-level-locked");
-            meta.setLore(lore);
+            meta.setLore(createRewardLore(rewards, "items.reward-available"));
             item.setItemMeta(meta);
             return item;
         }
+
+        if (!hasAccess && isPremium) {
+            ItemStack item = new ItemStack(plugin.getConfigManager().getGuiPremiumNoPassMaterial());
+            ItemMeta meta = item.getItemMeta();
+            meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.reward-premium-locked.name",
+                    "%level%", String.valueOf(level)));
+            meta.setLore(createRewardLore(rewards, "items.reward-premium-locked"));
+            item.setItemMeta(meta);
+            return item;
+        }
+
+        Material lockedMaterial = isPremium
+                ? plugin.getConfigManager().getGuiPremiumLockedMaterial()
+                : plugin.getConfigManager().getGuiFreeLockedMaterial();
+
+        ItemStack item = new ItemStack(lockedMaterial);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.reward-level-locked.name",
+                "%level%", String.valueOf(level),
+                "%type%", rewardType));
+        meta.setLore(createRewardLore(rewards, "items.reward-level-locked"));
+        item.setItemMeta(meta);
+        return item;
     }
 
     private ItemStack createClaimedRewardItem(List<Reward> rewards, int level, boolean isPremium) {
-        Material material = isPremium ?
-                plugin.getConfigManager().getGuiPremiumClaimedMaterial() :
-                plugin.getConfigManager().getGuiFreeClaimedMaterial();
+        Material material = isPremium
+                ? plugin.getConfigManager().getGuiPremiumClaimedMaterial()
+                : plugin.getConfigManager().getGuiFreeClaimedMaterial();
 
         if (material == null) {
             return null;
@@ -173,41 +152,32 @@ public class BattlePassGui extends BaseGui {
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-claimed.name",
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.reward-claimed.name",
                 "%level%", String.valueOf(level),
                 "%type%", plugin.getMessageManager().getMessage(isPremium ? "reward-types.premium" : "reward-types.free")));
-
-        List<String> lore = createRewardLore(rewards, "items.reward-claimed");
-        meta.setLore(lore);
+        meta.setLore(createRewardLore(rewards, "items.reward-claimed"));
         item.setItemMeta(meta);
         return item;
     }
 
     private List<String> createRewardLore(List<Reward> rewards, String configPath) {
         List<String> lore = new ArrayList<>();
+        lore.addAll(plugin.getMessageManager().getGuiMessages(configPath + ".lore-header"));
 
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList(configPath + ".lore-header")) {
-            lore.add(GradientColorParser.parse(line));
+        for (Reward reward : rewards) {
+            lore.add(plugin.getMessageManager().getMessage("messages.rewards.command-reward", "%reward%", reward.displayName));
         }
 
-        for (Reward r : rewards) {
-            lore.add(plugin.getMessageManager().getMessage("messages.rewards.command-reward", "%reward%", r.displayName));
-        }
-
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList(configPath + ".lore-footer")) {
-            String processedLine = line
-                    .replace("%level%", String.valueOf(rewards.get(0).level))
-                    .replace("%season_time%", plugin.getMissionManager().getTimeUntilSeasonEnd());
-            lore.add(GradientColorParser.parse(processedLine));
-        }
-
+        lore.addAll(plugin.getMessageManager().getGuiMessages(configPath + ".lore-footer",
+                "%level%", String.valueOf(rewards.get(0).level),
+                "%season_time%", plugin.getMissionManager().getTimeUntilSeasonEnd()));
         return lore;
     }
 
     private void setupSeparator(Inventory gui) {
         ItemStack separator = new ItemStack(plugin.getConfigManager().getGuiSeparatorMaterial());
         ItemMeta meta = separator.getItemMeta();
-        meta.setDisplayName(plugin.getMessageManager().getMessage("items.separator.name"));
+        meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.separator.name"));
         separator.setItemMeta(meta);
 
         for (int i = 18; i < 27; i++) {
@@ -217,7 +187,9 @@ public class BattlePassGui extends BaseGui {
 
     private void setupNavigationButtons(Inventory gui) {
         int maxPages = (int) Math.ceil(maxLevel / 9.0);
-        if (maxPages < 1) maxPages = 1;
+        if (maxPages < 1) {
+            maxPages = 1;
+        }
 
         if (page > 1) {
             gui.setItem(36, createNavigationButton("previous", page - 1));
@@ -232,32 +204,16 @@ public class BattlePassGui extends BaseGui {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
 
-        if (direction.equals("previous")) {
-            meta.setDisplayName(plugin.getMessageManager().getMessage("items.previous-page.name"));
-            List<String> lore = new ArrayList<>();
-            for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.previous-page.lore")) {
-                String processedLine = line.replace("%page%", String.valueOf(targetPage));
-                lore.add(GradientColorParser.parse(processedLine));
-            }
-            meta.setLore(lore);
-            meta.getPersistentDataContainer().set(
-                    plugin.getEventManager().getNavigationKey(),
-                    PersistentDataType.STRING,
-                    "previous"
-            );
+        if ("previous".equals(direction)) {
+            meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.previous-page.name"));
+            meta.setLore(plugin.getMessageManager().getGuiMessages("items.previous-page.lore",
+                    "%page%", String.valueOf(targetPage)));
+            meta.getPersistentDataContainer().set(plugin.getEventManager().getNavigationKey(), PersistentDataType.STRING, "previous");
         } else {
-            meta.setDisplayName(plugin.getMessageManager().getMessage("items.next-page.name"));
-            List<String> lore = new ArrayList<>();
-            for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.next-page.lore")) {
-                String processedLine = line.replace("%page%", String.valueOf(targetPage));
-                lore.add(GradientColorParser.parse(processedLine));
-            }
-            meta.setLore(lore);
-            meta.getPersistentDataContainer().set(
-                    plugin.getEventManager().getNavigationKey(),
-                    PersistentDataType.STRING,
-                    "next"
-            );
+            meta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.next-page.name"));
+            meta.setLore(plugin.getMessageManager().getGuiMessages("items.next-page.lore",
+                    "%page%", String.valueOf(targetPage)));
+            meta.getPersistentDataContainer().set(plugin.getEventManager().getNavigationKey(), PersistentDataType.STRING, "next");
         }
 
         item.setItemMeta(meta);
@@ -267,78 +223,51 @@ public class BattlePassGui extends BaseGui {
     private void setupActionButtons(Inventory gui) {
         ItemStack missions = new ItemStack(Material.BOOK);
         ItemMeta missionsMeta = missions.getItemMeta();
-        missionsMeta.setDisplayName(plugin.getMessageManager().getMessage("items.missions-button.name"));
-
-        List<String> missionsLore = new ArrayList<>();
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.missions-button.lore")) {
-            String processedLine = line.replace("%reset_time%", plugin.getMissionManager().getTimeUntilReset());
-            missionsLore.add(GradientColorParser.parse(processedLine));
-        }
-        missionsMeta.setLore(missionsLore);
+        missionsMeta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.missions-button.name"));
+        missionsMeta.setLore(plugin.getMessageManager().getGuiMessages("items.missions-button.lore",
+                "%reset_time%", plugin.getMissionManager().getTimeUntilReset()));
         missions.setItemMeta(missionsMeta);
         gui.setItem(49, missions);
 
         ItemStack leaderboard = new ItemStack(Material.GOLDEN_HELMET);
         ItemMeta leaderboardMeta = leaderboard.getItemMeta();
-        leaderboardMeta.setDisplayName(plugin.getMessageManager().getMessage("items.leaderboard-button.name"));
-
-        List<String> lboardLore = new ArrayList<>();
-        String coinsTime = plugin.getCoinsDistributionTask() != null ?
-                plugin.getCoinsDistributionTask().getTimeUntilNextDistribution() : "Unknown";
-
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.leaderboard-button.lore")) {
-            String processedLine = line.replace("%coins_time%", coinsTime);
-            lboardLore.add(GradientColorParser.parse(processedLine));
-        }
-        leaderboardMeta.setLore(lboardLore);
+        leaderboardMeta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.leaderboard-button.name"));
+        String coinsTime = plugin.getCoinsDistributionTask() != null
+                ? plugin.getCoinsDistributionTask().getTimeUntilNextDistribution()
+                : plugin.getMessageManager().getMessage("time.unknown");
+        leaderboardMeta.setLore(plugin.getMessageManager().getGuiMessages("items.leaderboard-button.lore",
+                "%coins_time%", coinsTime));
         leaderboard.setItemMeta(leaderboardMeta);
         gui.setItem(48, leaderboard);
 
         if (plugin.getConfigManager().isShopEnabled()) {
             ItemStack shop = new ItemStack(Material.GOLD_INGOT);
             ItemMeta shopMeta = shop.getItemMeta();
-            shopMeta.setDisplayName(plugin.getMessageManager().getMessage("items.shop-button.name"));
-
-            List<String> shopLore = new ArrayList<>();
-            for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.shop-button.lore")) {
-                String processedLine = line.replace("%coins%", String.valueOf(playerData.battleCoins));
-                shopLore.add(GradientColorParser.parse(processedLine));
-            }
-            shopMeta.setLore(shopLore);
+            shopMeta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.shop-button.name"));
+            shopMeta.setLore(plugin.getMessageManager().getGuiMessages("items.shop-button.lore",
+                    "%coins%", String.valueOf(playerData.battleCoins)));
             shop.setItemMeta(shopMeta);
             gui.setItem(47, shop);
         }
 
         ItemStack dailyReward = new ItemStack(Material.SUNFLOWER);
         ItemMeta dailyMeta = dailyReward.getItemMeta();
-        dailyMeta.setDisplayName(plugin.getMessageManager().getMessage("items.daily-reward.name"));
+        dailyMeta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.daily-reward.name"));
 
-        List<String> dailyLore = new ArrayList<>();
-        boolean canClaim = System.currentTimeMillis() - playerData.lastDailyReward >= 24 * 60 * 60 * 1000;
+        boolean canClaim = System.currentTimeMillis() - playerData.lastDailyReward >= 24L * 60L * 60L * 1000L;
         String timeUntil = plugin.getMissionManager().getTimeUntilDailyReward(playerData.lastDailyReward);
-
-        for (String line : plugin.getMessageManager().getMessagesConfig().getStringList(
-                canClaim ? "items.daily-reward.lore-available" : "items.daily-reward.lore-cooldown")) {
-            String processedLine = line
-                    .replace("%xp%", String.valueOf(plugin.getConfigManager().getDailyRewardXP()))
-                    .replace("%time%", timeUntil);
-            dailyLore.add(GradientColorParser.parse(processedLine));
-        }
-        dailyMeta.setLore(dailyLore);
+        dailyMeta.setLore(plugin.getMessageManager().getGuiMessages(
+                canClaim ? "items.daily-reward.lore-available" : "items.daily-reward.lore-cooldown",
+                "%xp%", String.valueOf(plugin.getConfigManager().getDailyRewardXP()),
+                "%time%", timeUntil));
         dailyReward.setItemMeta(dailyMeta);
         gui.setItem(50, dailyReward);
 
         if (player.hasPermission("battlepass.admin")) {
             ItemStack editRewards = new ItemStack(Material.COMMAND_BLOCK);
             ItemMeta editMeta = editRewards.getItemMeta();
-            editMeta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>⚙ Edit Rewards</gradient>"));
-            List<String> editLore = new ArrayList<>();
-            editLore.add("");
-            editLore.add(GradientColorParser.parse("&7Open the rewards editor"));
-            editLore.add(GradientColorParser.parse("&7to modify battle pass rewards"));
-            editLore.add("");
-            editLore.add(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>▶ CLICK TO EDIT</gradient>"));
-            editMeta.setLore(editLore);
+            editMeta.setDisplayName(plugin.getMessageManager().getGuiMessage("items.admin-rewards-editor.name"));
+            editMeta.setLore(plugin.getMessageManager().getGuiMessages("items.admin-rewards-editor.lore"));
             editRewards.setItemMeta(editMeta);
             gui.setItem(46, editRewards);
         }

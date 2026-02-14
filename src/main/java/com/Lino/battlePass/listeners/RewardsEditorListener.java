@@ -20,8 +20,16 @@ import org.bukkit.inventory.ItemStack;
 public class RewardsEditorListener implements Listener {
 
     private final BattlePass plugin;
-    private static final String EDIT_LEVEL_START = "Edit Level";
-    private static final String EDIT_LEVEL_END = "Rewards";
+    private static final String EDIT_LEVEL_START = "Редактирование уровня";
+    private static final String EDIT_LEVEL_END = "наград";
+    private static final String REWARDS_EDITOR_TITLE_RU = "Редактор наград";
+    private static final String REWARDS_EDITOR_TITLE_EN = "Rewards Editor";
+    private static final String FREE_CATEGORY_TITLE_RU = "Бесплатные награды";
+    private static final String FREE_CATEGORY_TITLE_EN = "Free Rewards";
+    private static final String PREMIUM_CATEGORY_TITLE_RU = "Премиум-награды";
+    private static final String PREMIUM_CATEGORY_TITLE_EN = "Premium Rewards";
+    private static final String PAGE_MARKER_RU = "Страница ";
+    private static final String PAGE_MARKER_EN = "Page ";
 
     public RewardsEditorListener(BattlePass plugin) {
         this.plugin = plugin;
@@ -35,7 +43,7 @@ public class RewardsEditorListener implements Listener {
         String title = ChatColor.stripColor(event.getView().getTitle());
         if (title == null) return;
 
-        if (title.contains("Rewards Editor")) {
+        if (isRewardsEditorTitle(title)) {
             event.setCancelled(true);
             int slot = event.getRawSlot();
             if (slot >= 0 && slot < event.getInventory().getSize()) {
@@ -44,10 +52,9 @@ public class RewardsEditorListener implements Listener {
             return;
         }
 
-        if (title.contains("Free Rewards") || title.contains("Premium Rewards")) {
-            boolean isPremium = title.contains("Premium Rewards");
-            String cleanTitle = title;
-            if (cleanTitle.contains("Page")) {
+        if (isRewardsCategoryTitle(title)) {
+            boolean isPremium = isPremiumCategoryTitle(title);
+            if (containsPageMarker(title)) {
                 event.setCancelled(true);
                 int slot = event.getRawSlot();
                 if (slot >= 0 && slot < event.getInventory().getSize()) {
@@ -142,14 +149,7 @@ public class RewardsEditorListener implements Listener {
 
     private void handleRewardsCategoryClick(Player player, int slot, boolean isPremium) {
         String title = ChatColor.stripColor(player.getOpenInventory().getTitle());
-        int currentPage = 1;
-
-        if (title != null && title.contains("Page")) {
-            String pageStr = title.substring(title.lastIndexOf("Page") + 5).trim();
-            try {
-                currentPage = Integer.parseInt(pageStr);
-            } catch (NumberFormatException ignored) {}
-        }
+        int currentPage = extractPage(title);
 
         if (slot < 45) {
             int startLevel = (currentPage - 1) * 45 + 1;
@@ -172,7 +172,7 @@ public class RewardsEditorListener implements Listener {
         } else if (slot == 53) {
             int maxLevel = plugin.getRewardManager().getMaxLevel();
             int endLevel = (currentPage - 1) * 45 + 45;
-            if (endLevel < maxLevel + 45) {
+            if (endLevel < maxLevel) {
                 player.closeInventory();
                 final int nextPage = currentPage + 1;
                 final boolean finalIsPremium = isPremium;
@@ -282,5 +282,56 @@ public class RewardsEditorListener implements Listener {
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             editor.open();
         });
+    }
+
+    private boolean isRewardsEditorTitle(String title) {
+        return title.contains(REWARDS_EDITOR_TITLE_RU) || title.contains(REWARDS_EDITOR_TITLE_EN);
+    }
+
+    private boolean isRewardsCategoryTitle(String title) {
+        return title.contains(FREE_CATEGORY_TITLE_RU) ||
+                title.contains(FREE_CATEGORY_TITLE_EN) ||
+                title.contains(PREMIUM_CATEGORY_TITLE_RU) ||
+                title.contains(PREMIUM_CATEGORY_TITLE_EN);
+    }
+
+    private boolean isPremiumCategoryTitle(String title) {
+        return title.contains(PREMIUM_CATEGORY_TITLE_RU) || title.contains(PREMIUM_CATEGORY_TITLE_EN);
+    }
+
+    private boolean containsPageMarker(String title) {
+        return title.contains(PAGE_MARKER_RU) || title.contains(PAGE_MARKER_EN);
+    }
+
+    private int extractPage(String title) {
+        if (title == null) {
+            return 1;
+        }
+
+        int page = extractPageByMarker(title, PAGE_MARKER_RU);
+        if (page > 0) {
+            return page;
+        }
+
+        page = extractPageByMarker(title, PAGE_MARKER_EN);
+        if (page > 0) {
+            return page;
+        }
+
+        return 1;
+    }
+
+    private int extractPageByMarker(String title, String marker) {
+        int markerIndex = title.lastIndexOf(marker);
+        if (markerIndex < 0) {
+            return -1;
+        }
+
+        String pageString = title.substring(markerIndex + marker.length()).trim();
+        try {
+            return Integer.parseInt(pageString);
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
     }
 }

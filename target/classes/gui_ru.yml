@@ -1,0 +1,192 @@
+gui:
+  battlepass: "&6Боевой пропуск &8| &7Страница %page%"
+  missions: "&6Ежедневные миссии"
+  leaderboard: "&6Таблица лидеров"
+  shop: "&6Магазин BattlePass"
+
+items:
+  progress:
+    name: "&#00D4FFВаш прогресс"
+    lore:
+      - "&7Уровень: &f%level%"
+      - "&7XP: &f%xp%&7/&f%xp_needed%"
+      - "&7Premium: %premium_status%"
+      - "&7Сезон: &f%current_season%"
+      - "&7До сброса: &f%season_time%"
+
+  premium-status:
+    active: "&aАктивен"
+    inactive: "&cНе активен"
+
+  separator:
+    name: " "
+
+  previous-page:
+    name: "&e← Предыдущая страница"
+    lore:
+      - "&7Открыть страницу %page%"
+
+  next-page:
+    name: "&eСледующая страница →"
+    lore:
+      - "&7Открыть страницу %page%"
+
+  missions-button:
+    name: "&eМиссии"
+    lore:
+      - "&7Выполняйте задания"
+      - "&7и получайте XP."
+      - "&7Сброс через: &f%reset_time%"
+
+  leaderboard-button:
+    name: "&eЛидеры"
+    lore:
+      - "&7Топ игроков по прогрессу."
+      - "&7Следующие монеты: &f%coins_time%"
+
+  shop-button:
+    name: "&eМагазин"
+    lore:
+      - "&7Покупка предметов за монеты."
+      - "&7Ваши монеты: &f%coins%"
+
+  daily-reward:
+    name: "&eЕжедневная награда"
+    lore-available:
+      - "&7Награда: &f%xp% XP"
+      - "&aНажмите, чтобы забрать"
+    lore-cooldown:
+      - "&7Награда: &f%xp% XP"
+      - "&7Доступно через: &f%time%"
+
+  reward-available:
+    name: "&aНаграда %type% • Уровень %level%"
+    lore-header:
+      - "&7Награды:"
+    lore-footer:
+      - "&7"
+      - "&aНажмите, чтобы забрать"
+
+  reward-claimed:
+    name: "&8Награда %type% • Уровень %level%"
+    lore-header:
+      - "&7Награды:"
+    lore-footer:
+      - "&7"
+      - "&8Уже получено"
+
+  reward-premium-locked:
+    name: "&6Premium награда • Уровень %level%"
+    lore-header:
+      - "&7Награды:"
+    lore-footer:
+      - "&7"
+      - "&6Требуется Premium"
+
+  reward-level-locked:
+    name: "&cНаграда %type% • Уровень %level%"
+    lore-header:
+      - "&7Награды:"
+    lore-footer:
+      - "&7"
+      - "&cНедостаточный уровень"
+
+  mission-timer:
+    name: "&eСброс миссий"
+    lore:
+      - "&7До сброса: &f%reset_time%"
+
+  mission-completed:
+    name: "&a%mission%"
+    lore:
+      - "&7Прогресс: &f%progress%/%required%"
+      - "&7Награда: &f%reward_xp% XP"
+      - "&7Сброс через: &f%reset_time%"
+      - "&aВыполнено"
+
+  mission-in-progress:
+    name: "&e%mission%"
+    lore:
+      - "&7Прогресс: &f%progress%/%required%"
+      - "&7Награда: &f%reward_xp% XP"
+      - "&7Сброс через: &f%reset_time%"
+      - "&eВ процессе"
+
+  leaderboard-title:
+    name: "&eТоп 10 игроков"
+    lore:
+      - "&7До конца сезона: &f%season_time%"
+      - "&7Следующая выдача монет: &f%coins_time%"
+
+  leaderboard-player:
+    name: "%rank% &b%player%"
+    lore:
+      - "&7Уровень: &f%level%"
+      - "&7Всего уровней: &f%total_levels%"
+      - "&7XP: &f%xp%"
+      - "&7Монеты: &f%coins%"
+      - "&7%status%"
+
+  leaderboard-rank:
+    first: "&6#1"
+    second: "&f#2"
+    third: "&c#3"
+    other: "&7#%rank%"
+
+  leaderboard-status:
+    you: "&aЭто вы"
+    other: "&7Продолжайте прокачку"
+
+  coins-info:
+    name: "&eBattle Coins"
+    lore:
+      - "&7Монеты выдаются топ-10 игроков."
+      - "&7Следующая выдача: &f%time%"
+
+  back-button:
+    name: "&c← Назад"
+    lore:
+      - "&7Вернуться назад"
+
+  shop-balance:
+    name: "&eВаш баланс"
+    lore:
+      - "&7Battle Coins: &f%coins%"
+
+  admin-rewards-editor:
+    name: "&6Редактор наград"
+    lore:
+      - "&7Открыть редактор наград."
+
+  admin-missions-reset:
+    name: "&cСбросить миссии"
+    lore:
+      - "&7Только для администратора."
+      - "&cНажмите для сброса"
+
+  admin-missions-editor:
+    name: "&6Редактор миссий"
+    lore:
+      - "&7Создание и редактирование миссий."
+
+custom-items:
+  premium-pass:
+    name: "&#FF66FF★ Ваучер Premium Battle Pass ★"
+    lore:
+      - "&7Активирует Premium ветку наград."
+      - "&7Действует до конца текущего сезона."
+      - "&aПКМ для активации"
+
+  battle-coin:
+    name: "&#FFD54F✦ Жетон Battle Coin ✦"
+    lore:
+      - "&7Добавляет 1 Battle Coin."
+      - "&7Можно складывать в стаки."
+      - "&aПКМ для использования"
+
+  level-boost:
+    name: "&#66FFCC✧ Эликсир ускорения опыта ✧"
+    lore:
+      - "&7Даёт +100 XP Battle Pass."
+      - "&7Можно использовать пачкой."
+      - "&aПКМ для использования"

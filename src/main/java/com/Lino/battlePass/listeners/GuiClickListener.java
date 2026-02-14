@@ -27,11 +27,11 @@ public class GuiClickListener implements Listener {
         String title = event.getView().getTitle();
         Player player = (Player) event.getWhoClicked();
 
-        boolean isBattlePassGUI = title.startsWith(plugin.getMessageManager().getMessage("gui.battlepass").split("%")[0]);
+        boolean isBattlePassGUI = title.startsWith(plugin.getMessageManager().getGuiMessage("gui.battlepass").split("%")[0]);
 
-        if (!isBattlePassGUI && !title.equals(plugin.getMessageManager().getMessage("gui.leaderboard")) &&
-                !title.equals(plugin.getMessageManager().getMessage("gui.missions")) &&
-                !title.equals(plugin.getMessageManager().getMessage("gui.shop"))) {
+        if (!isBattlePassGUI && !title.equals(plugin.getMessageManager().getGuiMessage("gui.leaderboard")) &&
+                !title.equals(plugin.getMessageManager().getGuiMessage("gui.missions")) &&
+                !title.equals(plugin.getMessageManager().getGuiMessage("gui.shop"))) {
             return;
         }
 
@@ -42,14 +42,14 @@ public class GuiClickListener implements Listener {
 
         if (isBattlePassGUI) {
             handleBattlePassClick(player, clicked, event.getSlot());
-        } else if (title.equals(plugin.getMessageManager().getMessage("gui.leaderboard"))) {
+        } else if (title.equals(plugin.getMessageManager().getGuiMessage("gui.leaderboard"))) {
             if (clicked.getType() == Material.BARRIER) {
                 int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
                 plugin.getGuiManager().openBattlePassGUI(player, page);
             }
-        } else if (title.equals(plugin.getMessageManager().getMessage("gui.missions"))) {
+        } else if (title.equals(plugin.getMessageManager().getGuiMessage("gui.missions"))) {
             handleMissionsClick(player, clicked, event.getSlot());
-        } else if (title.equals(plugin.getMessageManager().getMessage("gui.shop"))) {
+        } else if (title.equals(plugin.getMessageManager().getGuiMessage("gui.shop"))) {
             handleShopClick(player, clicked, event.getSlot());
         }
     }
@@ -84,7 +84,7 @@ public class GuiClickListener implements Listener {
             if (meta.getPersistentDataContainer().has(plugin.getEventManager().getNavigationKey(), PersistentDataType.STRING)) {
                 String action = meta.getPersistentDataContainer().get(plugin.getEventManager().getNavigationKey(), PersistentDataType.STRING);
 
-                // Calcolo dinamico delle pagine massime
+                // Dynamic max page calculation based on configured max reward level.
                 int maxLevel = plugin.getRewardManager().getMaxLevel();
                 int maxPages = (int) Math.ceil(maxLevel / 9.0);
                 if (maxPages < 1) maxPages = 1;
