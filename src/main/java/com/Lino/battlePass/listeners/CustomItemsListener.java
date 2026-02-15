@@ -40,6 +40,8 @@ public class CustomItemsListener implements Listener {
             handleBattleCoinsUse(event, player);
         } else if (plugin.getCustomItemManager().isLevelBoostItem(item)) {
             handleLevelBoostUse(event, player);
+        } else if (plugin.getCustomItemManager().isXPEventItem(item)) {
+            handleXPEventUse(event, player);
         }
     }
 
@@ -176,6 +178,50 @@ public class CustomItemsListener implements Listener {
                 player.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.new-rewards"));
             }
+        }
+    }
+
+    private void handleXPEventUse(PlayerInteractEvent event, Player player) {
+        event.setCancelled(true);
+
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+
+        if (!plugin.getCustomItemManager().isXPEventItem(itemInHand)) {
+            return;
+        }
+
+        if (plugin.getXpEventManager().isEventActive()) {
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.items.xp-event-already-active"));
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        if (itemInHand.getAmount() > 1) {
+            itemInHand.setAmount(itemInHand.getAmount() - 1);
+        } else {
+            player.getInventory().setItemInMainHand(null);
+        }
+
+        plugin.getXpEventManager().startEvent(2, 3600000);
+
+        String duration = plugin.getXpEventManager().getTimeRemaining();
+
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.items.xp-event-activated",
+                            "%player%", player.getName(),
+                            "%duration%", duration));
+            p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.2f);
+            p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.0f);
+        }
+
+        for (int i = 0; i < 10; i++) {
+            final int index = i;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL,
+                        1.0f, 0.5f + (index * 0.15f));
+            }, i * 3L);
         }
     }
 

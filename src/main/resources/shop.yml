@@ -154,3 +154,26 @@ shop-items:
     price: 700
     commands:
       - "bp giveitem levelboost <player> 64"
+
+  xp-event-beacon:
+    slot: 31
+    material: BEACON
+    display-name: "<gradient:#FFD700:#FF4500>✦ XP Event Beacon ✦</gradient>"
+    lore:
+      - ""
+      - "<gradient:#FFD700:#FF6B6B>Radiant Beacon</gradient>"
+      - "&7A powerful beacon that unleashes"
+      - "&7a surge of experience energy"
+      - "&7across the entire server"
+      - ""
+      - "<gradient:#4ECDC4:#45B7D1>▼ Effects ▼</gradient>"
+      - "&7• Activates <gradient:#FFD93D:#FF6B6B>2x XP Event</gradient> for the server"
+      - "&7• Duration: <gradient:#4ECDC4:#45B7D1>1 hour</gradient>"
+      - "&7• Affects all online players"
+      - ""
+      - "&7Price: <gradient:#FFD93D:#FF6B6B>500 Battle Coins</gradient>"
+      - ""
+      - "<gradient:#00FF88:#45B7D1>▶ CLICK TO PURCHASE</gradient>"
+    price: 500
+    commands:
+      - "bp giveitem xpevent <player> 1"

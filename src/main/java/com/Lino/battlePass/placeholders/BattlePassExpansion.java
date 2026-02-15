@@ -1,7 +1,6 @@
 package com.Lino.battlePass.placeholders;
 
 import com.Lino.battlePass.BattlePass;
-import com.Lino.battlePass.managers.SeasonRotationManager;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.PlayerData;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
@@ -133,14 +132,20 @@ public class BattlePassExpansion extends PlaceholderExpansion {
                 return completed + "/" + total;
 
             case "current_season":
-                SeasonRotationManager rotation = plugin.getSeasonRotationManager();
-                return rotation.isRotationEnabled() ?
-                        String.valueOf(rotation.getCurrentSeason()) : "1";
+                return String.valueOf(plugin.getSeasonRotationManager().getCurrentSeason());
 
             case "total_seasons":
-                SeasonRotationManager rot = plugin.getSeasonRotationManager();
-                return rot.isRotationEnabled() ?
-                        String.valueOf(rot.getTotalSeasons()) : "1";
+                return String.valueOf(plugin.getSeasonRotationManager().getTotalSeasons());
+
+            case "xp_event_active":
+                return plugin.getXpEventManager().isEventActive() ? "Yes" : "No";
+
+            case "xp_event_multiplier":
+                return String.valueOf(plugin.getXpEventManager().getMultiplier()) + "x";
+
+            case "xp_event_time":
+            case "xp_event_remaining":
+                return plugin.getXpEventManager().getTimeRemaining();
         }
 
         if (identifier.startsWith("mission_")) {

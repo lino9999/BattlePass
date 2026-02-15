@@ -22,6 +22,7 @@ messages:
     giveitem: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass giveitem <type> <player> <amount>"
     reset-player: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass resetplayer <player>"
     edit-rewards-season: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass edit rewards season <number>"
+    event: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/bp event <multiplier> <duration> &7(e.g. /bp event 2x 1h)"
 
   reset-player:
     sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Successfully reset battle pass progress for <gradient:#FFD93D:#FF6B6B>%player%</gradient>"
@@ -45,6 +46,8 @@ messages:
     exclude-top: "<gradient:#4ECDC4:#45B7D1>/bp excludefromtop <player></gradient> &7- Hide player from leaderboard"
     include-top: "<gradient:#4ECDC4:#45B7D1>/bp includetop <player></gradient> &7- Show player in leaderboard"
     edit-rewards-season: "<gradient:#4ECDC4:#45B7D1>/bp edit rewards season <number></gradient> &7- Edit rewards for a specific season"
+    event: "<gradient:#4ECDC4:#45B7D1>/bp event <multiplier> <duration></gradient> &7- Start an XP multiplier event"
+    stopevent: "<gradient:#4ECDC4:#45B7D1>/bp stopevent</gradient> &7- Stop the current XP event"
 
   premium:
     given-sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Premium pass given to <gradient:#FFD93D:#FF6B6B>%target%</gradient>"
@@ -103,6 +106,14 @@ messages:
     claimed: "<gradient:#00FF88:#45B7D1>✓ Daily Reward Claimed!</gradient> &fYou received <gradient:#FFD93D:#FF6B6B>%amount% XP</gradient>"
     already-claimed: "<gradient:#FF6B6B:#FF0000>✗ You have already claimed your daily reward!</gradient>"
 
+  event:
+    started: "<gradient:#FFD700:#FF6B6B>XP EVENT STARTED!</gradient> &fAll mission XP is now <gradient:#00FF88:#45B7D1>%multiplier%x</gradient> for <gradient:#4ECDC4:#45B7D1>%duration%</gradient>!"
+    ended: "<gradient:#FF6B6B:#FF0000>The XP event has ended.</gradient> &7Mission XP rewards are back to normal."
+    stopped: "<gradient:#FF6B6B:#FF0000>The XP event has been stopped by an admin.</gradient>"
+    not-active: "<gradient:#FF6B6B:#FF0000>There is no active XP event.</gradient>"
+    invalid-multiplier: "<gradient:#FF6B6B:#FF0000>Invalid multiplier! Use a number between 2 and 100 (e.g. 2x, 3x).</gradient>"
+    invalid-duration: "<gradient:#FF6B6B:#FF0000>Invalid duration! Use format like 30m, 1h, 2h30m.</gradient>"
+
   coins:
     distribution-announcement: "<gradient:#FFD93D:#FF6B6B>BATTLE COINS</gradient> <gradient:#4ECDC4:#45B7D1>Top 10 players are receiving their daily Battle Coins!</gradient>"
     distribution-player: "<gradient:#FFD93D:#FF6B6B>#%rank%</gradient> <gradient:#4ECDC4:#45B7D1>%player%</gradient> &7received <gradient:#FFD93D:#FF6B6B>%amount% Battle Coins</gradient>"
@@ -128,6 +139,8 @@ messages:
     coins-redeemed: "<gradient:#00FF88:#45B7D1>✓ Redeemed %amount% Battle Coins!</gradient>"
     max-level-reached: "<gradient:#FF6B6B:#FF0000>✗ You have already reached the maximum level!</gradient>"
     xp-boost-used: "<gradient:#00FF88:#45B7D1>★ XP BOOST!</gradient>\n<gradient:#4ECDC4:#45B7D1>Consumed %items% elixir(s) and gained %amount% XP!</gradient>"
+    xp-event-activated: "<gradient:#FFD700:#FF4500>XP EVENT!</gradient> <gradient:#4ECDC4:#45B7D1>%player%</gradient> &fhas activated a <gradient:#FFD93D:#FF6B6B>2x XP Event</gradient> for <gradient:#4ECDC4:#45B7D1>%duration%</gradient>!"
+    xp-event-already-active: "<gradient:#FF6B6B:#FF0000>An XP event is already active!</gradient>"
 
 gui:
   battlepass: "<gradient:#FF6B6B:#4ECDC4>⚡ BATTLE PASS</gradient> &8- &7Page %page%"

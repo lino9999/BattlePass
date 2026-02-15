@@ -33,6 +33,8 @@ public class BattlePassTabCompleter implements TabCompleter {
                 completions.add("excludefromtop");
                 completions.add("includetop");
                 completions.add("edit");
+                completions.add("event");
+                completions.add("stopevent");
             }
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("reset") && sender.hasPermission("battlepass.admin")) {
@@ -41,10 +43,16 @@ public class BattlePassTabCompleter implements TabCompleter {
                 completions.add("missions");
             } else if (args[0].equalsIgnoreCase("edit") && sender.hasPermission("battlepass.admin")) {
                 completions.add("rewards");
+            } else if (args[0].equalsIgnoreCase("event") && sender.hasPermission("battlepass.admin")) {
+                completions.add("2x");
+                completions.add("3x");
+                completions.add("4x");
+                completions.add("5x");
             } else if (args[0].equalsIgnoreCase("giveitem") && sender.hasPermission("battlepass.admin")) {
                 completions.add("premium");
                 completions.add("coins");
                 completions.add("levelboost");
+                completions.add("xpevent");
             } else if (sender.hasPermission("battlepass.admin")) {
                 String subCommand = args[0].toLowerCase();
 
@@ -64,6 +72,11 @@ public class BattlePassTabCompleter implements TabCompleter {
 
             if (subCommand.equals("edit") && args[1].equalsIgnoreCase("rewards")) {
                 completions.add("season");
+            } else if (subCommand.equals("event")) {
+                completions.add("30m");
+                completions.add("1h");
+                completions.add("2h");
+                completions.add("3h");
             } else if (subCommand.equals("giveitem")) {
                 return Bukkit.getOnlinePlayers().stream()
                         .map(Player::getName)

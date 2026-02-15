@@ -8,6 +8,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,12 +60,19 @@ public class MissionProgressTracker {
             if (newProgress >= mission.required && currentProgress < mission.required) {
                 completedKeys.add(missionKey);
 
-                data.xp += mission.xpReward;
+                int eventMultiplier = plugin.getXpEventManager().getMultiplier();
+                int xpToAdd = mission.xpReward * eventMultiplier;
+                data.xp += xpToAdd;
                 checkLevelUp(player, data);
+
+                String xpText = String.valueOf(xpToAdd);
+                if (eventMultiplier > 1) {
+                    xpText = xpToAdd + " (" + eventMultiplier + "x)";
+                }
 
                 player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.completed",
                         "%mission%", mission.name,
-                        "%reward_xp%", String.valueOf(mission.xpReward)));
+                        "%reward_xp%", xpText));
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
                 showCompletedActionbar(player, mission.name);
@@ -79,7 +87,6 @@ public class MissionProgressTracker {
     }
 
     private String generateMissionKey(Mission mission) {
-        // Updated to include mission name to avoid collisions
         return mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
     }
 
@@ -158,41 +165,42 @@ public class MissionProgressTracker {
 
         MessageManager messageManager = plugin.getMessageManager();
         String progressMessage = messageManager.getMessage("messages.mission.actionbar-progress",
+                "%mission%", missionName,
                 "%current%", String.valueOf(current),
-                "%required%", String.valueOf(required),
-                "%mission%", missionName);
+                "%required%", String.valueOf(required));
 
-        sendActionBar(player, progressMessage);
+        int taskId = new BukkitRunnable() {
+            private int count = 0;
 
-        int taskId = Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
             @Override
             public void run() {
-                Long lastUpdate = lastActionbarUpdate.getOrDefault(uuid, new HashMap<>()).get(key);
-                if (lastUpdate != null && System.currentTimeMillis() - lastUpdate >= 29500) {
+                if (count >= 40) {
                     sendActionBar(player, "");
-                    playerTasks.remove(key);
-                    lastActionbarUpdate.get(uuid).remove(key);
+                    Integer currentTaskId = playerTasks.remove(key);
+                    if (currentTaskId != null) {
+                        Bukkit.getScheduler().cancelTask(currentTaskId);
+                        scheduledTaskIds.remove(currentTaskId);
+                    }
+                    return;
                 }
+                sendActionBar(player, progressMessage);
+                count++;
             }
-        }, 600L).getTaskId();
+        }.runTaskTimer(plugin, 0L, 5L).getTaskId();
 
         playerTasks.put(key, taskId);
         scheduledTaskIds.add(taskId);
-
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            scheduledTaskIds.remove(taskId);
-        }, 601L);
     }
 
     private void showCompletedActionbar(Player player, String missionName) {
         UUID uuid = player.getUniqueId();
-        String key = missionName.toLowerCase().replace(" ", "_") + "_completed";
 
         if (!actionbarTasks.containsKey(uuid)) {
             actionbarTasks.put(uuid, new ConcurrentHashMap<>());
         }
 
         Map<String, Integer> playerTasks = actionbarTasks.get(uuid);
+        String key = missionName.toLowerCase().replace(" ", "_");
 
         if (playerTasks.containsKey(key)) {
             int oldTaskId = playerTasks.get(key);
@@ -204,7 +212,7 @@ public class MissionProgressTracker {
         String completedMessage = messageManager.getMessage("messages.mission.actionbar-completed",
                 "%mission%", missionName);
 
-        int taskId = Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
+        int taskId = new BukkitRunnable() {
             private int count = 0;
 
             @Override
@@ -221,7 +229,7 @@ public class MissionProgressTracker {
                 sendActionBar(player, completedMessage);
                 count++;
             }
-        }, 0L, 20L).getTaskId();
+        }.runTaskTimer(plugin, 0L, 20L).getTaskId();
 
         playerTasks.put(key, taskId);
         scheduledTaskIds.add(taskId);

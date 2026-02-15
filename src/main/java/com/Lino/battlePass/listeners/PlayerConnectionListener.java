@@ -55,6 +55,7 @@ public class PlayerConnectionListener implements Listener {
                 }
 
                 plugin.getSoundManager().checkAndUpdateSound(player);
+                plugin.getXpEventManager().addPlayerToBossBar(player);
             }
         }.runTaskLater(plugin, 40L);
     }
@@ -71,6 +72,7 @@ public class PlayerConnectionListener implements Listener {
             }
         }
 
+        plugin.getXpEventManager().removePlayerFromBossBar(event.getPlayer());
         plugin.getSoundManager().stopItemSound(uuid);
         plugin.getMissionManager().clearPlayerActionbars(uuid);
         plugin.getPlayerDataManager().removePlayer(uuid);
