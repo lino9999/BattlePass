@@ -29,6 +29,11 @@ public class ConfigManager {
     private int coinsDistributionHours = 24;
     private int missionResetHours = 24;
     private boolean customItemSoundsEnabled = true;
+    private String leaderboardSortBy = "level";
+    private String leaderboardTiebreaker = "xp";
+    private int leaderboardMinLevel = 2;
+    private int leaderboardSize = 20;
+    private boolean resetTotalLevelsOnSeasonEnd = true;
 
     private Material guiFreeLockedMaterial = Material.GRAY_STAINED_GLASS;
     private Material guiPremiumLockedMaterial = Material.GRAY_STAINED_GLASS;
@@ -65,6 +70,11 @@ public class ConfigManager {
         coinsDistributionHours = config.getInt("battle-coins.distribution-hours", 24);
         missionResetHours = config.getInt("missions.reset-hours", 24);
         customItemSoundsEnabled = config.getBoolean("custom-items.sounds-enabled", true);
+        leaderboardSortBy = config.getString("leaderboard.sort-by", "level").toLowerCase();
+        leaderboardTiebreaker = config.getString("leaderboard.tiebreaker", "xp").toLowerCase();
+        leaderboardMinLevel = config.getInt("leaderboard.min-level", 2);
+        leaderboardSize = Math.min(config.getInt("leaderboard.size", 20), 27);
+        resetTotalLevelsOnSeasonEnd = config.getBoolean("leaderboard.reset-total-levels-on-season-end", true);
 
         databaseType = config.getString("database.type", "SQLITE");
         dbHost = config.getString("database.host", "localhost");
@@ -267,5 +277,25 @@ public class ConfigManager {
 
     public int getDbPoolSize() {
         return dbPoolSize;
+    }
+
+    public String getLeaderboardSortBy() {
+        return leaderboardSortBy;
+    }
+
+    public String getLeaderboardTiebreaker() {
+        return leaderboardTiebreaker;
+    }
+
+    public int getLeaderboardMinLevel() {
+        return leaderboardMinLevel;
+    }
+
+    public int getLeaderboardSize() {
+        return leaderboardSize;
+    }
+
+    public boolean isResetTotalLevelsOnSeasonEnd() {
+        return resetTotalLevelsOnSeasonEnd;
     }
 }

@@ -371,15 +371,34 @@ public class DatabaseManager {
         }, databaseExecutor);
     }
 
+    private String mapSortColumn(String configValue) {
+        switch (configValue) {
+            case "level": return "level";
+            case "total_levels": return "total_levels";
+            case "xp": return "xp";
+            case "battle_coins": return "battle_coins";
+            default: return "level";
+        }
+    }
+
     public CompletableFuture<List<PlayerData>> getTop10Players() {
         return CompletableFuture.supplyAsync(() -> {
             List<PlayerData> allPlayers = new ArrayList<>();
             Connection conn = null;
             boolean shouldClose = isMySQL;
 
+            String sortBy = mapSortColumn(plugin.getConfigManager().getLeaderboardSortBy());
+            String tiebreaker = mapSortColumn(plugin.getConfigManager().getLeaderboardTiebreaker());
+            int minLevel = plugin.getConfigManager().getLeaderboardMinLevel();
+            int limit = plugin.getConfigManager().getLeaderboardSize();
+
+            String query = "SELECT * FROM " + prefix + "players WHERE exclude_from_top = 0 AND level >= ? ORDER BY " + sortBy + " DESC, " + tiebreaker + " DESC LIMIT ?";
+
             try {
                 conn = getConnection();
-                try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + prefix + "players WHERE exclude_from_top = 0 ORDER BY total_levels DESC, level DESC, xp DESC LIMIT 10")) {
+                try (PreparedStatement ps = conn.prepareStatement(query)) {
+                    ps.setInt(1, minLevel);
+                    ps.setInt(2, limit);
                     try (ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) {
                             PlayerData data = new PlayerData(UUID.fromString(rs.getString("uuid")));
@@ -400,6 +419,76 @@ public class DatabaseManager {
                 }
             }
             return allPlayers;
+        }, databaseExecutor);
+    }
+
+    /**
+     * Returns [rank, totalEligiblePlayers]. rank=-1 if player is not eligible.
+     */
+    public CompletableFuture<int[]> getPlayerRankInfo(UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            int[] result = new int[]{-1, 0};
+            Connection conn = null;
+            boolean shouldClose = isMySQL;
+
+            String sortBy = mapSortColumn(plugin.getConfigManager().getLeaderboardSortBy());
+            String tiebreaker = mapSortColumn(plugin.getConfigManager().getLeaderboardTiebreaker());
+            int minLevel = plugin.getConfigManager().getLeaderboardMinLevel();
+
+            try {
+                conn = getConnection();
+
+                // Get player's own values
+                int playerLevel = 0, playerSortVal = 0, playerTieVal = 0;
+                boolean excluded = false;
+                boolean found = false;
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT level, xp, total_levels, battle_coins, exclude_from_top FROM " + prefix + "players WHERE uuid = ?")) {
+                    ps.setString(1, uuid.toString());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            found = true;
+                            playerLevel = rs.getInt("level");
+                            playerSortVal = rs.getInt(sortBy);
+                            playerTieVal = rs.getInt(tiebreaker);
+                            excluded = rs.getInt("exclude_from_top") == 1;
+                        }
+                    }
+                }
+
+                // Get total eligible players
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT COUNT(*) FROM " + prefix + "players WHERE exclude_from_top = 0 AND level >= ?")) {
+                    ps.setInt(1, minLevel);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) result[1] = rs.getInt(1);
+                    }
+                }
+
+                if (!found || excluded || playerLevel < minLevel) {
+                    return result;
+                }
+
+                // Count players ranked higher
+                String rankQuery = "SELECT COUNT(*) FROM " + prefix + "players WHERE exclude_from_top = 0 AND level >= ? AND (" +
+                        sortBy + " > ? OR (" + sortBy + " = ? AND " + tiebreaker + " > ?))";
+                try (PreparedStatement ps = conn.prepareStatement(rankQuery)) {
+                    ps.setInt(1, minLevel);
+                    ps.setInt(2, playerSortVal);
+                    ps.setInt(3, playerSortVal);
+                    ps.setInt(4, playerTieVal);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) result[0] = rs.getInt(1) + 1;
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            } finally {
+                if (shouldClose && conn != null) {
+                    try { conn.close(); } catch (SQLException e) {}
+                }
+            }
+            return result;
         }, databaseExecutor);
     }
 
@@ -670,12 +759,17 @@ public class DatabaseManager {
                 conn = getConnection();
                 try (Statement stmt = conn.createStatement()) {
                     boolean resetCoins = plugin.getConfigManager().isResetCoinsOnSeasonEnd();
+                    boolean resetTotalLevels = plugin.getConfigManager().isResetTotalLevelsOnSeasonEnd();
 
+                    StringBuilder sql = new StringBuilder("UPDATE " + prefix + "players SET xp = 0, level = 1, claimed_free = '', claimed_premium = '', has_premium = 0, last_daily_reward = 0");
                     if (resetCoins) {
-                        stmt.executeUpdate("UPDATE " + prefix + "players SET xp = 0, level = 1, claimed_free = '', claimed_premium = '', has_premium = 0, last_daily_reward = 0, battle_coins = 0");
-                    } else {
-                        stmt.executeUpdate("UPDATE " + prefix + "players SET xp = 0, level = 1, claimed_free = '', claimed_premium = '', has_premium = 0, last_daily_reward = 0");
+                        sql.append(", battle_coins = 0");
                     }
+                    if (resetTotalLevels) {
+                        sql.append(", total_levels = 0");
+                    }
+                    stmt.executeUpdate(sql.toString());
+
                     stmt.executeUpdate("DELETE FROM " + prefix + "missions");
                     stmt.executeUpdate("DELETE FROM " + prefix + "daily_missions");
                 }
