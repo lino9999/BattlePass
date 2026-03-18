@@ -57,6 +57,14 @@ battle-coins:
     9: 2
     10: 1
 
+# Leaderboard configuration
+leaderboard:
+  sort-by: level
+  tiebreaker: xp
+  min-level: 2
+  size: 20
+  reset-total-levels-on-season-end: true
+
 # Shop configuration
 shop:
   enabled: true
