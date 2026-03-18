@@ -160,15 +160,10 @@ public class BattlePassExpansion extends PlaceholderExpansion {
     }
 
     private String getPlayerRank(UUID uuid) {
-        CompletableFuture<List<PlayerData>> future = plugin.getDatabaseManager().getTop10Players();
-        List<PlayerData> topPlayers = future.join();
-
-        for (int i = 0; i < topPlayers.size(); i++) {
-            if (topPlayers.get(i).uuid.equals(uuid)) {
-                return String.valueOf(i + 1);
-            }
+        int[] rankInfo = plugin.getDatabaseManager().getPlayerRankInfo(uuid).join();
+        if (rankInfo[0] > 0) {
+            return String.valueOf(rankInfo[0]);
         }
-
         return "Unranked";
     }
 
@@ -207,7 +202,8 @@ public class BattlePassExpansion extends PlaceholderExpansion {
             String[] parts = identifier.split("_");
             int position = Integer.parseInt(parts[0]);
 
-            if (position < 1 || position > 10) {
+            int maxPosition = plugin.getConfigManager().getLeaderboardSize();
+            if (position < 1 || position > maxPosition) {
                 return "";
             }
 

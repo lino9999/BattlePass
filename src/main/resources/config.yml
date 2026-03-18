@@ -57,6 +57,20 @@ battle-coins:
     9: 2
     10: 1
 
+# Leaderboard configuration
+leaderboard:
+  # Sort criteria for the top leaderboard
+  # Options: level (current season level), total_levels (cumulative all-time), xp, battle_coins
+  sort-by: level
+  # Secondary sort when primary values are tied
+  tiebreaker: xp
+  # Minimum level to appear in the leaderboard (filters inactive players)
+  min-level: 2
+  # How many players to show in the leaderboard GUI (max 27)
+  size: 20
+  # Whether to reset total_levels when a new season starts
+  reset-total-levels-on-season-end: true
+
 # Shop configuration
 shop:
   enabled: true
