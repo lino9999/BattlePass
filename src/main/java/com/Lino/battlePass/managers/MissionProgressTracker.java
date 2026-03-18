@@ -40,6 +40,16 @@ public class MissionProgressTracker {
 
             if (!mission.target.equals("ANY") && !mission.target.equals(target)) continue;
 
+            // World check
+            if (mission.world != null && !mission.world.isEmpty()) {
+                if (!player.getWorld().getName().equalsIgnoreCase(mission.world)) continue;
+            }
+
+            // Region check
+            if (mission.region != null && !mission.region.isEmpty()) {
+                if (!isInWorldGuardRegion(player, mission.region)) continue;
+            }
+
             String missionKey = generateMissionKey(mission);
 
             if (completedKeys.contains(missionKey)) {
@@ -83,6 +93,20 @@ public class MissionProgressTracker {
 
         if (changed) {
             plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+        }
+    }
+
+    private boolean isInWorldGuardRegion(Player player, String regionName) {
+        try {
+            if (Bukkit.getPluginManager().getPlugin("WorldGuard") == null) return false;
+            com.sk89q.worldguard.protection.regions.RegionContainer container =
+                com.sk89q.worldguard.WorldGuard.getInstance().getPlatform().getRegionContainer();
+            com.sk89q.worldguard.protection.regions.RegionQuery query = container.createQuery();
+            com.sk89q.worldguard.protection.ApplicableRegionSet set =
+                query.getApplicableRegions(com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(player.getLocation()));
+            return set.getRegions().stream().anyMatch(r -> r.getId().equalsIgnoreCase(regionName));
+        } catch (Exception e) {
+            return false;
         }
     }
 
