@@ -17,16 +17,47 @@ public class MissionGenerator {
     }
 
     public List<Mission> generateDailyMissions(String missionDate) {
-        ConfigurationSection pools = configManager.getMissionsConfig().getConfigurationSection("mission-pools");
-        if (pools == null) {
-            return new ArrayList<>();
-        }
-
         List<Mission> newMissions = new ArrayList<>();
         List<WeightedMissionTemplate> weightedTemplates = new ArrayList<>();
-        Map<String, MissionTemplate> uniqueTemplates = new HashMap<>();
+
+        // Load global mission pool
+        loadPoolFromConfig(configManager.getMissionsConfig(), weightedTemplates);
+
+        // Merge season-specific mission pool (keys prefixed with "season_" to avoid collisions)
+        FileConfiguration seasonConfig = configManager.getSeasonMissionsConfig();
+        if (seasonConfig != null) {
+            loadPoolFromConfig(seasonConfig, weightedTemplates);
+        }
+
+        if (weightedTemplates.isEmpty()) {
+            return newMissions;
+        }
+
+        int missionsToGenerate = configManager.getDailyMissionsCount();
+
+        for (int i = 0; i < missionsToGenerate && !weightedTemplates.isEmpty(); i++) {
+            WeightedMissionTemplate selected = selectWeightedRandom(weightedTemplates);
+
+            if (selected != null) {
+                Mission mission = createMissionFromTemplate(selected.template);
+                newMissions.add(mission);
+                weightedTemplates.removeIf(w -> w.key.equals(selected.key));
+            }
+        }
+
+        return newMissions;
+    }
+
+    private void loadPoolFromConfig(FileConfiguration config, List<WeightedMissionTemplate> weightedTemplates) {
+        ConfigurationSection pools = config.getConfigurationSection("mission-pools");
+        if (pools == null) return;
+
+        Set<String> existingKeys = new HashSet<>();
+        for (WeightedMissionTemplate w : weightedTemplates) existingKeys.add(w.key);
 
         for (String key : pools.getKeys(false)) {
+            if (existingKeys.contains(key)) continue; // season overrides global if same key
+
             ConfigurationSection missionSection = pools.getConfigurationSection(key);
             if (missionSection == null) continue;
 
@@ -38,30 +69,14 @@ public class MissionGenerator {
             int minXP = missionSection.getInt("min-xp");
             int maxXP = missionSection.getInt("max-xp");
             int weight = missionSection.getInt("weight", 10);
+            String world = missionSection.getString("world", null);
+            String region = missionSection.getString("region", null);
 
             MissionTemplate template = new MissionTemplate(displayName, type, target,
-                    minRequired, maxRequired, minXP, maxXP);
+                    minRequired, maxRequired, minXP, maxXP, world, region);
 
-            uniqueTemplates.put(key, template);
             weightedTemplates.add(new WeightedMissionTemplate(template, weight, key));
         }
-
-        int missionsToGenerate = configManager.getDailyMissionsCount();
-        Set<String> usedMissionKeys = new HashSet<>();
-
-        for (int i = 0; i < missionsToGenerate && !weightedTemplates.isEmpty(); i++) {
-            WeightedMissionTemplate selected = selectWeightedRandom(weightedTemplates);
-
-            if (selected != null) {
-                Mission mission = createMissionFromTemplate(selected.template);
-                newMissions.add(mission);
-                usedMissionKeys.add(selected.key);
-
-                weightedTemplates.removeIf(w -> w.key.equals(selected.key));
-            }
-        }
-
-        return newMissions;
     }
 
     private WeightedMissionTemplate selectWeightedRandom(List<WeightedMissionTemplate> weightedTemplates) {
@@ -96,7 +111,7 @@ public class MissionGenerator {
                 .replace("<amount>", String.valueOf(required))
                 .replace("<target>", formatTarget(template.target));
 
-        return new Mission(name, template.type, template.target, required, xpReward);
+        return new Mission(name, template.type, template.target, required, xpReward, template.world, template.region);
     }
 
     private String formatTarget(String target) {

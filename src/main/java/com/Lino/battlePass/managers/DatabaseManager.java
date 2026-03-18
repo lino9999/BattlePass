@@ -175,6 +175,14 @@ public class DatabaseManager {
                         "date TEXT)"
                 );
 
+                // Migration: add world and region columns if they don't exist
+                try {
+                    stmt.executeUpdate("ALTER TABLE " + prefix + "daily_missions ADD COLUMN world TEXT DEFAULT NULL");
+                } catch (SQLException ignored) {}
+                try {
+                    stmt.executeUpdate("ALTER TABLE " + prefix + "daily_missions ADD COLUMN region TEXT DEFAULT NULL");
+                } catch (SQLException ignored) {}
+
                 if (!isMySQL) {
                     stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_missions_uuid_date ON " + prefix + "missions(uuid, date)");
                 }
@@ -567,8 +575,8 @@ public class DatabaseManager {
             if (missions.isEmpty()) return;
 
             String insertSql = isMySQL
-                    ? "INSERT INTO " + prefix + "daily_missions (name, type, target, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name)"
-                    : "INSERT OR REPLACE INTO " + prefix + "daily_missions (name, type, target, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?)";
+                    ? "INSERT INTO " + prefix + "daily_missions (name, type, target, required, xp_reward, date, world, region) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name)"
+                    : "INSERT OR REPLACE INTO " + prefix + "daily_missions (name, type, target, required, xp_reward, date, world, region) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
             Connection conn = null;
             boolean shouldClose = isMySQL;
@@ -587,6 +595,8 @@ public class DatabaseManager {
                         ps.setInt(4, mission.required);
                         ps.setInt(5, mission.xpReward);
                         ps.setString(6, missionDate);
+                        ps.setString(7, mission.world);
+                        ps.setString(8, mission.region);
                         ps.addBatch();
                     }
                     ps.executeBatch();
@@ -616,12 +626,20 @@ public class DatabaseManager {
                     ps.setString(1, missionDate);
                     try (ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) {
+                            String world = null;
+                            String region = null;
+                            try {
+                                world = rs.getString("world");
+                                region = rs.getString("region");
+                            } catch (SQLException ignored) {}
                             loadedMissions.add(new Mission(
                                     rs.getString("name"),
                                     rs.getString("type"),
                                     rs.getString("target"),
                                     rs.getInt("required"),
-                                    rs.getInt("xp_reward")
+                                    rs.getInt("xp_reward"),
+                                    world,
+                                    region
                             ));
                         }
                     }

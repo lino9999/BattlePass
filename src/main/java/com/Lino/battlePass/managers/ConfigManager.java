@@ -14,6 +14,7 @@ public class ConfigManager {
     private final BattlePass plugin;
     private FileConfiguration config;
     private FileConfiguration missionsConfig;
+    private FileConfiguration seasonMissionsConfig;
     private FileConfiguration messagesConfig;
     private FileConfiguration battlePassFreeConfig;
     private FileConfiguration battlePassPremiumConfig;
@@ -108,6 +109,22 @@ public class ConfigManager {
         missionsConfig = YamlConfiguration.loadConfiguration(missionsFile);
         dailyMissionsCount = missionsConfig.getInt("daily-missions-count", 7);
 
+        seasonMissionsConfig = null;
+        try {
+            SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+            if (rotation != null && rotation.isRotationEnabled()) {
+                File seasonMissions = new File(plugin.getDataFolder(),
+                    "seasons/season-" + rotation.getCurrentSeason() + "/missions.yml");
+                if (seasonMissions.exists()) {
+                    seasonMissionsConfig = YamlConfiguration.loadConfiguration(seasonMissions);
+                    plugin.getLogger().info("Loading season-specific missions from: season-" + rotation.getCurrentSeason());
+                    if (seasonMissionsConfig.isSet("daily-missions-count")) {
+                        dailyMissionsCount = seasonMissionsConfig.getInt("daily-missions-count", dailyMissionsCount);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
         File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
         messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
 
@@ -143,6 +160,10 @@ public class ConfigManager {
 
     public FileConfiguration getMissionsConfig() {
         return missionsConfig;
+    }
+
+    public FileConfiguration getSeasonMissionsConfig() {
+        return seasonMissionsConfig;
     }
 
     public FileConfiguration getMessagesConfig() {
