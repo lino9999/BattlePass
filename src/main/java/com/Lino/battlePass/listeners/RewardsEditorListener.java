@@ -6,13 +6,11 @@ import com.Lino.battlePass.gui.RewardsCategoryGui;
 import com.Lino.battlePass.gui.RewardsEditorGui;
 import com.Lino.battlePass.models.EditableReward;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -22,36 +20,46 @@ import org.bukkit.inventory.ItemStack;
 public class RewardsEditorListener implements Listener {
 
     private final BattlePass plugin;
-
-    private static final String REWARDS_EDITOR_KEYWORD = "Rewards Editor";
-    private static final String FREE_REWARDS_KEYWORD = "Free Rewards";
-    private static final String PREMIUM_REWARDS_KEYWORD = "Premium Rewards";
-    private static final String EDIT_LEVEL_START = "Edit Level ";
-    private static final String EDIT_LEVEL_END = " Rewards";
+    private static final String EDIT_LEVEL_START = "Edit Level";
+    private static final String EDIT_LEVEL_END = "Rewards";
 
     public RewardsEditorListener(BattlePass plugin) {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
-
         Player player = (Player) event.getWhoClicked();
-        String title = ChatColor.stripColor(event.getView().getTitle());
 
+        String title = ChatColor.stripColor(event.getView().getTitle());
         if (title == null) return;
 
-        if (title.contains(REWARDS_EDITOR_KEYWORD) && !title.startsWith(EDIT_LEVEL_START)) {
+        if (title.contains("Rewards Editor")) {
             event.setCancelled(true);
-            handleRewardsEditorClick(player, event.getSlot());
+            int slot = event.getRawSlot();
+            if (slot >= 0 && slot < event.getInventory().getSize()) {
+                handleRewardsEditorClick(player, slot);
+            }
+            return;
         }
-        else if ((title.contains(FREE_REWARDS_KEYWORD) || title.contains(PREMIUM_REWARDS_KEYWORD)) && title.contains("Page")) {
-            event.setCancelled(true);
-            handleRewardsCategoryClick(player, event.getSlot(), title.contains(PREMIUM_REWARDS_KEYWORD));
+
+        if (title.contains("Free Rewards") || title.contains("Premium Rewards")) {
+            boolean isPremium = title.contains("Premium Rewards");
+            String cleanTitle = title;
+            if (cleanTitle.contains("Page")) {
+                event.setCancelled(true);
+                int slot = event.getRawSlot();
+                if (slot >= 0 && slot < event.getInventory().getSize()) {
+                    handleRewardsCategoryClick(player, slot, isPremium);
+                }
+                return;
+            }
         }
-        else if (title.startsWith(EDIT_LEVEL_START) && title.endsWith(EDIT_LEVEL_END)) {
+
+        if (title.startsWith(EDIT_LEVEL_START) && title.endsWith(EDIT_LEVEL_END)) {
             handleLevelEditClick(player, event);
+            return;
         }
     }
 
@@ -122,6 +130,7 @@ public class RewardsEditorListener implements Listener {
                 }, 1L);
                 break;
             case 22:
+                plugin.getRewardEditorManager().clearSeasonEditingContext(player.getUniqueId());
                 int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
                 player.closeInventory();
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -179,6 +188,7 @@ public class RewardsEditorListener implements Listener {
         } else if (slot == 49) {
             player.closeInventory();
             plugin.getRewardEditorManager().saveAllRewards(player);
+            plugin.getRewardEditorManager().clearSeasonEditingContext(player.getUniqueId());
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 plugin.getGuiManager().openBattlePassGUI(player, 1);
             }, 20L);
@@ -201,7 +211,7 @@ public class RewardsEditorListener implements Listener {
             if (event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT) {
                 event.setCancelled(true);
                 ItemStack item = event.getCurrentItem();
-                if (item != null && item.getType() != Material.AIR) {
+                if (item != null && !item.getType().isAir()) {
                     editor.addReward(new EditableReward(item.clone()));
                     refreshEditor(player, editor);
                 }
@@ -211,46 +221,20 @@ public class RewardsEditorListener implements Listener {
 
         event.setCancelled(true);
 
-        int clickedSlot = event.getSlot();
+        int clickedSlot = event.getRawSlot();
 
-        if (clickedSlot >= 0 && clickedSlot < 36) {
-            ItemStack currentItem = event.getInventory().getItem(clickedSlot);
-            ItemStack cursorItem = event.getCursor();
+        if (clickedSlot >= 0 && clickedSlot < 45) {
+            ItemStack cursor = event.getCursor();
+            ItemStack clicked = event.getCurrentItem();
 
-            if (event.getClick() == ClickType.NUMBER_KEY) {
-                int hotbarSlot = event.getHotbarButton();
-                ItemStack hotbarItem = player.getInventory().getItem(hotbarSlot);
-
-                if (currentItem != null && currentItem.getType() != Material.AIR) {
-                    editor.removeReward(clickedSlot);
-                }
-
-                if (hotbarItem != null && hotbarItem.getType() != Material.AIR) {
-                    editor.addReward(new EditableReward(hotbarItem.clone()));
-                    player.getInventory().setItem(hotbarSlot, null);
-                }
-
+            if (cursor != null && !cursor.getType().isAir()) {
+                editor.addReward(new EditableReward(cursor.clone()));
                 refreshEditor(player, editor);
-                return;
-            }
-
-            boolean hasCursorItem = cursorItem != null && cursorItem.getType() != Material.AIR;
-            boolean hasCurrentItem = currentItem != null && currentItem.getType() != Material.AIR;
-
-            if (hasCurrentItem) {
+            } else if (clicked != null && !clicked.getType().isAir()) {
                 editor.removeReward(clickedSlot);
-            }
-
-            if (hasCursorItem) {
-                editor.addReward(new EditableReward(cursorItem.clone()));
-                event.getView().setCursor(null);
-            }
-
-            if (hasCurrentItem || hasCursorItem) {
                 refreshEditor(player, editor);
             }
-        }
-        else if (clickedSlot >= 36 && clickedSlot < 54) {
+        } else if (clickedSlot >= 46 && clickedSlot < 54) {
             handleControlButtons(player, editor, clickedSlot);
         }
     }

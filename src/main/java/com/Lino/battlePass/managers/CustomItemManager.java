@@ -19,12 +19,14 @@ public class CustomItemManager {
     private final NamespacedKey premiumItemKey;
     private final NamespacedKey coinsItemKey;
     private final NamespacedKey levelItemKey;
+    private final NamespacedKey xpEventItemKey;
 
     public CustomItemManager(BattlePass plugin) {
         this.plugin = plugin;
         this.premiumItemKey = new NamespacedKey(plugin, "premium_pass_item");
         this.coinsItemKey = new NamespacedKey(plugin, "battle_coins_item");
         this.levelItemKey = new NamespacedKey(plugin, "level_boost_item");
+        this.xpEventItemKey = new NamespacedKey(plugin, "xp_event_item");
     }
 
     public ItemStack createPremiumPassItem(int amount) {
@@ -120,6 +122,37 @@ public class CustomItemManager {
         return item;
     }
 
+    public ItemStack createXPEventItem(int amount) {
+        ItemStack item = new ItemStack(Material.BEACON, amount);
+        ItemMeta meta = item.getItemMeta();
+
+        meta.setDisplayName(GradientColorParser.parse("<gradient:#FFD700:#FF4500>✦ XP Event Beacon ✦</gradient>"));
+
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.add(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Radiant Beacon</gradient>"));
+        lore.add(GradientColorParser.parse("&7A powerful beacon charged with"));
+        lore.add(GradientColorParser.parse("&7concentrated experience energy that"));
+        lore.add(GradientColorParser.parse("&7amplifies XP gains for all players"));
+        lore.add("");
+        lore.add(GradientColorParser.parse("<gradient:#4ECDC4:#45B7D1>▼ Effects ▼</gradient>"));
+        lore.add(GradientColorParser.parse("&7• Activates <gradient:#FFD93D:#FF6B6B>2x XP Event</gradient> for the server"));
+        lore.add(GradientColorParser.parse("&7• Duration: <gradient:#4ECDC4:#45B7D1>1 hour</gradient>"));
+        lore.add(GradientColorParser.parse("&7• Affects all online players"));
+        lore.add("");
+        lore.add(GradientColorParser.parse("<gradient:#00FF88:#45B7D1>➤ RIGHT CLICK TO ACTIVATE</gradient>"));
+        lore.add("");
+        lore.add(GradientColorParser.parse("&8&oThe beacon hums with overwhelming power..."));
+
+        meta.setLore(lore);
+        meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        meta.getPersistentDataContainer().set(xpEventItemKey, PersistentDataType.BOOLEAN, true);
+
+        item.setItemMeta(meta);
+        return item;
+    }
+
     public boolean isPremiumPassItem(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
         ItemMeta meta = item.getItemMeta();
@@ -138,6 +171,12 @@ public class CustomItemManager {
         return meta.getPersistentDataContainer().has(levelItemKey, PersistentDataType.BOOLEAN);
     }
 
+    public boolean isXPEventItem(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        ItemMeta meta = item.getItemMeta();
+        return meta.getPersistentDataContainer().has(xpEventItemKey, PersistentDataType.BOOLEAN);
+    }
+
     public NamespacedKey getPremiumItemKey() {
         return premiumItemKey;
     }
@@ -148,5 +187,9 @@ public class CustomItemManager {
 
     public NamespacedKey getLevelItemKey() {
         return levelItemKey;
+    }
+
+    public NamespacedKey getXpEventItemKey() {
+        return xpEventItemKey;
     }
 }

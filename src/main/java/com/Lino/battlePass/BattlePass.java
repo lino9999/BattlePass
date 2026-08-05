@@ -38,6 +38,8 @@ public class BattlePass extends JavaPlugin {
     private RewardEditorManager rewardEditorManager;
     private BattlePassExpansion placeholderExpansion;
     private MissionEditorManager missionEditorManager;
+    private SeasonRotationManager seasonRotationManager;
+    private XPEventManager xpEventManager;
 
     private boolean updateAvailable = false;
     private String latestVersion = "";
@@ -54,6 +56,14 @@ public class BattlePass extends JavaPlugin {
 
         configManager = new ConfigManager(this);
         messageManager = new MessageManager(this);
+
+        seasonRotationManager = new SeasonRotationManager(this);
+        seasonRotationManager.createDefaultSeasonFolders();
+
+        configManager.reload();
+
+        xpEventManager = new XPEventManager(this);
+
         databaseManager = new DatabaseManager(this);
         playerDataManager = new PlayerDataManager(this, databaseManager);
         rewardManager = new RewardManager(this, configManager);
@@ -122,6 +132,9 @@ public class BattlePass extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (xpEventManager != null) {
+            xpEventManager.stopEvent();
+        }
         if (placeholderExpansion != null) {
             placeholderExpansion.unregister();
         }
@@ -205,6 +218,7 @@ public class BattlePass extends JavaPlugin {
 
     public void reload() {
         reloadConfig();
+        seasonRotationManager.reload();
         configManager.reload();
         messageManager.reload();
         rewardManager.loadRewards();
@@ -325,5 +339,13 @@ public class BattlePass extends JavaPlugin {
 
     public RewardEditorManager getRewardEditorManager() {
         return rewardEditorManager;
+    }
+
+    public SeasonRotationManager getSeasonRotationManager() {
+        return seasonRotationManager;
+    }
+
+    public XPEventManager getXpEventManager() {
+        return xpEventManager;
     }
 }
