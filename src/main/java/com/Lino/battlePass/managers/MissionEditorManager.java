@@ -142,7 +142,7 @@ public class MissionEditorManager {
                     int value = Integer.parseInt(message);
                     if (value < 1) {
                         player.sendMessage(plugin.getMessageManager().getPrefix() + "§cValue must be at least 1!");
-                        editingStates.put(player.getUniqueId(), state); // Restore state
+                        editingStates.put(player.getUniqueId(), state);
                         return;
                     }
                     String field = state.type == EditType.MIN_REQ ? "min-required"
@@ -162,7 +162,9 @@ public class MissionEditorManager {
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    openMissionDetails(player, state.missionKey);
+                    if (player.isOnline()) {
+                        openMissionDetails(player, state.missionKey);
+                    }
                 }
             }.runTask(plugin);
 

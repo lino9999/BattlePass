@@ -3,6 +3,7 @@ package com.Lino.battlePass.listeners;
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.PlayerData;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -12,6 +13,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 public class CustomItemsListener implements Listener {
@@ -34,6 +36,8 @@ public class CustomItemsListener implements Listener {
 
         if (item == null) return;
 
+        if (!isUsableHand(event, player)) return;
+
         if (plugin.getCustomItemManager().isPremiumPassItem(item)) {
             handlePremiumPassUse(event, player, item);
         } else if (plugin.getCustomItemManager().isBattleCoinsItem(item)) {
@@ -42,6 +46,21 @@ public class CustomItemsListener implements Listener {
             handleLevelBoostUse(event, player);
         } else if (plugin.getCustomItemManager().isXPEventItem(item)) {
             handleXPEventUse(event, player);
+        }
+    }
+
+    private boolean isUsableHand(PlayerInteractEvent event, Player player) {
+        if (event.getHand() == EquipmentSlot.HAND) return true;
+        return player.getInventory().getItemInMainHand().getType() == Material.AIR;
+    }
+
+    private void consumeHeldItem(PlayerInteractEvent event, Player player, ItemStack item) {
+        if (item.getAmount() > 1) {
+            item.setAmount(item.getAmount() - 1);
+        } else if (event.getHand() == EquipmentSlot.OFF_HAND) {
+            player.getInventory().setItemInOffHand(null);
+        } else {
+            player.getInventory().setItemInMainHand(null);
         }
     }
 
@@ -65,15 +84,7 @@ public class CustomItemsListener implements Listener {
         data.hasPremium = true;
         plugin.getPlayerDataManager().markForSave(player.getUniqueId());
 
-        if (item.getAmount() > 1) {
-            item.setAmount(item.getAmount() - 1);
-        } else {
-            if (player.getInventory().getItemInMainHand().equals(item)) {
-                player.getInventory().setItemInMainHand(null);
-            } else {
-                player.getInventory().setItemInOffHand(null);
-            }
-        }
+        consumeHeldItem(event, player, item);
 
         player.sendMessage(plugin.getMessageManager().getPrefix() +
                 plugin.getMessageManager().getMessage("messages.items.premium-activated"));
@@ -92,9 +103,9 @@ public class CustomItemsListener implements Listener {
     private void handleBattleCoinsUse(PlayerInteractEvent event, Player player) {
         event.setCancelled(true);
 
-        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        ItemStack itemInHand = event.getItem();
 
-        if (!plugin.getCustomItemManager().isBattleCoinsItem(itemInHand)) {
+        if (itemInHand == null || !plugin.getCustomItemManager().isBattleCoinsItem(itemInHand)) {
             return;
         }
 
@@ -109,7 +120,7 @@ public class CustomItemsListener implements Listener {
         data.battleCoins += amount;
         plugin.getPlayerDataManager().markForSave(player.getUniqueId());
 
-        player.getInventory().setItemInMainHand(null);
+        consumeHeldItem(event, player, itemInHand);
 
         player.sendMessage(plugin.getMessageManager().getPrefix() +
                 plugin.getMessageManager().getMessage("messages.items.coins-redeemed",
@@ -128,9 +139,9 @@ public class CustomItemsListener implements Listener {
     private void handleLevelBoostUse(PlayerInteractEvent event, Player player) {
         event.setCancelled(true);
 
-        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        ItemStack itemInHand = event.getItem();
 
-        if (!plugin.getCustomItemManager().isLevelBoostItem(itemInHand)) {
+        if (itemInHand == null || !plugin.getCustomItemManager().isLevelBoostItem(itemInHand)) {
             return;
         }
 
@@ -152,7 +163,7 @@ public class CustomItemsListener implements Listener {
         int amount = itemInHand.getAmount();
         int totalXP = amount * 100;
 
-        player.getInventory().setItemInMainHand(null);
+        consumeHeldItem(event, player, itemInHand);
 
         data.xp += totalXP;
 
@@ -201,9 +212,9 @@ public class CustomItemsListener implements Listener {
     private void handleXPEventUse(PlayerInteractEvent event, Player player) {
         event.setCancelled(true);
 
-        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        ItemStack itemInHand = event.getItem();
 
-        if (!plugin.getCustomItemManager().isXPEventItem(itemInHand)) {
+        if (itemInHand == null || !plugin.getCustomItemManager().isXPEventItem(itemInHand)) {
             return;
         }
 
@@ -214,11 +225,7 @@ public class CustomItemsListener implements Listener {
             return;
         }
 
-        if (itemInHand.getAmount() > 1) {
-            itemInHand.setAmount(itemInHand.getAmount() - 1);
-        } else {
-            player.getInventory().setItemInMainHand(null);
-        }
+        consumeHeldItem(event, player, itemInHand);
 
         plugin.getXpEventManager().startEvent(2, 3600000);
 

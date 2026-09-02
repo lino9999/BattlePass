@@ -119,7 +119,9 @@ public class RewardEditorManager {
         new BukkitRunnable() {
             @Override
             public void run() {
-                finalEditor.open();
+                if (player.isOnline()) {
+                    finalEditor.open();
+                }
             }
         }.runTaskLater(plugin, 20L);
 

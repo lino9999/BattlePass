@@ -35,7 +35,7 @@ public class MissionDetailsGui {
             return;
         }
 
-        String type = section.getString("type");
+        String type = section.getString("type", "UNKNOWN");
 
         gui.setItem(10, createEditItem(Material.NAME_TAG, "&eDisplay Name", section.getString("display-name")));
         gui.setItem(11, createEditItem(Material.DIAMOND_SWORD, "&eType", type));

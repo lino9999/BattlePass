@@ -319,11 +319,6 @@ public class BattlePass extends JavaPlugin {
         this.coinsDistributionTask = task;
     }
 
-    /**
-     * Cancels the current coins distribution task (if any) and starts a new one.
-     * If a saved distribution time is provided it is restored, otherwise the
-     * freshly computed time is persisted so restarts don't reset the countdown.
-     */
     public void startCoinsDistributionTask(LocalDateTime savedTime) {
         if (coinsDistributionTask != null) {
             coinsDistributionTask.cancel();
