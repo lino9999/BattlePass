@@ -173,7 +173,11 @@ public class RewardManager {
         for (Reward reward : rewards) {
             if (reward.command != null) {
                 String command = reward.command.replace("<player>", player.getName());
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+                try {
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Failed to execute reward command '" + reward.command + "': " + e.getMessage());
+                }
                 message.append("\n").append(messageManager.getMessage("messages.rewards.command-reward",
                         "%reward%", reward.displayName));
             } else {

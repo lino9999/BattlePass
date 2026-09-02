@@ -100,8 +100,12 @@ public class ShopManager {
         plugin.getPlayerDataManager().markForSave(player.getUniqueId());
 
         for (String command : item.commands) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-                    command.replace("<player>", player.getName()));
+            try {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                        command.replace("<player>", player.getName()));
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to execute shop command '" + command + "': " + e.getMessage());
+            }
         }
 
         for (ItemStack itemStack : item.items) {
