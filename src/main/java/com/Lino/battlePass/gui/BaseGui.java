@@ -24,7 +24,14 @@ public abstract class BaseGui {
     }
 
     public Inventory createInventory() {
-        return Bukkit.createInventory(null, size, title);
+        return BaseGui.createInventory(size, title);
+    }
+
+    public static Inventory createInventory(int size, String title) {
+        BaseHolder holder = new BaseHolder();
+        Inventory inv = Bukkit.createInventory(holder, size, title);
+        holder.setInventory(inv);
+        return inv;
     }
 
     protected ItemStack createItem(Material material, String displayName, List<String> lore) {

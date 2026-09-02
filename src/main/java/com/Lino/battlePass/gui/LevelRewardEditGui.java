@@ -57,7 +57,7 @@ public class LevelRewardEditGui {
         String title = GradientColorParser.parse(gradient + "Edit Level " + level + " " +
                 (isPremium ? "Premium" : "Free") + " Rewards</gradient>");
 
-        Inventory gui = Bukkit.createInventory(null, 54, title);
+        Inventory gui = BaseGui.createInventory(54, title);
 
         int slot = 0;
         for (EditableReward reward : currentRewards) {
