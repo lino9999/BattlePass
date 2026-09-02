@@ -16,9 +16,14 @@ import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class CustomItemsListener implements Listener {
 
     private final BattlePass plugin;
+    private final Map<UUID, Long> lastCustomItemUse = new ConcurrentHashMap<>();
 
     public CustomItemsListener(BattlePass plugin) {
         this.plugin = plugin;
@@ -38,13 +43,25 @@ public class CustomItemsListener implements Listener {
 
         if (!isUsableHand(event, player)) return;
 
-        if (plugin.getCustomItemManager().isPremiumPassItem(item)) {
+        boolean premium = plugin.getCustomItemManager().isPremiumPassItem(item);
+        boolean coins = !premium && plugin.getCustomItemManager().isBattleCoinsItem(item);
+        boolean boost = !premium && !coins && plugin.getCustomItemManager().isLevelBoostItem(item);
+        boolean xpEvent = !premium && !coins && !boost && plugin.getCustomItemManager().isXPEventItem(item);
+
+        if (!premium && !coins && !boost && !xpEvent) return;
+
+        long now = System.currentTimeMillis();
+        Long last = lastCustomItemUse.get(player.getUniqueId());
+        if (last != null && now - last < 50) return;
+        lastCustomItemUse.put(player.getUniqueId(), now);
+
+        if (premium) {
             handlePremiumPassUse(event, player, item);
-        } else if (plugin.getCustomItemManager().isBattleCoinsItem(item)) {
+        } else if (coins) {
             handleBattleCoinsUse(event, player);
-        } else if (plugin.getCustomItemManager().isLevelBoostItem(item)) {
+        } else if (boost) {
             handleLevelBoostUse(event, player);
-        } else if (plugin.getCustomItemManager().isXPEventItem(item)) {
+        } else {
             handleXPEventUse(event, player);
         }
     }

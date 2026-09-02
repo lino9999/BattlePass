@@ -23,6 +23,7 @@ public class MissionManager {
     private final MissionResetHandler resetHandler;
 
     private volatile List<Mission> dailyMissions = Collections.synchronizedList(new ArrayList<>());
+    private volatile boolean missionsLoadAttempted = false;
     private String currentMissionDate;
 
     public MissionManager(BattlePass plugin, ConfigManager configManager, DatabaseManager databaseManager, PlayerDataManager playerDataManager) {
@@ -90,6 +91,7 @@ public class MissionManager {
                 saveSeasonData();
             } else {
                 dailyMissions = new ArrayList<>(missions);
+                missionsLoadAttempted = true;
 
                 if (resetHandler.getNextMissionReset() == null) {
                     resetHandler.calculateNextReset();
@@ -110,6 +112,7 @@ public class MissionManager {
         }
 
         dailyMissions = new ArrayList<>(missionGenerator.generateDailyMissions());
+        missionsLoadAttempted = true;
     }
 
     public void checkMissionReset() {
@@ -249,6 +252,6 @@ public class MissionManager {
     }
 
     public boolean isInitialized() {
-        return currentMissionDate != null && !dailyMissions.isEmpty();
+        return currentMissionDate != null && missionsLoadAttempted;
     }
 }
