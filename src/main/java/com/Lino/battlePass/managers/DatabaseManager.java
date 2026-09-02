@@ -176,16 +176,17 @@ public class DatabaseManager {
                         "date TEXT)"
                 );
 
-                if (!isMySQL) {
-                    try {
-                        stmt.executeUpdate("ALTER TABLE " + prefix + "daily_missions ADD COLUMN additional_targets TEXT");
-                    } catch (SQLException ignored) {
-                    }
-                } else {
+                if (isMySQL) {
                     try {
                         stmt.executeUpdate("ALTER TABLE " + prefix + "daily_missions ADD COLUMN additional_targets TEXT DEFAULT ''");
                     } catch (SQLException ignored) {
                     }
+                } else {
+                    try {
+                        stmt.executeUpdate("ALTER TABLE " + prefix + "daily_missions ADD COLUMN additional_targets TEXT");
+                    } catch (SQLException ignored) {
+                    }
+                    stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_missions_uuid_date ON " + prefix + "missions(uuid, date)");
                 }
             }
         } finally {
