@@ -59,7 +59,7 @@ public class MissionResetHandler {
 
         broadcastNewSeason();
 
-        plugin.getPlayerDataManager().clearCache(false);
+        plugin.getPlayerDataManager().clearCache(true);
 
         plugin.getDatabaseManager().resetSeason().thenRun(() -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
@@ -81,7 +81,7 @@ public class MissionResetHandler {
 
         broadcastNewSeason();
 
-        plugin.getPlayerDataManager().clearCache(false);
+        plugin.getPlayerDataManager().clearCache(true);
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             plugin.getDatabaseManager().resetSeason().thenRun(() -> {
