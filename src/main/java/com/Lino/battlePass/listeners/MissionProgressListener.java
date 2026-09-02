@@ -142,9 +142,7 @@ public class MissionProgressListener implements Listener {
             return;
         }
 
-        for (String type : enumerateDamageTypes(last)) {
-            plugin.getMissionManager().progressMission(player, "DEATH", type, 1);
-        }
+        plugin.getMissionManager().progressMission(player, "DEATH", enumerateDamageTypes(last), 1);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -152,9 +150,7 @@ public class MissionProgressListener implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
         int amount = (int) event.getFinalDamage();
 
-        for (String type : enumerateDamageTypes(event)) {
-            plugin.getMissionManager().progressMission(player, "DAMAGE_TAKEN", type, amount);
-        }
+        plugin.getMissionManager().progressMission(player, "DAMAGE_TAKEN", enumerateDamageTypes(event), amount);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

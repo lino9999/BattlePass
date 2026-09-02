@@ -2,7 +2,6 @@ package com.Lino.battlePass.managers;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.PlayerData;
-import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -32,7 +31,7 @@ public class MissionResetHandler {
             LocalDateTime now = LocalDateTime.now();
             int hoursInterval = plugin.getConfigManager().getMissionResetHours();
 
-            LocalDateTime lastReset = nextMissionReset.minusHours(24);
+            LocalDateTime lastReset = nextMissionReset.minusHours(hoursInterval);
 
             while (lastReset.plusHours(hoursInterval).isBefore(now)) {
                 lastReset = lastReset.plusHours(hoursInterval);
@@ -92,12 +91,6 @@ public class MissionResetHandler {
 
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         plugin.getPlayerDataManager().loadPlayer(player.getUniqueId());
-                    }
-
-                    if (plugin.getCoinsDistributionTask() != null) {
-                        plugin.getCoinsDistributionTask().cancel();
-                        CoinsDistributionTask newTask = new CoinsDistributionTask(plugin);
-                        newTask.runTaskTimer(plugin, 200L, 1200L);
                     }
                 });
             });

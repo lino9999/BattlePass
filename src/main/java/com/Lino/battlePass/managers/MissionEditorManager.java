@@ -41,10 +41,13 @@ public class MissionEditorManager {
     }
 
     public void createMissionFromType(Player player, String type) {
-        String uniqueId = generateUniqueId(type);
-
         File file = new File(plugin.getDataFolder(), "missions.yml");
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+
+        String uniqueId = generateUniqueId(type);
+        while (config.contains("mission-pools." + uniqueId)) {
+            uniqueId = generateUniqueId(type);
+        }
         String path = "mission-pools." + uniqueId;
 
         config.set(path + ".type", type);
@@ -133,16 +136,19 @@ public class MissionEditorManager {
                     config.set(path + "target", message.toUpperCase());
                     break;
                 case MIN_REQ:
-                    config.set(path + "min-required", Integer.parseInt(message));
-                    break;
                 case MAX_REQ:
-                    config.set(path + "max-required", Integer.parseInt(message));
-                    break;
                 case MIN_XP:
-                    config.set(path + "min-xp", Integer.parseInt(message));
-                    break;
                 case MAX_XP:
-                    config.set(path + "max-xp", Integer.parseInt(message));
+                    int value = Integer.parseInt(message);
+                    if (value < 1) {
+                        player.sendMessage(plugin.getMessageManager().getPrefix() + "§cValue must be at least 1!");
+                        editingStates.put(player.getUniqueId(), state); // Restore state
+                        return;
+                    }
+                    String field = state.type == EditType.MIN_REQ ? "min-required"
+                            : state.type == EditType.MAX_REQ ? "max-required"
+                            : state.type == EditType.MIN_XP ? "min-xp" : "max-xp";
+                    config.set(path + field, value);
                     break;
                 case WEIGHT:
                     config.set(path + "weight", Integer.parseInt(message));

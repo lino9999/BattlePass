@@ -43,7 +43,13 @@ public class ShopManager {
                 if (item == null) continue;
 
                 int slot = item.getInt("slot");
-                Material material = Material.valueOf(item.getString("material", "STONE"));
+                Material material;
+                try {
+                    material = Material.valueOf(item.getString("material", "STONE"));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().warning("Invalid material for shop item '" + key + "': " + item.getString("material") + ". Using STONE.");
+                    material = Material.STONE;
+                }
                 String displayName = item.getString("display-name", "Shop Item");
                 List<String> lore = item.getStringList("lore");
                 int price = item.getInt("price", 0);
@@ -53,9 +59,13 @@ public class ShopManager {
                 if (item.contains("items")) {
                     List<Map<?, ?>> itemMaps = item.getMapList("items");
                     for (Map<?, ?> map : itemMaps) {
-                        Material mat = Material.valueOf((String) map.get("material"));
-                        int amount = (Integer) map.get("amount");
-                        itemsList.add(new ItemStack(mat, amount));
+                        try {
+                            Material mat = Material.valueOf(String.valueOf(map.get("material")));
+                            int amount = map.get("amount") instanceof Integer ? (Integer) map.get("amount") : 1;
+                            itemsList.add(new ItemStack(mat, Math.max(1, amount)));
+                        } catch (Exception e) {
+                            plugin.getLogger().warning("Invalid item entry in shop item '" + key + "': " + map);
+                        }
                     }
                 }
 
@@ -70,6 +80,12 @@ public class ShopManager {
 
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         MessageManager messageManager = plugin.getMessageManager();
+
+        if (data == null) {
+            player.sendMessage(messageManager.getPrefix() +
+                    messageManager.getMessage("messages.data-loading"));
+            return;
+        }
 
         if (data.battleCoins < item.price) {
             player.sendMessage(messageManager.getPrefix() +
@@ -89,7 +105,10 @@ public class ShopManager {
         }
 
         for (ItemStack itemStack : item.items) {
-            player.getInventory().addItem(itemStack);
+            Map<Integer, ItemStack> leftover = player.getInventory().addItem(itemStack);
+            for (ItemStack drop : leftover.values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), drop);
+            }
         }
 
         player.sendMessage(messageManager.getPrefix() +

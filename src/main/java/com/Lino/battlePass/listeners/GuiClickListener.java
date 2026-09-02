@@ -27,6 +27,8 @@ public class GuiClickListener implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (!BaseHolder.isBattlePassInventory(event.getView().getTopInventory())) return;
 
+        if (!(event.getWhoClicked() instanceof Player)) return;
+
         String title = event.getView().getTitle();
         Player player = (Player) event.getWhoClicked();
 
@@ -145,6 +147,11 @@ public class GuiClickListener implements Listener {
 
     private void handleRewardClaim(Player player, int slot, int currentPage) {
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data == null) {
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.data-loading"));
+            return;
+        }
         int startLevel = (currentPage - 1) * 9 + 1;
 
         if (slot >= 9 && slot <= 17) {
@@ -190,6 +197,11 @@ public class GuiClickListener implements Listener {
 
     private void handleDailyRewardClaim(Player player, int currentPage) {
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data == null) {
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.data-loading"));
+            return;
+        }
         long now = System.currentTimeMillis();
         long dayInMillis = 24 * 60 * 60 * 1000;
 

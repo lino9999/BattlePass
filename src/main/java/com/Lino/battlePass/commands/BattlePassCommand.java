@@ -5,7 +5,6 @@ import com.Lino.battlePass.gui.RewardsEditorGui;
 import com.Lino.battlePass.managers.SeasonRotationManager;
 import com.Lino.battlePass.managers.XPEventManager;
 import com.Lino.battlePass.models.PlayerData;
-import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
@@ -91,6 +90,11 @@ public class BattlePassCommand implements CommandExecutor {
                 }
 
                 PlayerData dataReset = plugin.getPlayerDataManager().getPlayerData(targetReset.getUniqueId());
+                if (dataReset == null) {
+                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                            plugin.getMessageManager().getMessage("messages.data-loading"));
+                    return true;
+                }
                 dataReset.level = 1;
                 dataReset.xp = 0;
                 dataReset.claimedFreeRewards.clear();
@@ -227,12 +231,9 @@ public class BattlePassCommand implements CommandExecutor {
     private void reloadPlugin(CommandSender sender) {
         plugin.reload();
 
-        if (plugin.getCoinsDistributionTask() != null) {
-            plugin.getCoinsDistributionTask().cancel();
-            CoinsDistributionTask newTask = new CoinsDistributionTask(plugin);
-            plugin.setCoinsDistributionTask(newTask);
-            newTask.runTaskTimer(plugin, 200L, 1200L);
-        }
+        plugin.getDatabaseManager().loadCoinsDistributionTime()
+                .exceptionally(ex -> null)
+                .thenAccept(plugin::startCoinsDistributionTask);
 
         sender.sendMessage(plugin.getMessageManager().getPrefix() +
                 plugin.getMessageManager().getMessage("messages.config-reloaded"));
@@ -309,6 +310,11 @@ public class BattlePassCommand implements CommandExecutor {
         }
 
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
+        if (data == null) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.data-loading"));
+            return true;
+        }
         data.hasPremium = add;
         plugin.getPlayerDataManager().markForSave(target.getUniqueId());
 
@@ -360,6 +366,11 @@ public class BattlePassCommand implements CommandExecutor {
             }
 
             PlayerData data = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
+            if (data == null) {
+                sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.data-loading"));
+                return true;
+            }
             int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
 
             if (add) {
@@ -431,6 +442,11 @@ public class BattlePassCommand implements CommandExecutor {
             }
 
             PlayerData data = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
+            if (data == null) {
+                sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.data-loading"));
+                return true;
+            }
 
             if (add) {
                 data.battleCoins += amount;
@@ -489,6 +505,11 @@ public class BattlePassCommand implements CommandExecutor {
         }
 
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
+        if (data == null) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.data-loading"));
+            return true;
+        }
         data.excludeFromTop = exclude;
 
         plugin.getPlayerDataManager().markForSave(target.getUniqueId());

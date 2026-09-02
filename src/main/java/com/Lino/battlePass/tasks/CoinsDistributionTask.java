@@ -39,6 +39,11 @@ public class CoinsDistributionTask extends BukkitRunnable {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 List<Integer> coinAmounts = plugin.getConfigManager().getCoinsDistribution();
 
+                if (topPlayers.isEmpty() || coinAmounts.isEmpty()) {
+                    plugin.getLogger().info("Coins distribution skipped: no eligible players.");
+                    return;
+                }
+
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.playSound(onlinePlayer.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.0f);
                 }
@@ -50,9 +55,19 @@ public class CoinsDistributionTask extends BukkitRunnable {
                     PlayerData topPlayer = topPlayers.get(i);
                     int coins = coinAmounts.get(i);
 
-                    topPlayer.battleCoins += coins;
+                    PlayerData onlineData = plugin.getPlayerDataManager().getPlayerData(topPlayer.uuid);
+                    if (onlineData != null) {
+                        onlineData.battleCoins += coins;
+                        plugin.getPlayerDataManager().markForSave(topPlayer.uuid);
+                    } else {
+                        topPlayer.battleCoins += coins;
+                        plugin.getDatabaseManager().updatePlayerCoins(topPlayer.uuid, topPlayer.battleCoins);
+                    }
 
                     String playerName = Bukkit.getOfflinePlayer(topPlayer.uuid).getName();
+                    if (playerName == null) {
+                        playerName = "Unknown";
+                    }
                     String rank = String.valueOf(i + 1);
 
                     Bukkit.broadcastMessage(plugin.getMessageManager().getMessage("messages.coins.distribution-player",
@@ -62,18 +77,10 @@ public class CoinsDistributionTask extends BukkitRunnable {
 
                     Player player = Bukkit.getPlayer(topPlayer.uuid);
                     if (player != null) {
-                        PlayerData onlineData = plugin.getPlayerDataManager().getPlayerData(topPlayer.uuid);
-                        if (onlineData != null) {
-                            onlineData.battleCoins = topPlayer.battleCoins;
-                            plugin.getPlayerDataManager().markForSave(topPlayer.uuid);
-                        }
-
                         player.sendMessage(plugin.getMessageManager().getPrefix() +
                                 plugin.getMessageManager().getMessage("messages.coins.received",
                                         "%amount%", String.valueOf(coins)));
                         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-                    } else {
-                        plugin.getDatabaseManager().updatePlayerCoins(topPlayer.uuid, topPlayer.battleCoins);
                     }
                 }
             });
@@ -92,9 +99,14 @@ public class CoinsDistributionTask extends BukkitRunnable {
     }
 
     public String getTimeUntilNextDistribution() {
+        if (nextDistribution == null) {
+            return "Unknown";
+        }
+
         LocalDateTime now = LocalDateTime.now();
-        long hours = ChronoUnit.HOURS.between(now, nextDistribution);
-        long minutes = ChronoUnit.MINUTES.between(now, nextDistribution) % 60;
+        long totalMinutes = Math.max(0, ChronoUnit.MINUTES.between(now, nextDistribution));
+        long hours = totalMinutes / 60;
+        long minutes = totalMinutes % 60;
 
         return plugin.getMessageManager().getMessage("time.hours-minutes",
                 "%hours%", String.valueOf(hours),

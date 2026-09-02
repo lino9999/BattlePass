@@ -98,15 +98,12 @@ public class BattlePass extends JavaPlugin {
 
                             new BattlePassTask(BattlePass.this).runTaskTimer(BattlePass.this, 6000L, 1200L);
 
-                            databaseManager.loadCoinsDistributionTime().thenAccept(nextDist -> {
-                                coinsDistributionTask = new CoinsDistributionTask(BattlePass.this);
-                                if (nextDist != null) {
-                                    coinsDistributionTask.setNextDistribution(nextDist);
-                                } else {
-                                    coinsDistributionTask.resetDistributionTime();
-                                }
-                                coinsDistributionTask.runTaskTimer(BattlePass.this, 200L, 1200L);
-                            });
+                            databaseManager.loadCoinsDistributionTime()
+                                    .exceptionally(ex -> {
+                                        getLogger().warning("Could not load coins distribution time: " + ex.getMessage());
+                                        return null;
+                                    })
+                                    .thenAccept(nextDist -> startCoinsDistributionTask(nextDist));
 
                             registerPlaceholders();
                             checkForUpdates();
@@ -320,6 +317,27 @@ public class BattlePass extends JavaPlugin {
 
     public void setCoinsDistributionTask(CoinsDistributionTask task) {
         this.coinsDistributionTask = task;
+    }
+
+    /**
+     * Cancels the current coins distribution task (if any) and starts a new one.
+     * If a saved distribution time is provided it is restored, otherwise the
+     * freshly computed time is persisted so restarts don't reset the countdown.
+     */
+    public void startCoinsDistributionTask(LocalDateTime savedTime) {
+        if (coinsDistributionTask != null) {
+            coinsDistributionTask.cancel();
+        }
+
+        CoinsDistributionTask task = new CoinsDistributionTask(this);
+        if (savedTime != null) {
+            task.setNextDistribution(savedTime);
+        } else {
+            task.resetDistributionTime();
+        }
+
+        coinsDistributionTask = task;
+        task.runTaskTimer(this, 200L, 1200L);
     }
 
     public CustomItemManager getCustomItemManager() {

@@ -29,6 +29,8 @@ public class GuiManager {
     }
 
     public void openBattlePassGUI(Player player, int page) {
+        if (!isPlayerDataReady(player)) return;
+
         if (page < 1) page = 1;
 
         int maxPages = plugin.getRewardManager().getMaxPage();
@@ -41,6 +43,8 @@ public class GuiManager {
     }
 
     public void openMissionsGUI(Player player) {
+        if (!isPlayerDataReady(player)) return;
+
         MissionsGui gui = new MissionsGui(plugin, player);
         gui.open();
     }
@@ -51,8 +55,19 @@ public class GuiManager {
     }
 
     public void openShopGUI(Player player) {
+        if (!isPlayerDataReady(player)) return;
+
         ShopGui gui = new ShopGui(plugin, player);
         gui.open();
+    }
+
+    private boolean isPlayerDataReady(Player player) {
+        if (playerDataManager.getPlayerData(player.getUniqueId()) == null) {
+            player.sendMessage(messageManager.getPrefix() +
+                    messageManager.getMessage("messages.data-loading"));
+            return false;
+        }
+        return true;
     }
 
     public void clearCache() {

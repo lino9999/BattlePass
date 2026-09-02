@@ -26,8 +26,12 @@ public class MissionProgressTracker {
     }
 
     public void trackProgress(Player player, String type, String target, int amount, List<Mission> dailyMissions) {
+        trackProgress(player, type, Collections.singletonList(target), amount, dailyMissions);
+    }
+
+    public void trackProgress(Player player, String type, Collection<String> targets, int amount, List<Mission> dailyMissions) {
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        if (data == null || dailyMissions.isEmpty()) return;
+        if (data == null || dailyMissions.isEmpty() || targets.isEmpty()) return;
 
         UUID playerUUID = player.getUniqueId();
         Set<String> completedKeys = playerCompletedMissions.computeIfAbsent(playerUUID, k -> ConcurrentHashMap.newKeySet());
@@ -38,7 +42,14 @@ public class MissionProgressTracker {
         for (Mission mission : dailyMissions) {
             if (!mission.type.equals(type)) continue;
 
-            if (!mission.isValidTarget(target)) continue;
+            boolean matches = false;
+            for (String actionTarget : targets) {
+                if (mission.isValidTarget(actionTarget)) {
+                    matches = true;
+                    break;
+                }
+            }
+            if (!matches) continue;
 
             String missionKey = generateMissionKey(mission);
 

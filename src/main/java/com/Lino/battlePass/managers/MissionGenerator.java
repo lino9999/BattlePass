@@ -29,13 +29,15 @@ public class MissionGenerator {
             if (missionSection == null) continue;
 
             String type = missionSection.getString("type");
-            String target = missionSection.getString("target");
+            if (type == null || type.isEmpty()) continue;
+
+            String target = missionSection.getString("target", "ANY");
             List<String> additionalTargets = missionSection.getStringList("additional-targets");
-            String displayName = missionSection.getString("display-name");
-            int minRequired = missionSection.getInt("min-required");
-            int maxRequired = missionSection.getInt("max-required");
-            int minXP = missionSection.getInt("min-xp");
-            int maxXP = missionSection.getInt("max-xp");
+            String displayName = missionSection.getString("display-name", type.replace("_", " ") + " <amount>");
+            int minRequired = missionSection.getInt("min-required", 1);
+            int maxRequired = missionSection.getInt("max-required", minRequired);
+            int minXP = missionSection.getInt("min-xp", 100);
+            int maxXP = missionSection.getInt("max-xp", minXP);
             int weight = missionSection.getInt("weight", 10);
 
             MissionTemplate template = new MissionTemplate(displayName, type, target, additionalTargets,
@@ -82,10 +84,8 @@ public class MissionGenerator {
     }
 
     private Mission createMissionFromTemplate(MissionTemplate template) {
-        int required = ThreadLocalRandom.current().nextInt(
-                template.minRequired, template.maxRequired + 1);
-        int xpReward = ThreadLocalRandom.current().nextInt(
-                template.minXP, template.maxXP + 1);
+        int required = randomInRange(Math.max(1, template.minRequired), Math.max(1, template.maxRequired));
+        int xpReward = randomInRange(Math.max(1, template.minXP), Math.max(1, template.maxXP));
 
         String name = template.nameFormat
                 .replace("<amount>", String.valueOf(required))
@@ -94,8 +94,14 @@ public class MissionGenerator {
         return new Mission(name, template.type, template.target, template.additionalTargets, required, xpReward);
     }
 
+    private int randomInRange(int min, int max) {
+        int low = Math.min(min, max);
+        int high = Math.max(min, max);
+        return ThreadLocalRandom.current().nextInt(low, high + 1);
+    }
+
     private String formatTarget(String target) {
-        if (target.equals("ANY")) {
+        if (target == null || target.equals("ANY")) {
             return "";
         }
         return target.toLowerCase().replace("_", " ");

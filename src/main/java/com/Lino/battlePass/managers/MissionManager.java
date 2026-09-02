@@ -3,7 +3,6 @@ package com.Lino.battlePass.managers;
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.PlayerData;
-import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -169,14 +168,8 @@ public class MissionManager {
         saveSeasonData();
         progressTracker.resetProgress();
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (plugin.getCoinsDistributionTask() != null) {
-                plugin.getCoinsDistributionTask().cancel();
-                CoinsDistributionTask newTask = new CoinsDistributionTask(plugin);
-                plugin.setCoinsDistributionTask(newTask);
-                newTask.runTaskTimer(plugin, 200L, 1200L);
-            }
-        }, 40L);
+        Bukkit.getScheduler().runTaskLater(plugin, () ->
+                plugin.startCoinsDistributionTask(null), 40L);
     }
 
     public void forceResetMissions() {
@@ -200,6 +193,10 @@ public class MissionManager {
 
     public void progressMission(Player player, String type, String target, int amount) {
         progressTracker.trackProgress(player, type, target, amount, dailyMissions);
+    }
+
+    public void progressMission(Player player, String type, Collection<String> targets, int amount) {
+        progressTracker.trackProgress(player, type, targets, amount, dailyMissions);
     }
 
     public void clearPlayerActionbars(UUID uuid) {

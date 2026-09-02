@@ -56,6 +56,10 @@ public class BattlePassGui extends BaseGui {
         String currentSeason = rotation.isRotationEnabled() ?
                 String.valueOf(rotation.getCurrentSeason()) : "1";
 
+        String currentSeasonLine = plugin.getMessageManager().getMessagesConfig().getString(
+                "items.progress.current-season",
+                "&8▸ &7Current Season: <gradient:#FFD93D:#FF6B6B>%current_season%</gradient>");
+
         for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.progress.lore")) {
             String processedLine = line
                     .replace("%level%", String.valueOf(playerData.level))
@@ -67,9 +71,8 @@ public class BattlePassGui extends BaseGui {
                     .replace("%current_season%", currentSeason);
             lore.add(GradientColorParser.parse(processedLine));
 
-            if (line.contains("%season_time%")) {
-                lore.add(GradientColorParser.parse(
-                        "&8▸ &7Current Season: <gradient:#FFD93D:#FF6B6B>" + currentSeason + "</gradient>"));
+            if (line.contains("%season_time%") && currentSeasonLine != null && !currentSeasonLine.isEmpty()) {
+                lore.add(GradientColorParser.parse(currentSeasonLine.replace("%current_season%", currentSeason)));
             }
         }
 

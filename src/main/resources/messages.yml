@@ -7,6 +7,7 @@ messages:
   player-only: "<gradient:#FF0000:#FF6B6B>✗ Only players can use this command!</gradient>"
   no-permission: "<gradient:#FF0000:#FF6B6B>✗ You don't have permission to use this command!</gradient>"
   player-not-found: "<gradient:#FF0000:#FF6B6B>✗ Player not found!</gradient>"
+  data-loading: "<gradient:#FFD93D:#FF6B6B>⏳ Your Battle Pass data is still loading, please try again in a moment!</gradient>"
   invalid-amount: "<gradient:#FF0000:#FF6B6B>✗ Invalid amount! Please enter a number.</gradient>"
   amount-must-be-positive: "<gradient:#FF0000:#FF6B6B>✗ Amount must be positive!</gradient>"
   invalid-item-type: "<gradient:#FF0000:#FF6B6B>✗ Invalid item type! Use 'premium', 'coins' or 'levelboost'.</gradient>"
@@ -151,6 +152,8 @@ gui:
 items:
   progress:
     name: "<gradient:#FFD93D:#FF6B6B>⭐ Your Progress</gradient>"
+    # Translatable line shown below the season countdown. Use %current_season% as placeholder.
+    current-season: "&8▸ &7Current Season: <gradient:#FFD93D:#FF6B6B>%current_season%</gradient>"
     lore:
       - "&7"
       - "&8▸ &7Level: <gradient:#4ECDC4:#45B7D1>%level%</gradient>&7/<gradient:#4ECDC4:#45B7D1>%max_level%</gradient>"

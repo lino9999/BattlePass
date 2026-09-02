@@ -420,27 +420,16 @@ public class DatabaseManager {
 
             try {
                 conn = getConnection();
-                boolean exists = false;
-                try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM " + prefix + "season_data WHERE id = 1")) {
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) exists = true;
-                    }
-                }
-
-                if (exists) {
-                    try (PreparedStatement ps = conn.prepareStatement("UPDATE " + prefix + "season_data SET end_date = ?, mission_reset_time = ?, current_mission_date = ? WHERE id = 1")) {
-                        ps.setString(1, endDate != null ? endDate.toString() : "");
-                        ps.setString(2, missionResetTime != null ? missionResetTime.toString() : "");
-                        ps.setString(3, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
-                        ps.executeUpdate();
-                    }
-                } else {
-                    try (PreparedStatement ps = conn.prepareStatement("INSERT INTO " + prefix + "season_data (id, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?)")) {
-                        ps.setString(1, endDate != null ? endDate.toString() : "");
-                        ps.setString(2, missionResetTime != null ? missionResetTime.toString() : "");
-                        ps.setString(3, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
-                        ps.executeUpdate();
-                    }
+                String sql = isMySQL
+                        ? "INSERT INTO " + prefix + "season_data (id, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?) " +
+                          "ON DUPLICATE KEY UPDATE end_date = VALUES(end_date), mission_reset_time = VALUES(mission_reset_time), current_mission_date = VALUES(current_mission_date)"
+                        : "INSERT INTO " + prefix + "season_data (id, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?) " +
+                          "ON CONFLICT(id) DO UPDATE SET end_date = excluded.end_date, mission_reset_time = excluded.mission_reset_time, current_mission_date = excluded.current_mission_date";
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, endDate != null ? endDate.toString() : "");
+                    ps.setString(2, missionResetTime != null ? missionResetTime.toString() : "");
+                    ps.setString(3, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
+                    ps.executeUpdate();
                 }
 
             } catch (SQLException e) {
@@ -460,23 +449,12 @@ public class DatabaseManager {
 
             try {
                 conn = getConnection();
-                boolean exists = false;
-                try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM " + prefix + "season_data WHERE id = 1")) {
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) exists = true;
-                    }
-                }
-
-                if (exists) {
-                    try (PreparedStatement ps = conn.prepareStatement("UPDATE " + prefix + "season_data SET next_coins_distribution = ? WHERE id = 1")) {
-                        ps.setString(1, nextDistribution.toString());
-                        ps.executeUpdate();
-                    }
-                } else {
-                    try (PreparedStatement ps = conn.prepareStatement("INSERT INTO " + prefix + "season_data (id, next_coins_distribution) VALUES (1, ?)")) {
-                        ps.setString(1, nextDistribution.toString());
-                        ps.executeUpdate();
-                    }
+                String sql = isMySQL
+                        ? "INSERT INTO " + prefix + "season_data (id, next_coins_distribution) VALUES (1, ?) ON DUPLICATE KEY UPDATE next_coins_distribution = VALUES(next_coins_distribution)"
+                        : "INSERT INTO " + prefix + "season_data (id, next_coins_distribution) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET next_coins_distribution = excluded.next_coins_distribution";
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, nextDistribution.toString());
+                    ps.executeUpdate();
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -500,7 +478,11 @@ public class DatabaseManager {
                         if (rs.next()) {
                             String timeStr = rs.getString("next_coins_distribution");
                             if (timeStr != null && !timeStr.isEmpty()) {
-                                return LocalDateTime.parse(timeStr);
+                                try {
+                                    return LocalDateTime.parse(timeStr);
+                                } catch (Exception e) {
+                                    plugin.getLogger().warning("Invalid coins distribution time in DB: " + timeStr);
+                                }
                             }
                         }
                     }

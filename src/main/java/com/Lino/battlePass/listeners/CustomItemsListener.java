@@ -49,6 +49,12 @@ public class CustomItemsListener implements Listener {
         event.setCancelled(true);
 
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data == null) {
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.data-loading"));
+            return;
+        }
+
         if (data.hasPremium) {
             player.sendMessage(plugin.getMessageManager().getPrefix() +
                     plugin.getMessageManager().getMessage("messages.items.already-have-premium"));
@@ -92,8 +98,14 @@ public class CustomItemsListener implements Listener {
             return;
         }
 
-        int amount = itemInHand.getAmount();
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data == null) {
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.data-loading"));
+            return;
+        }
+
+        int amount = itemInHand.getAmount();
         data.battleCoins += amount;
         plugin.getPlayerDataManager().markForSave(player.getUniqueId());
 
@@ -124,6 +136,11 @@ public class CustomItemsListener implements Listener {
 
         int maxLevel = plugin.getRewardManager().getMaxLevel();
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data == null) {
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.data-loading"));
+            return;
+        }
 
         if (data.level >= maxLevel) {
             player.sendMessage(plugin.getMessageManager().getPrefix() +
