@@ -422,7 +422,7 @@ mission-pools:
       - FLETCHER
       - LEATHERWORKER
       - MASON
-    display-name: "Change with Crafters Villagers <amount> Times"
+    display-name: "Trade with Crafter Villagers <amount> Times"
     min-required: 5
     max-required: 20
     min-xp: 200
@@ -612,7 +612,7 @@ mission-pools:
     weight: 9
 
   # WalkDistance missions
-  # Supported targets: ANY, WALK, SWIM, FLY, SHIFT
+  # Supported targets: ANY, WALK, SWIM, FLY, SNEAK
   move-distance:
     type: WALK_DISTANCE
     target: ANY

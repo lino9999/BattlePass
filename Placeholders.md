@@ -37,6 +37,16 @@ Make sure you have PlaceholderAPI installed on your server. The BattlePass plugi
 - `%battlepass_rank%` - Player's rank on leaderboard
 - `%battlepass_leaderboard_rank%` - Same as above
 
+### Seasons
+- `%battlepass_current_season%` - Current season number (season rotation)
+- `%battlepass_total_seasons%` - Total number of seasons in the rotation
+
+### XP Events
+- `%battlepass_xp_event_active%` - Shows "Yes" or "No"
+- `%battlepass_xp_event_multiplier%` - Current XP event multiplier (e.g., "2x")
+- `%battlepass_xp_event_time%` - Time remaining for the active XP event
+- `%battlepass_xp_event_remaining%` - Same as above
+
 ### Missions
 - `%battlepass_completed_missions%` - Number of completed daily missions
 - `%battlepass_total_missions%` - Total number of daily missions
