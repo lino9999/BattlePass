@@ -64,14 +64,14 @@ public class ConfigManager {
 
     public void reload() {
         config = plugin.getConfig();
-        xpPerLevel = config.getInt("experience.xp-per-level", 200);
+        xpPerLevel = Math.max(1, config.getInt("experience.xp-per-level", 200));
         seasonResetType = config.getString("season.reset-type", "DURATION");
-        seasonDuration = config.getInt("season.duration", 30);
-        dailyRewardXP = config.getInt("daily-reward.xp", 200);
+        seasonDuration = Math.max(1, config.getInt("season.duration", 30));
+        dailyRewardXP = Math.max(0, config.getInt("daily-reward.xp", 200));
         shopEnabled = config.getBoolean("shop.enabled", true);
         resetCoinsOnSeasonEnd = config.getBoolean("season.reset-coins-on-season-end", true);
-        coinsDistributionHours = config.getInt("battle-coins.distribution-hours", 24);
-        missionResetHours = config.getInt("missions.reset-hours", 24);
+        coinsDistributionHours = Math.max(1, config.getInt("battle-coins.distribution-hours", 24));
+        missionResetHours = Math.max(1, config.getInt("missions.reset-hours", 24));
         customItemSoundsEnabled = config.getBoolean("custom-items.sounds-enabled", true);
 
         databaseType = config.getString("database.type", "SQLITE");
