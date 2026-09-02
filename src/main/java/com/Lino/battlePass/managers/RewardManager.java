@@ -108,7 +108,7 @@ public class RewardManager {
             return new Reward(level, command, displayName, isFree);
         } else if (config.contains(path + ".material")) {
             String material = config.getString(path + ".material", "DIRT");
-            int amount = config.getInt(path + ".amount", 1);
+            int amount = Math.max(1, config.getInt(path + ".amount", 1));
 
             try {
                 Material mat = Material.valueOf(material.toUpperCase());

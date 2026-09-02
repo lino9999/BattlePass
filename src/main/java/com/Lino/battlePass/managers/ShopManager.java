@@ -43,6 +43,10 @@ public class ShopManager {
                 if (item == null) continue;
 
                 int slot = item.getInt("slot");
+                if (slot < 0 || slot > 53) {
+                    plugin.getLogger().warning("Shop item '" + key + "' has invalid slot " + slot + " (must be 0-53). Skipping.");
+                    continue;
+                }
                 Material material;
                 try {
                     material = Material.valueOf(item.getString("material", "STONE"));
@@ -52,7 +56,7 @@ public class ShopManager {
                 }
                 String displayName = item.getString("display-name", "Shop Item");
                 List<String> lore = item.getStringList("lore");
-                int price = item.getInt("price", 0);
+                int price = Math.max(0, item.getInt("price", 0));
                 List<String> commands = item.getStringList("commands");
 
                 List<ItemStack> itemsList = new ArrayList<>();

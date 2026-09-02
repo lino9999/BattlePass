@@ -80,7 +80,7 @@ public class ItemSerializer {
             return null;
         }
 
-        int amount = section.getInt("amount", 1);
+        int amount = Math.max(1, section.getInt("amount", 1));
         ItemStack item = new ItemStack(material, amount);
 
         ItemMeta meta = item.getItemMeta();
