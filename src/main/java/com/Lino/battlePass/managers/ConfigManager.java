@@ -120,7 +120,13 @@ public class ConfigManager {
 
         File missionsFile = new File(plugin.getDataFolder(), "missions.yml");
         missionsConfig = YamlConfiguration.loadConfiguration(missionsFile);
-        dailyMissionsCount = missionsConfig.getInt("daily-missions-count", 7);
+        int configuredMissionsCount = missionsConfig.getInt("daily-missions-count", 7);
+        if (configuredMissionsCount > 7) {
+            plugin.getLogger().warning("daily-missions-count is set to " + configuredMissionsCount +
+                    " but the missions GUI only shows 7 missions. Using 7.");
+            configuredMissionsCount = 7;
+        }
+        dailyMissionsCount = Math.max(0, configuredMissionsCount);
 
         File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
         messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
