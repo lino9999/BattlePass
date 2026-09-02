@@ -63,6 +63,8 @@ public class LeaderboardGui extends BaseGui {
     private void setupLeaderboard(Inventory gui) {
         plugin.getDatabaseManager().getTop10Players().thenAccept(topPlayers -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!player.isOnline()) return;
+
                 int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
 
                 for (int i = 0; i < topPlayers.size() && i < 10; i++) {
