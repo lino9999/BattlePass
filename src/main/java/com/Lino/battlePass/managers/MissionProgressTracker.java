@@ -4,6 +4,7 @@ import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.events.BattlePassXPGainEvent;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.PlayerData;
+import com.Lino.battlePass.utils.GradientColorParser;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -157,7 +158,9 @@ public class MissionProgressTracker {
         try {
             player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
         } catch (Exception e) {
-            player.sendMessage("§7[§6Progress§7] " + message);
+            String fallbackPrefix = plugin.getMessageManager().getMessagesConfig()
+                    .getString("messages.mission.actionbar-prefix", "&7[&6Progress&7]");
+            player.sendMessage(GradientColorParser.parse(fallbackPrefix) + " " + message);
         }
     }
 

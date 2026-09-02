@@ -30,7 +30,8 @@ public class MissionDetailsGui {
         ConfigurationSection section = plugin.getConfigManager().getMissionsConfig().getConfigurationSection("mission-pools." + missionKey);
 
         if (section == null) {
-            player.sendMessage("§cMission not found!");
+            player.sendMessage(GradientColorParser.parse(
+                    plugin.getMessageManager().getMessagesConfig().getString("messages.mission.not-found", "&cMission not found!")));
             player.closeInventory();
             return;
         }

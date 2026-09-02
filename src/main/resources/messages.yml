@@ -78,6 +78,8 @@ messages:
     reset-admin: "<gradient:#FF6B6B:#4ECDC4>⟳ %admin% has forcefully reset the daily missions!</gradient>"
     actionbar-progress: "&c%mission%: &7%current%&f/&8%required%"
     actionbar-completed: "<gradient:#00FF88:#45B7D1>✓ COMPLETED:</gradient> &a&l%mission%"
+    actionbar-prefix: "&7[&6Progress&7]"
+    not-found: "<gradient:#FF6B6B:#FF0000>✗ Mission not found!</gradient>"
 
   season:
     reset: "<gradient:#FF0000:#FFD93D>SEASON RESET</gradient>\n<gradient:#4ECDC4:#45B7D1>The Battle Pass season has ended! A new season begins now!</gradient>"
