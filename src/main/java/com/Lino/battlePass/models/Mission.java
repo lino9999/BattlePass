@@ -21,9 +21,11 @@ public class Mission {
     }
 
     public boolean isValidTarget(String actionTarget) {
-        if ("ANY".equals(target) || target.equalsIgnoreCase(actionTarget)) {
+        if (target == null || "ANY".equals(target) || target.equalsIgnoreCase(actionTarget)) {
             return true;
         }
-        return additionalTargets.stream().anyMatch(additional -> additional.equalsIgnoreCase(actionTarget));
+        return additionalTargets.stream()
+                .filter(java.util.Objects::nonNull)
+                .anyMatch(additional -> additional.equalsIgnoreCase(actionTarget));
     }
 }
