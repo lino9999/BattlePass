@@ -28,6 +28,7 @@ public class RewardsEditorGui extends BaseGui {
         }
 
         Inventory gui = createInventory();
+        String maxLevel = String.valueOf(plugin.getRewardManager().getMaxLevel());
 
         ItemStack freeRewards = new ItemStack(Material.CHEST);
         ItemMeta freeMeta = freeRewards.getItemMeta();
@@ -39,7 +40,7 @@ public class RewardsEditorGui extends BaseGui {
         freeLore.add(GradientColorParser.parse("&7that all players can claim"));
         freeLore.add("");
         freeLore.add(GradientColorParser.parse("<gradient:#4ECDC4:#45B7D1>▼ Features ▼</gradient>"));
-        freeLore.add(GradientColorParser.parse("&7• View all 54 levels"));
+        freeLore.add(GradientColorParser.parse("&7• View all %max_level% levels".replace("%max_level%", maxLevel)));
         freeLore.add(GradientColorParser.parse("&7• Add/remove items"));
         freeLore.add(GradientColorParser.parse("&7• Configure commands"));
         freeLore.add("");
@@ -59,7 +60,7 @@ public class RewardsEditorGui extends BaseGui {
         premiumLore.add(GradientColorParser.parse("&7exclusive to premium pass holders"));
         premiumLore.add("");
         premiumLore.add(GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>▼ Features ▼</gradient>"));
-        premiumLore.add(GradientColorParser.parse("&7• View all 54 levels"));
+        premiumLore.add(GradientColorParser.parse("&7• View all %max_level% levels".replace("%max_level%", maxLevel)));
         premiumLore.add(GradientColorParser.parse("&7• Add/remove items"));
         premiumLore.add(GradientColorParser.parse("&7• Configure commands"));
         premiumLore.add("");

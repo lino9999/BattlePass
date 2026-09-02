@@ -61,6 +61,7 @@ public class BattlePassGui extends BaseGui {
                     .replace("%level%", String.valueOf(playerData.level))
                     .replace("%xp%", String.valueOf(playerData.xp))
                     .replace("%xp_needed%", String.valueOf(plugin.getConfigManager().getXpPerLevel()))
+                    .replace("%max_level%", String.valueOf(maxLevel))
                     .replace("%premium_status%", premiumStatus)
                     .replace("%season_time%", plugin.getMissionManager().getTimeUntilSeasonEnd())
                     .replace("%current_season%", currentSeason);
@@ -216,8 +217,7 @@ public class BattlePassGui extends BaseGui {
     }
 
     private void setupNavigationButtons(Inventory gui) {
-        int maxPages = (int) Math.ceil(maxLevel / 9.0);
-        if (maxPages < 1) maxPages = 1;
+        int maxPages = plugin.getRewardManager().getMaxPage();
 
         if (page > 1) {
             gui.setItem(36, createNavigationButton("previous", page - 1));

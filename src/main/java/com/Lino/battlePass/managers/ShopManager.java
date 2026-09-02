@@ -20,7 +20,6 @@ import java.util.*;
 public class ShopManager {
 
     private final BattlePass plugin;
-    private FileConfiguration shopConfig;
     private final Map<Integer, ShopItem> shopItems = new HashMap<>();
 
     public ShopManager(BattlePass plugin) {
@@ -34,7 +33,7 @@ public class ShopManager {
             plugin.saveResource("shop.yml", false);
         }
 
-        shopConfig = YamlConfiguration.loadConfiguration(shopFile);
+        FileConfiguration shopConfig = YamlConfiguration.loadConfiguration(shopFile);
         shopItems.clear();
 
         ConfigurationSection items = shopConfig.getConfigurationSection("shop-items");
