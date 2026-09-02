@@ -38,7 +38,7 @@ public class MissionGenerator {
             int maxRequired = missionSection.getInt("max-required", minRequired);
             int minXP = missionSection.getInt("min-xp", 100);
             int maxXP = missionSection.getInt("max-xp", minXP);
-            int weight = missionSection.getInt("weight", 10);
+            int weight = Math.max(0, missionSection.getInt("weight", 10));
 
             MissionTemplate template = new MissionTemplate(displayName, type, target, additionalTargets,
                     minRequired, maxRequired, minXP, maxXP);
@@ -66,7 +66,7 @@ public class MissionGenerator {
 
         int totalWeight = weightedTemplates.stream().mapToInt(w -> w.weight).sum();
 
-        if (totalWeight == 0) {
+        if (totalWeight <= 0) {
             return weightedTemplates.get(ThreadLocalRandom.current().nextInt(weightedTemplates.size()));
         }
 
