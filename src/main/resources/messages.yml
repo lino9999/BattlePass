@@ -73,6 +73,7 @@ messages:
     completed: "<gradient:#00FF88:#45B7D1>✓ MISSION COMPLETED:</gradient> &a%mission% <gradient:#FFD93D:#FF6B6B>(+%reward_xp% XP)</gradient>"
     reset: "<gradient:#FF6B6B:#4ECDC4>⟳ Daily missions have been reset!</gradient>"
     forced-reset: "<gradient:#FF6B6B:#4ECDC4>⟳ An administrator has reset the daily missions!</gradient>"
+    admin-reset: "<gradient:#FF6B6B:#4ECDC4>⟳ An administrator has reset the daily missions!</gradient>"
     reset-complete: "<gradient:#00FF88:#00D4FF>✓ Missions have been successfully reset!</gradient>"
     reset-admin: "<gradient:#FF6B6B:#4ECDC4>⟳ %admin% has forcefully reset the daily missions!</gradient>"
     actionbar-progress: "&c%mission%: &7%current%&f/&8%required%"
