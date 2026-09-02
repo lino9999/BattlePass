@@ -81,7 +81,7 @@ public class ConfigManager {
         dbUser = config.getString("database.username", "root");
         dbPass = config.getString("database.password", "");
         dbPrefix = config.getString("database.prefix", "bp_");
-        dbPoolSize = config.getInt("database.pool-size", 10);
+        dbPoolSize = Math.max(1, config.getInt("database.pool-size", 10));
 
         guiCustomModelData.clear();
 
