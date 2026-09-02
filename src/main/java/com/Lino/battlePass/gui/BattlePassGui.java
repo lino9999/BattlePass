@@ -128,6 +128,7 @@ public class BattlePassGui extends BaseGui {
         if (data.level >= level && hasAccess) {
             ItemStack item = new ItemStack(plugin.getConfigManager().getGuiRewardAvailableMaterial());
             ItemMeta meta = item.getItemMeta();
+            applyGuiCustomModelData(meta, "gui.reward-available");
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-available.name",
                     "%level%", String.valueOf(level),
                     "%type%", rewardType));
@@ -140,6 +141,7 @@ public class BattlePassGui extends BaseGui {
         } else if (!hasAccess && isPremium) {
             ItemStack item = new ItemStack(plugin.getConfigManager().getGuiPremiumNoPassMaterial());
             ItemMeta meta = item.getItemMeta();
+            applyGuiCustomModelData(meta, "gui.premium-no-pass");
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-premium-locked.name",
                     "%level%", String.valueOf(level)));
 
@@ -155,6 +157,7 @@ public class BattlePassGui extends BaseGui {
 
             ItemStack item = new ItemStack(lockedMaterial);
             ItemMeta meta = item.getItemMeta();
+            applyGuiCustomModelData(meta, isPremium ? "gui.reward-locked.premium" : "gui.reward-locked.free");
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-level-locked.name",
                     "%level%", String.valueOf(level),
                     "%type%", rewardType));
@@ -163,6 +166,13 @@ public class BattlePassGui extends BaseGui {
             meta.setLore(lore);
             item.setItemMeta(meta);
             return item;
+        }
+    }
+
+    private void applyGuiCustomModelData(ItemMeta meta, String configPath) {
+        Integer customModelData = plugin.getConfigManager().getGuiCustomModelData(configPath);
+        if (customModelData != null) {
+            meta.setCustomModelData(customModelData);
         }
     }
 
@@ -177,6 +187,7 @@ public class BattlePassGui extends BaseGui {
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
+        applyGuiCustomModelData(meta, isPremium ? "gui.reward-claimed.premium" : "gui.reward-claimed.free");
         meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-claimed.name",
                 "%level%", String.valueOf(level),
                 "%type%", plugin.getMessageManager().getMessage(isPremium ? "reward-types.premium" : "reward-types.free")));
@@ -211,6 +222,7 @@ public class BattlePassGui extends BaseGui {
     private void setupSeparator(Inventory gui) {
         ItemStack separator = new ItemStack(plugin.getConfigManager().getGuiSeparatorMaterial());
         ItemMeta meta = separator.getItemMeta();
+        applyGuiCustomModelData(meta, "gui.separator");
         meta.setDisplayName(plugin.getMessageManager().getMessage("items.separator.name"));
         separator.setItemMeta(meta);
 
@@ -234,6 +246,11 @@ public class BattlePassGui extends BaseGui {
     private ItemStack createNavigationButton(String direction, int targetPage) {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
+
+        int navigationCustomModelData = plugin.getConfigManager().getGuiNavigationCustomModelData();
+        if (navigationCustomModelData > 0) {
+            meta.setCustomModelData(navigationCustomModelData);
+        }
 
         if (direction.equals("previous")) {
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.previous-page.name"));

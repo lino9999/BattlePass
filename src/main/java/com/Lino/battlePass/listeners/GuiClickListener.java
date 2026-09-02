@@ -1,8 +1,10 @@
 package com.Lino.battlePass.listeners;
 
 import com.Lino.battlePass.BattlePass;
+import com.Lino.battlePass.events.BattlePassXPGainEvent;
 import com.Lino.battlePass.gui.BaseHolder;
 import com.Lino.battlePass.models.PlayerData;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -207,6 +209,11 @@ public class GuiClickListener implements Listener {
 
         if (now - data.lastDailyReward >= dayInMillis) {
             int xpReward = plugin.getConfigManager().getDailyRewardXP();
+
+            BattlePassXPGainEvent xpGainEvent = new BattlePassXPGainEvent(player, BattlePassXPGainEvent.XPSource.DAILY_REWARD, xpReward);
+            Bukkit.getPluginManager().callEvent(xpGainEvent);
+            xpReward = xpGainEvent.isCancelled() ? 0 : Math.max(0, xpGainEvent.getAmount());
+
             data.xp += xpReward;
             data.lastDailyReward = now;
 

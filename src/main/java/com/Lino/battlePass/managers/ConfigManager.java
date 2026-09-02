@@ -2,12 +2,15 @@ package com.Lino.battlePass.managers;
 
 import com.Lino.battlePass.BattlePass;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ConfigManager {
 
@@ -39,6 +42,11 @@ public class ConfigManager {
     private Material guiPremiumClaimedMaterial = Material.LIME_STAINED_GLASS;
     private boolean hideFreeClaimedRewards = false;
     private boolean hidePremiumClaimedRewards = false;
+    private final Map<String, Integer> guiCustomModelData = new HashMap<>();
+    private int guiNavigationCustomModelData = 0;
+    private List<String> missionDisabledWorlds = new ArrayList<>();
+    private int actionbarProgressDuration = 10;
+    private int actionbarCompletedDuration = 15;
 
     private String databaseType;
     private String dbHost;
@@ -75,29 +83,35 @@ public class ConfigManager {
         dbPrefix = config.getString("database.prefix", "bp_");
         dbPoolSize = config.getInt("database.pool-size", 10);
 
-        guiFreeLockedMaterial = parseMaterial(config.getString("gui.reward-locked.free", "GRAY_STAINED_GLASS"), Material.GRAY_STAINED_GLASS);
-        guiPremiumLockedMaterial = parseMaterial(config.getString("gui.reward-locked.premium", "GRAY_STAINED_GLASS"), Material.GRAY_STAINED_GLASS);
-        guiPremiumNoPassMaterial = parseMaterial(config.getString("gui.premium-no-pass", "IRON_BARS"), Material.IRON_BARS);
-        guiRewardAvailableMaterial = parseMaterial(config.getString("gui.reward-available", "CHEST"), Material.CHEST);
-        guiSeparatorMaterial = parseMaterial(config.getString("gui.separator", "GRAY_STAINED_GLASS_PANE"), Material.GRAY_STAINED_GLASS_PANE);
+        guiCustomModelData.clear();
 
-        String freeClaimedStr = config.getString("gui.reward-claimed.free", "GREEN_STAINED_GLASS");
-        if (freeClaimedStr != null && freeClaimedStr.equalsIgnoreCase("NONE")) {
+        guiFreeLockedMaterial = parseGuiMaterial("gui.reward-locked.free", Material.GRAY_STAINED_GLASS);
+        guiPremiumLockedMaterial = parseGuiMaterial("gui.reward-locked.premium", Material.GRAY_STAINED_GLASS);
+        guiPremiumNoPassMaterial = parseGuiMaterial("gui.premium-no-pass", Material.IRON_BARS);
+        guiRewardAvailableMaterial = parseGuiMaterial("gui.reward-available", Material.CHEST);
+        guiSeparatorMaterial = parseGuiMaterial("gui.separator", Material.GRAY_STAINED_GLASS_PANE);
+
+        if (isGuiEntryNone("gui.reward-claimed.free")) {
             hideFreeClaimedRewards = true;
             guiFreeClaimedMaterial = null;
         } else {
             hideFreeClaimedRewards = false;
-            guiFreeClaimedMaterial = parseMaterial(freeClaimedStr, Material.GREEN_STAINED_GLASS);
+            guiFreeClaimedMaterial = parseGuiMaterial("gui.reward-claimed.free", Material.GREEN_STAINED_GLASS);
         }
 
-        String premiumClaimedStr = config.getString("gui.reward-claimed.premium", "LIME_STAINED_GLASS");
-        if (premiumClaimedStr != null && premiumClaimedStr.equalsIgnoreCase("NONE")) {
+        if (isGuiEntryNone("gui.reward-claimed.premium")) {
             hidePremiumClaimedRewards = true;
             guiPremiumClaimedMaterial = null;
         } else {
             hidePremiumClaimedRewards = false;
-            guiPremiumClaimedMaterial = parseMaterial(premiumClaimedStr, Material.LIME_STAINED_GLASS);
+            guiPremiumClaimedMaterial = parseGuiMaterial("gui.reward-claimed.premium", Material.LIME_STAINED_GLASS);
         }
+
+        guiNavigationCustomModelData = Math.max(0, config.getInt("gui.navigation.custom-model-data", 0));
+
+        missionDisabledWorlds = config.getStringList("missions.disabled-worlds");
+        actionbarProgressDuration = Math.max(1, config.getInt("missions.actionbar.progress-duration", 10));
+        actionbarCompletedDuration = Math.max(1, config.getInt("missions.actionbar.completed-duration", 15));
 
         coinsDistribution.clear();
         for (int i = 1; i <= 10; i++) {
@@ -135,6 +149,64 @@ public class ConfigManager {
             plugin.getLogger().warning("Invalid material '" + materialName + "' in config. Using default: " + defaultMaterial.name());
             return defaultMaterial;
         }
+    }
+
+    private boolean isGuiEntryNone(String path) {
+        Object raw = config.get(path);
+        String materialName;
+        if (raw instanceof ConfigurationSection section) {
+            materialName = section.getString("material");
+        } else {
+            materialName = config.getString(path);
+        }
+        return materialName != null && materialName.equalsIgnoreCase("NONE");
+    }
+
+    private Material parseGuiMaterial(String path, Material defaultMaterial) {
+        Object raw = config.get(path);
+        String materialName = null;
+        int customModelData = 0;
+
+        if (raw instanceof ConfigurationSection section) {
+            materialName = section.getString("material");
+            customModelData = section.getInt("custom-model-data", 0);
+        } else if (raw instanceof String) {
+            materialName = (String) raw;
+        }
+
+        if (customModelData > 0) {
+            guiCustomModelData.put(path, customModelData);
+        } else {
+            guiCustomModelData.remove(path);
+        }
+
+        return parseMaterial(materialName, defaultMaterial);
+    }
+
+    public Integer getGuiCustomModelData(String path) {
+        return guiCustomModelData.get(path);
+    }
+
+    public int getGuiNavigationCustomModelData() {
+        return guiNavigationCustomModelData;
+    }
+
+    public boolean isMissionWorldDisabled(String worldName) {
+        if (missionDisabledWorlds == null || worldName == null) return false;
+        for (String world : missionDisabledWorlds) {
+            if (world != null && world.equalsIgnoreCase(worldName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public int getActionbarProgressDuration() {
+        return actionbarProgressDuration;
+    }
+
+    public int getActionbarCompletedDuration() {
+        return actionbarCompletedDuration;
     }
 
     public FileConfiguration getConfig() {

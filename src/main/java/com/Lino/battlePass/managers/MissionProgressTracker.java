@@ -1,6 +1,7 @@
 package com.Lino.battlePass.managers;
 
 import com.Lino.battlePass.BattlePass;
+import com.Lino.battlePass.events.BattlePassXPGainEvent;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.PlayerData;
 import net.md_5.bungee.api.ChatMessageType;
@@ -73,8 +74,15 @@ public class MissionProgressTracker {
 
                 int eventMultiplier = plugin.getXpEventManager().getMultiplier();
                 int xpToAdd = mission.xpReward * eventMultiplier;
-                data.xp += xpToAdd;
-                checkLevelUp(player, data);
+
+                BattlePassXPGainEvent xpGainEvent = new BattlePassXPGainEvent(player, BattlePassXPGainEvent.XPSource.MISSION, xpToAdd);
+                Bukkit.getPluginManager().callEvent(xpGainEvent);
+                xpToAdd = xpGainEvent.isCancelled() ? 0 : Math.max(0, xpGainEvent.getAmount());
+
+                if (xpToAdd > 0) {
+                    data.xp += xpToAdd;
+                    checkLevelUp(player, data);
+                }
 
                 String xpText = String.valueOf(xpToAdd);
                 if (eventMultiplier > 1) {
@@ -180,12 +188,14 @@ public class MissionProgressTracker {
                 "%current%", String.valueOf(current),
                 "%required%", String.valueOf(required));
 
+        int maxCount = Math.max(1, plugin.getConfigManager().getActionbarProgressDuration()) * 4;
+
         int taskId = new BukkitRunnable() {
             private int count = 0;
 
             @Override
             public void run() {
-                if (count >= 40) {
+                if (count >= maxCount) {
                     sendActionBar(player, "");
                     Integer currentTaskId = playerTasks.remove(key);
                     if (currentTaskId != null) {
@@ -223,12 +233,14 @@ public class MissionProgressTracker {
         String completedMessage = messageManager.getMessage("messages.mission.actionbar-completed",
                 "%mission%", missionName);
 
+        int maxCount = Math.max(1, plugin.getConfigManager().getActionbarCompletedDuration());
+
         int taskId = new BukkitRunnable() {
             private int count = 0;
 
             @Override
             public void run() {
-                if (count >= 15) {
+                if (count >= maxCount) {
                     sendActionBar(player, "");
                     Integer currentTaskId = playerTasks.remove(key);
                     if (currentTaskId != null) {

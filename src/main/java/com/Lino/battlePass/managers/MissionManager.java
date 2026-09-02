@@ -195,10 +195,12 @@ public class MissionManager {
     }
 
     public void progressMission(Player player, String type, String target, int amount) {
+        if (configManager.isMissionWorldDisabled(player.getWorld().getName())) return;
         progressTracker.trackProgress(player, type, target, amount, dailyMissions);
     }
 
     public void progressMission(Player player, String type, Collection<String> targets, int amount) {
+        if (configManager.isMissionWorldDisabled(player.getWorld().getName())) return;
         progressTracker.trackProgress(player, type, targets, amount, dailyMissions);
     }
 

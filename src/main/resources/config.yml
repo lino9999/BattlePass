@@ -41,6 +41,15 @@ daily-reward:
 # Missions configuration
 missions:
   reset-hours: 24
+  # Worlds where Battle Pass missions will NOT progress. Example:
+  # disabled-worlds:
+  #   - "world_nether"
+  #   - "creative_world"
+  disabled-worlds: []
+  # Actionbar shown during missions (durations in seconds)
+  actionbar:
+    progress-duration: 10
+    completed-duration: 15
 
 # Battle Coins distribution configuration
 battle-coins:
@@ -66,6 +75,12 @@ custom-items:
   sounds-enabled: true
 
 # GUI Customization
+# Every item below accepts a material name, or a section with custom model data
+# for resource packs. Example:
+#   reward-locked:
+#     free:
+#       material: GRAY_STAINED_GLASS
+#       custom-model-data: 101
 gui:
   reward-locked:
     free: GRAY_STAINED_GLASS
@@ -76,3 +91,6 @@ gui:
     free: GREEN_STAINED_GLASS
     premium: LIME_STAINED_GLASS
   separator: GRAY_STAINED_GLASS_PANE
+  # Optional custom model data for the page navigation arrows
+  navigation:
+    custom-model-data: 0
