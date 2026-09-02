@@ -53,6 +53,9 @@ public class BattlePassTask extends BukkitRunnable {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
                 data.lastNotification = availableRewards;
                 plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+            } else if (availableRewards < data.lastNotification) {
+                data.lastNotification = availableRewards;
+                plugin.getPlayerDataManager().markForSave(player.getUniqueId());
             }
         }
     }
