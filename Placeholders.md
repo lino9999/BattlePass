@@ -93,3 +93,11 @@ Replace X with the position (1-10)
 ```
 &7[&eLvl %battlepass_level%&7] &f%player_name%
 ```
+
+## Notes
+
+- Placeholders that need player data return `Loading...` for a moment right after the player joins, while the data is being loaded.
+- `%battlepass_coins_distribution_time%` returns `Unknown` until the coin delivery system has started.
+- `%battlepass_rank%` returns `Unranked` when the player is not in the leaderboard (or is excluded from it).
+- `%battlepass_top_X_name%` returns `Empty` when that leaderboard position has no player.
+- The mission placeholders (`mission_progress_X`, `mission_name_X`, `mission_status_X`) depend on the `daily-missions-count` setting in missions.yml (default 7).
