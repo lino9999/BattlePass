@@ -24,6 +24,8 @@ messages:
     reset-player: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass resetplayer <player>"
     edit-rewards-season: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass edit rewards season <number>"
     event: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/bp event <multiplier> <duration> &7(e.g. /bp event 2x 1h)"
+    exclude-top: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass excludefromtop <player>"
+    include-top: "<gradient:#FFE66D:#FF6B6B>Usage:</gradient> &f/battlepass includetop <player>"
 
   reset-player:
     sender: "<gradient:#00FF88:#00D4FF>✓</gradient> Successfully reset battle pass progress for <gradient:#FFD93D:#FF6B6B>%player%</gradient>"
@@ -117,6 +119,10 @@ messages:
     not-active: "<gradient:#FF6B6B:#FF0000>There is no active XP event.</gradient>"
     invalid-multiplier: "<gradient:#FF6B6B:#FF0000>Invalid multiplier! Use a number between 2 and 100 (e.g. 2x, 3x).</gradient>"
     invalid-duration: "<gradient:#FF6B6B:#FF0000>Invalid duration! Use format like 30m, 1h, 2h30m.</gradient>"
+
+  exclude-top:
+    excluded: "<gradient:#00FF88:#45B7D1>✓</gradient> %player% is now excluded from the top leaderboard."
+    included: "<gradient:#00FF88:#45B7D1>✓</gradient> %player% is now included in the top leaderboard."
 
   coins:
     distribution-announcement: "<gradient:#FFD93D:#FF6B6B>BATTLE COINS</gradient> <gradient:#4ECDC4:#45B7D1>Top 10 players are receiving their daily Battle Coins!</gradient>"

@@ -5,6 +5,7 @@ import com.Lino.battlePass.gui.RewardsEditorGui;
 import com.Lino.battlePass.managers.SeasonRotationManager;
 import com.Lino.battlePass.managers.XPEventManager;
 import com.Lino.battlePass.models.PlayerData;
+import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
@@ -493,7 +494,10 @@ public class BattlePassCommand implements CommandExecutor {
         }
 
         if (args.length < 2) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() + "Usage: /battlepass " + (exclude ? "excludefromtop" : "includetop") + " <player>");
+            String usageMessage = plugin.getMessageManager().getMessagesConfig().getString(
+                    exclude ? "messages.usage.exclude-top" : "messages.usage.include-top",
+                    "&eUsage: /battlepass " + (exclude ? "excludefromtop" : "includetop") + " <player>");
+            sender.sendMessage(plugin.getMessageManager().getPrefix() + GradientColorParser.parse(usageMessage));
             return true;
         }
 
@@ -515,8 +519,11 @@ public class BattlePassCommand implements CommandExecutor {
         plugin.getPlayerDataManager().markForSave(target.getUniqueId());
         plugin.getPlayerDataManager().savePlayer(target.getUniqueId());
 
-        String status = exclude ? "excluded from" : "included in";
-        sender.sendMessage(plugin.getMessageManager().getPrefix() + "Player " + target.getName() + " is now " + status + " the top leaderboard.");
+        String statusMessage = plugin.getMessageManager().getMessagesConfig().getString(
+                exclude ? "messages.exclude-top.excluded" : "messages.exclude-top.included",
+                exclude ? "&a%player% is now excluded from the top leaderboard." : "&a%player% is now included in the top leaderboard.");
+        sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                GradientColorParser.parse(statusMessage.replace("%player%", target.getName())));
 
         return true;
     }
