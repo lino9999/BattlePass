@@ -156,7 +156,13 @@ public class MissionManager {
         progressTracker.resetProgress();
     }
 
+    private volatile long lastForceSeasonReset = 0;
+
     public void forceResetSeason() {
+        long now = System.currentTimeMillis();
+        if (now - lastForceSeasonReset < 5000) return;
+        lastForceSeasonReset = now;
+
         SeasonRotationManager rotation = plugin.getSeasonRotationManager();
         if (rotation != null && rotation.isRotationEnabled()) {
             rotation.rotateToNextSeason();
