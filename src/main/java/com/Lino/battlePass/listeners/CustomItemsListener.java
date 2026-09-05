@@ -42,14 +42,16 @@ public class CustomItemsListener implements Listener {
 
         if (item == null) return;
 
-        if (!isUsableHand(event, player)) return;
-
         boolean premium = plugin.getCustomItemManager().isPremiumPassItem(item);
         boolean coins = !premium && plugin.getCustomItemManager().isBattleCoinsItem(item);
         boolean boost = !premium && !coins && plugin.getCustomItemManager().isLevelBoostItem(item);
         boolean xpEvent = !premium && !coins && !boost && plugin.getCustomItemManager().isXPEventItem(item);
 
         if (!premium && !coins && !boost && !xpEvent) return;
+
+        event.setCancelled(true);
+
+        if (!isUsableHand(event, player)) return;
 
         long now = System.currentTimeMillis();
         Long last = lastCustomItemUse.get(player.getUniqueId());
@@ -76,6 +78,14 @@ public class CustomItemsListener implements Listener {
         if (item.getAmount() > 1) {
             item.setAmount(item.getAmount() - 1);
         } else if (event.getHand() == EquipmentSlot.OFF_HAND) {
+            player.getInventory().setItemInOffHand(null);
+        } else {
+            player.getInventory().setItemInMainHand(null);
+        }
+    }
+
+    private void consumeEntireHeldItem(PlayerInteractEvent event, Player player) {
+        if (event.getHand() == EquipmentSlot.OFF_HAND) {
             player.getInventory().setItemInOffHand(null);
         } else {
             player.getInventory().setItemInMainHand(null);
@@ -138,7 +148,7 @@ public class CustomItemsListener implements Listener {
         data.battleCoins += amount;
         plugin.getPlayerDataManager().markForSave(player.getUniqueId());
 
-        consumeHeldItem(event, player, itemInHand);
+        consumeEntireHeldItem(event, player);
 
         player.sendMessage(plugin.getMessageManager().getPrefix() +
                 plugin.getMessageManager().getMessage("messages.items.coins-redeemed",
@@ -185,7 +195,7 @@ public class CustomItemsListener implements Listener {
         Bukkit.getPluginManager().callEvent(xpGainEvent);
         totalXP = xpGainEvent.isCancelled() ? 0 : Math.max(0, xpGainEvent.getAmount());
 
-        consumeHeldItem(event, player, itemInHand);
+        consumeEntireHeldItem(event, player);
 
         data.xp += totalXP;
 
