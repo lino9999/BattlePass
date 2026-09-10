@@ -64,7 +64,7 @@ public class MissionsGui extends BaseGui {
 
             String key = mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
 
-            int progress = playerData.missionProgress.getOrDefault(key, 0);
+            int progress = Math.max(0, playerData.missionProgress.getOrDefault(key, 0));
             boolean completed = progress >= mission.required;
 
             ItemStack missionItem = new ItemStack(completed ? Material.LIME_DYE : Material.GRAY_DYE);

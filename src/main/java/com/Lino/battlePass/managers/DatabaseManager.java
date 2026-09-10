@@ -251,7 +251,7 @@ public class DatabaseManager {
                     ps.setString(2, missionDate);
                     try (ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) {
-                            data.missionProgress.put(rs.getString("mission"), rs.getInt("progress"));
+                            data.missionProgress.put(rs.getString("mission"), Math.max(0, rs.getInt("progress")));
                         }
                     }
                 }
@@ -339,7 +339,7 @@ public class DatabaseManager {
                         for (Map.Entry<String, Integer> mission : data.missionProgress.entrySet()) {
                             ps.setString(1, uuid.toString());
                             ps.setString(2, mission.getKey());
-                            ps.setInt(3, mission.getValue());
+                            ps.setInt(3, Math.max(0, mission.getValue()));
                             ps.setString(4, missionDate);
                             ps.addBatch();
                         }

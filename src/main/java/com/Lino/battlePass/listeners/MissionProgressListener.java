@@ -148,7 +148,8 @@ public class MissionProgressListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
-        int amount = (int) event.getFinalDamage();
+        int amount = calculateDamageTakenAmount(player, event);
+        if (amount <= 0) return;
 
         plugin.getMissionManager().progressMission(player, "DAMAGE_TAKEN", enumerateDamageTypes(event), amount);
     }
@@ -157,9 +158,10 @@ public class MissionProgressListener implements Listener {
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         Entity trueDamager = getTrueDamager(event.getDamager());
         if (trueDamager instanceof Player player) {
-            int amount = (int) Math.round(event.getFinalDamage());
-            String victimType = safeName(event.getEntity().getType().name());
-            plugin.getMissionManager().progressMission(player, "DAMAGE_DEALT", victimType, amount);
+            int amount = calculateDamageDealtAmount(event);
+            if (amount <= 0) return;
+            List<String> victimTypes = enumerateVictimTypes(event.getEntity());
+            plugin.getMissionManager().progressMission(player, "DAMAGE_DEALT", victimTypes, amount);
         }
     }
 
@@ -346,6 +348,77 @@ public class MissionProgressListener implements Listener {
         }
     }
 
+    private int calculateDamageTakenAmount(Player player, EntityDamageEvent event) {
+        double finalDamage = event.getFinalDamage();
+        double rawDamage = event.getDamage();
+
+        // If player is blocking with a shield and took no final damage, the attack was blocked.
+        if (player.isBlocking() && finalDamage <= 0) {
+            return 0;
+        }
+
+        double effectiveDamage;
+        if (finalDamage > 0) {
+            effectiveDamage = finalDamage;
+        } else if (rawDamage > 0) {
+            effectiveDamage = rawDamage;
+        } else if (finalDamage < 0) {
+            effectiveDamage = Math.abs(finalDamage);
+        } else {
+            effectiveDamage = 0;
+        }
+
+        int amount = (int) Math.round(effectiveDamage);
+        if (effectiveDamage > 0 && amount == 0) {
+            amount = 1;
+        }
+        return Math.max(0, amount);
+    }
+
+    private int calculateDamageDealtAmount(EntityDamageByEntityEvent event) {
+        double finalDamage = event.getFinalDamage();
+        double rawDamage = event.getDamage();
+
+        double effectiveDamage;
+        if (finalDamage > 0) {
+            effectiveDamage = finalDamage;
+        } else if (rawDamage > 0) {
+            effectiveDamage = rawDamage;
+        } else if (finalDamage < 0) {
+            effectiveDamage = Math.abs(finalDamage);
+        } else {
+            effectiveDamage = 0;
+        }
+
+        int amount = (int) Math.round(effectiveDamage);
+        if (effectiveDamage > 0 && amount == 0) {
+            amount = 1;
+        }
+        return Math.max(0, amount);
+    }
+
+    private List<String> enumerateVictimTypes(Entity victim) {
+        List<String> targets = new ArrayList<>();
+        targets.add(safeName(victim.getType().name()));
+        if (victim instanceof Player) {
+            targets.add("PLAYER");
+        } else if (victim instanceof Monster) {
+            targets.add("MONSTER");
+            targets.add("MOB");
+            targets.add("MOBS");
+        } else if (victim instanceof Animals || victim instanceof WaterMob || victim instanceof Ambient) {
+            targets.add("ANIMAL");
+            targets.add("ANIMALS");
+            targets.add("MOB");
+            targets.add("MOBS");
+        } else if (victim instanceof LivingEntity) {
+            targets.add("MOB");
+            targets.add("MOBS");
+        }
+        targets.add("ANY");
+        return new ArrayList<>(new LinkedHashSet<>(targets));
+    }
+
     private List<String> enumerateDamageTypes(EntityDamageEvent event) {
         List<String> result = new ArrayList<>();
 
@@ -362,6 +435,11 @@ public class MissionProgressListener implements Listener {
                     } else if (shooterEntity instanceof LivingEntity livingShooter) {
                         String mobBase = safeName(livingShooter.getType().name());
                         result.add(mobBase);
+                        if (livingShooter instanceof Monster) {
+                            result.add("MONSTER");
+                            result.add("MOB");
+                            result.add("MOBS");
+                        }
                     } else {
                         result.add(safeName(shooterEntity.getType().name()));
                     }
@@ -371,6 +449,11 @@ public class MissionProgressListener implements Listener {
                     result.add("PLAYER");
                 } else if (rawDamager instanceof LivingEntity living) {
                     result.add(safeName(living.getType().name()));
+                    if (living instanceof Monster) {
+                        result.add("MONSTER");
+                        result.add("MOB");
+                        result.add("MOBS");
+                    }
                 } else {
                     result.add(safeName(rawDamager.getType().name()));
                 }
@@ -378,6 +461,7 @@ public class MissionProgressListener implements Listener {
         }
 
         result.add(safeName(getCauseName(event.getCause())));
+        result.add("ANY");
 
         return new ArrayList<>(new LinkedHashSet<>(result));
     }

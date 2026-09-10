@@ -32,6 +32,8 @@ public class MissionProgressTracker {
     }
 
     public void trackProgress(Player player, String type, Collection<String> targets, int amount, List<Mission> dailyMissions) {
+        if (amount <= 0) return;
+
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         if (data == null || dailyMissions.isEmpty() || targets.isEmpty()) return;
 
@@ -59,7 +61,7 @@ public class MissionProgressTracker {
                 continue;
             }
 
-            int currentProgress = data.missionProgress.getOrDefault(missionKey, 0);
+            int currentProgress = Math.max(0, data.missionProgress.getOrDefault(missionKey, 0));
 
             if (currentProgress >= mission.required) {
                 completedKeys.add(missionKey);
@@ -67,6 +69,7 @@ public class MissionProgressTracker {
             }
 
             int newProgress = Math.min(currentProgress + amount, mission.required);
+            newProgress = Math.max(0, newProgress);
             data.missionProgress.put(missionKey, newProgress);
             changed = true;
 
@@ -289,7 +292,7 @@ public class MissionProgressTracker {
         int completed = 0;
         for (Mission mission : missions) {
             String key = generateMissionKey(mission);
-            int progress = data.missionProgress.getOrDefault(key, 0);
+            int progress = Math.max(0, data.missionProgress.getOrDefault(key, 0));
             if (progress >= mission.required) {
                 completed++;
             }
