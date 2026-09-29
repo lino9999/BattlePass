@@ -25,6 +25,7 @@ public class MissionManager {
     private volatile List<Mission> dailyMissions = Collections.synchronizedList(new ArrayList<>());
     private volatile boolean missionsLoadAttempted = false;
     private String currentMissionDate;
+    private boolean seasonResetInProgress;
 
     public MissionManager(BattlePass plugin, ConfigManager configManager, DatabaseManager databaseManager, PlayerDataManager playerDataManager) {
         this.plugin = plugin;
@@ -40,7 +41,8 @@ public class MissionManager {
     public void initialize() {
         databaseManager.loadSeasonData().thenAccept(data -> {
             if (data.containsKey("endDate")) {
-                resetHandler.setSeasonEndDate((LocalDateTime) data.get("endDate"));
+                resetHandler.restoreSeason((LocalDateTime) data.get("endDate"),
+                        (LocalDateTime) data.get("startDate"));
                 if (data.containsKey("missionResetTime")) {
                     resetHandler.setNextMissionReset((LocalDateTime) data.get("missionResetTime"));
                 }
@@ -48,10 +50,14 @@ public class MissionManager {
                     currentMissionDate = (String) data.get("currentMissionDate");
                 }
 
-                if (LocalDateTime.now().isAfter(resetHandler.getSeasonEndDate())) {
-                    Bukkit.getScheduler().runTask(plugin, () -> resetSeason());
+                if (data.get("startDate") == null) {
+                    plugin.getLogger().info("Migrating legacy season timing to the configured duration.");
+                }
+                if (!LocalDateTime.now().isBefore(resetHandler.getSeasonEndDate())) {
+                    Bukkit.getScheduler().runTask(plugin, () -> resetSeason(this::loadMissionsAfterSeasonData));
                     return;
                 }
+                saveSeasonData();
             } else {
                 resetHandler.calculateSeasonEndDate();
                 currentMissionDate = LocalDateTime.now().toLocalDate().toString();
@@ -103,6 +109,11 @@ public class MissionManager {
 
     public void recalculateResetTimeOnReload() {
         resetHandler.recalculateResetTimeOnReload();
+        if (resetHandler.recalculateSeasonEndDateOnReload()
+                && !LocalDateTime.now().isBefore(resetHandler.getSeasonEndDate())) {
+            resetSeason(null);
+            return;
+        }
         saveSeasonData();
     }
 
@@ -116,6 +127,7 @@ public class MissionManager {
     }
 
     public void checkMissionReset() {
+        if (seasonResetInProgress) return;
         if (resetHandler.shouldResetMissions()) {
             currentMissionDate = LocalDateTime.now().toLocalDate().toString();
 
@@ -136,11 +148,13 @@ public class MissionManager {
 
     public void checkSeasonReset() {
         if (resetHandler.shouldResetSeason()) {
-            resetSeason();
+            resetSeason(null);
         }
     }
 
-    private void resetSeason() {
+    private void resetSeason(Runnable onComplete) {
+        if (seasonResetInProgress) return;
+        seasonResetInProgress = true;
         SeasonRotationManager rotation = plugin.getSeasonRotationManager();
         if (rotation != null && rotation.isRotationEnabled()) {
             rotation.rotateToNextSeason();
@@ -148,19 +162,28 @@ public class MissionManager {
             plugin.getRewardManager().loadRewards();
         }
 
-        resetHandler.resetSeason();
+        var reset = resetHandler.resetSeason();
         currentMissionDate = LocalDateTime.now().toLocalDate().toString();
-        generateDailyMissions();
         resetHandler.calculateNextReset();
-        saveSeasonData();
-        progressTracker.resetProgress();
+        reset.whenComplete((result, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            seasonResetInProgress = false;
+            if (error != null) {
+                plugin.getLogger().severe("Failed to reset season: " + error.getMessage());
+                return;
+            }
+            generateDailyMissions();
+            saveDailyMissions();
+            saveSeasonData();
+            progressTracker.resetProgress();
+            if (onComplete != null) onComplete.run();
+        }));
     }
 
     private volatile long lastForceSeasonReset = 0;
 
     public void forceResetSeason() {
         long now = System.currentTimeMillis();
-        if (now - lastForceSeasonReset < 5000) return;
+        if (seasonResetInProgress || now - lastForceSeasonReset < 5000) return;
         lastForceSeasonReset = now;
 
         SeasonRotationManager rotation = plugin.getSeasonRotationManager();
@@ -170,15 +193,22 @@ public class MissionManager {
             plugin.getRewardManager().loadRewards();
         }
 
-        resetHandler.forceResetSeason();
+        seasonResetInProgress = true;
+        var reset = resetHandler.forceResetSeason();
         currentMissionDate = LocalDateTime.now().toLocalDate().toString();
-        generateDailyMissions();
-        saveDailyMissions();
-        saveSeasonData();
-        progressTracker.resetProgress();
-
-        Bukkit.getScheduler().runTaskLater(plugin, () ->
-                plugin.startCoinsDistributionTask(null), 40L);
+        resetHandler.calculateNextReset();
+        reset.whenComplete((result, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            seasonResetInProgress = false;
+            if (error != null) {
+                plugin.getLogger().severe("Failed to reset season: " + error.getMessage());
+                return;
+            }
+            generateDailyMissions();
+            saveDailyMissions();
+            saveSeasonData();
+            progressTracker.resetProgress();
+            plugin.startCoinsDistributionTask(null);
+        }));
     }
 
     public void forceResetMissions() {
@@ -223,6 +253,7 @@ public class MissionManager {
     private void saveSeasonData() {
         databaseManager.saveSeasonData(
                 resetHandler.getSeasonEndDate(),
+                resetHandler.getSeasonStartDate(),
                 resetHandler.getNextMissionReset(),
                 currentMissionDate
         );
