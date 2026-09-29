@@ -160,10 +160,25 @@ public class DatabaseManager {
                 stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "season_data (" +
                         "id " + intKey + " PRIMARY KEY " + autoIncrement + "," +
                         "end_date TEXT," +
+                        "start_date TEXT," +
                         "mission_reset_time TEXT," +
                         "current_mission_date TEXT," +
                         "next_coins_distribution TEXT)"
                 );
+
+                // Existing installations have season_data without these columns.
+                boolean hasStartDate = false;
+                try (ResultSet columns = conn.getMetaData().getColumns(null, null,
+                        prefix + "season_data", null)) {
+                    while (columns.next()) {
+                        if ("start_date".equalsIgnoreCase(columns.getString("COLUMN_NAME"))
+                                && (prefix + "season_data").equalsIgnoreCase(columns.getString("TABLE_NAME"))) {
+                            hasStartDate = true;
+                            break;
+                        }
+                    }
+                }
+                if (!hasStartDate) stmt.executeUpdate("ALTER TABLE " + prefix + "season_data ADD COLUMN start_date TEXT");
 
                 stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "daily_missions (" +
                         "id " + intKey + " PRIMARY KEY " + autoIncrement + "," +
@@ -413,7 +428,8 @@ public class DatabaseManager {
         }, databaseExecutor);
     }
 
-    public CompletableFuture<Void> saveSeasonData(LocalDateTime endDate, LocalDateTime missionResetTime, String currentMissionDate) {
+    public CompletableFuture<Void> saveSeasonData(LocalDateTime endDate, LocalDateTime startDate,
+                                                   LocalDateTime missionResetTime, String currentMissionDate) {
         return CompletableFuture.runAsync(() -> {
             Connection conn = null;
             boolean shouldClose = isMySQL;
@@ -421,14 +437,15 @@ public class DatabaseManager {
             try {
                 conn = getConnection();
                 String sql = isMySQL
-                        ? "INSERT INTO " + prefix + "season_data (id, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?) " +
-                          "ON DUPLICATE KEY UPDATE end_date = VALUES(end_date), mission_reset_time = VALUES(mission_reset_time), current_mission_date = VALUES(current_mission_date)"
-                        : "INSERT INTO " + prefix + "season_data (id, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?) " +
-                          "ON CONFLICT(id) DO UPDATE SET end_date = excluded.end_date, mission_reset_time = excluded.mission_reset_time, current_mission_date = excluded.current_mission_date";
+                        ? "INSERT INTO " + prefix + "season_data (id, end_date, start_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) " +
+                          "ON DUPLICATE KEY UPDATE end_date = VALUES(end_date), start_date = VALUES(start_date), mission_reset_time = VALUES(mission_reset_time), current_mission_date = VALUES(current_mission_date)"
+                        : "INSERT INTO " + prefix + "season_data (id, end_date, start_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) " +
+                          "ON CONFLICT(id) DO UPDATE SET end_date = excluded.end_date, start_date = excluded.start_date, mission_reset_time = excluded.mission_reset_time, current_mission_date = excluded.current_mission_date";
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
                     ps.setString(1, endDate != null ? endDate.toString() : "");
-                    ps.setString(2, missionResetTime != null ? missionResetTime.toString() : "");
-                    ps.setString(3, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
+                    ps.setString(2, startDate != null ? startDate.toString() : "");
+                    ps.setString(3, missionResetTime != null ? missionResetTime.toString() : "");
+                    ps.setString(4, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
                     ps.executeUpdate();
                 }
 
@@ -518,6 +535,14 @@ public class DatabaseManager {
                                 }
                             }
 
+                            String startDateStr = rs.getString("start_date");
+                            if (startDateStr != null && !startDateStr.isEmpty()) {
+                                try {
+                                    data.put("startDate", LocalDateTime.parse(startDateStr));
+                                } catch (Exception e) {
+                                    plugin.getLogger().warning("Invalid season start date in DB: " + startDateStr);
+                                }
+                            }
                             String resetTimeStr = rs.getString("mission_reset_time");
                             if (resetTimeStr != null && !resetTimeStr.isEmpty()) {
                                 try {

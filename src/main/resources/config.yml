@@ -5,6 +5,9 @@ season:
   # Reset type: MONTH_START (reset at beginning of month) or DURATION (reset after X days)
   reset-type: "DURATION"
   # Season duration in days (only used when reset-type is DURATION)
+  # Changes during a season take effect from its original start after /bp reload or restart.
+  # On first upgrade from older versions, an existing DURATION season starts a fresh
+  # full duration once because the old database did not store its start date.
   duration: 30
   # Whether to reset battle coins when season ends
   reset-coins-on-season-end: true
