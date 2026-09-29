@@ -127,6 +127,7 @@ public class MissionManager {
     }
 
     public void checkMissionReset() {
+        if (seasonResetInProgress) return;
         if (resetHandler.shouldResetMissions()) {
             currentMissionDate = LocalDateTime.now().toLocalDate().toString();
 
