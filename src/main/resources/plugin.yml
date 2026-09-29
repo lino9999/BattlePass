@@ -1,5 +1,5 @@
 name: BattlePass
-version: '8.2'
+version: '${project.version}'
 main: com.Lino.battlePass.BattlePass
 api-version: '1.21'
 author: Lino

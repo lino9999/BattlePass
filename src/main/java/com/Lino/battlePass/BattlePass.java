@@ -3,6 +3,7 @@ package com.Lino.battlePass;
 import com.Lino.battlePass.commands.BattlePassTabCompleter;
 import com.Lino.battlePass.listeners.MissionProgressListener;
 import com.Lino.battlePass.placeholders.BattlePassExpansion;
+import com.Lino.battlePass.utils.VersionUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -117,6 +118,10 @@ public class BattlePass extends JavaPlugin {
                     }
                 }.runTaskTimer(this, 0L, 10L);
             });
+        }).exceptionally(ex -> {
+            getLogger().severe("BattlePass could not start: " + ex.getMessage());
+            getServer().getScheduler().runTask(this, () -> getServer().getPluginManager().disablePlugin(this));
+            return null;
         });
     }
 
@@ -181,7 +186,7 @@ public class BattlePass extends JavaPlugin {
                         if (version != null && !version.trim().isEmpty()) {
                             String currentVersion = getDescription().getVersion();
 
-                            if (!version.equals(currentVersion)) {
+                            if (VersionUtils.isNewer(version, currentVersion)) {
                                 updateAvailable = true;
                                 latestVersion = version;
 
@@ -320,13 +325,20 @@ public class BattlePass extends JavaPlugin {
     }
 
     public void startCoinsDistributionTask(LocalDateTime savedTime) {
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(this, () -> startCoinsDistributionTask(savedTime));
+            return;
+        }
+
+        LocalDateTime nextTime = savedTime;
         if (coinsDistributionTask != null) {
+            if (nextTime == null) nextTime = coinsDistributionTask.getNextDistribution();
             coinsDistributionTask.cancel();
         }
 
         CoinsDistributionTask task = new CoinsDistributionTask(this);
-        if (savedTime != null) {
-            task.setNextDistribution(savedTime);
+        if (nextTime != null) {
+            task.setNextDistribution(nextTime);
         } else {
             task.resetDistributionTime();
         }

@@ -1,6 +1,25 @@
 # Changelog
 
-## Latest Update
+## 8.6
+
+### Database upgrades and version reporting (#20, #21)
+- The plugin version now comes from the Maven project version, so the JAR name and `plugin.yml` cannot disagree. The update checker compares numeric releases and no longer advertises an older published version as an update.
+- Fixed MySQL upgrades failing to add `daily_missions.additional_targets`: the migration no longer uses the unsupported `TEXT DEFAULT ''` definition.
+- Existing SQLite and MySQL databases now receive missing season start and coin distribution columns automatically. Migrations check for existing columns and tolerate another server adding the same column concurrently.
+- Database initialization and migration errors now stop plugin startup with a diagnostic instead of reporting success and repeatedly failing later.
+
+### Follow-up fixes for previously reported issues (#1, #2, #19)
+- XP gain events now implement Bukkit's `Cancellable` interface, allowing external listeners using `ignoreCancelled` to behave correctly.
+- Closing another plugin's inventory no longer affects BattlePass's reward editor state, even if its title matches a BattlePass editor.
+- Restarting the coin distribution task after a manual season reset preserves the current deadline. Changes to the managed task are performed on the server thread.
+
+### Season duration - fixed
+- Fixed automatic and manual resets saving the previous season's deadline before the new one was calculated. Restarting could previously end the new season early or reset it again immediately.
+- The season start date is now persisted. Changes to `season.duration` apply to the current season on `/bp reload` or restart, counting from that start date instead of restarting the countdown each time. If the shortened duration has already elapsed, the season resets on the next check.
+- Season saves are ordered, including on MySQL, so an older save cannot overwrite a newer deadline. New daily missions are saved after the season reset has finished deleting the old missions.
+- Upgrade behavior: old databases have no season start date. On the first startup after upgrading, an existing `DURATION` season receives a fresh countdown using the configured duration, preserving player progress, premium access and rewards. This one-time migration is logged. `MONTH_START` seasons retain their calendar deadline.
+
+## Previous updates
 
 ### Battle Coins delivery - fixed
 - Fixed the problem where Battle Coins were never delivered at the scheduled time. The delivery system now always starts correctly and keeps its schedule.

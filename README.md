@@ -84,6 +84,12 @@ Unlike other plugins, **BattlePass** focuses on ease of use for admins and engag
 4.  Restart your server.
 5.  Enjoy! Config files (`config.yml`, `missions.yml`, `shop.yml`) will generate automatically.
 
+### Build from source
+
+Use Java 21 and Maven, then run `mvn clean package`. The build runs the regression tests and produces `target/BattlePass-8.6.jar`. The release version is defined in `pom.xml`; Maven also writes it into the packaged `plugin.yml`.
+
+See [the issue review](docs/ISSUE_REVIEW.md) for the fixes, configuration examples and validation details. Existing databases are migrated automatically at startup. If MySQL reports an `ALTER` permission error, grant the plugin's database account permission to update its tables before restarting.
+
 ---
 
 ## 🎮 Commands & Permissions

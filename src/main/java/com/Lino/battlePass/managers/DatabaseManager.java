@@ -11,6 +11,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +25,7 @@ public class DatabaseManager {
     private final ExecutorService databaseExecutor;
     private boolean isMySQL;
     private String prefix;
+    private CompletableFuture<Void> seasonSave = CompletableFuture.completedFuture(null);
 
     public DatabaseManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -60,9 +62,8 @@ public class DatabaseManager {
             createTables();
             plugin.getLogger().info("Database initialized successfully!");
 
-        } catch (Throwable e) {
-            plugin.getLogger().severe("CRITICAL DATABASE ERROR: " + e.getMessage());
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw new CompletionException("Database initialization or migration failed: " + e.getMessage(), e);
         }
     }
 
@@ -159,6 +160,7 @@ public class DatabaseManager {
 
                 stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "season_data (" +
                         "id " + intKey + " PRIMARY KEY " + autoIncrement + "," +
+                        "start_date TEXT," +
                         "end_date TEXT," +
                         "mission_reset_time TEXT," +
                         "current_mission_date TEXT," +
@@ -176,16 +178,11 @@ public class DatabaseManager {
                         "date TEXT)"
                 );
 
-                if (isMySQL) {
-                    try {
-                        stmt.executeUpdate("ALTER TABLE " + prefix + "daily_missions ADD COLUMN additional_targets TEXT DEFAULT ''");
-                    } catch (SQLException ignored) {
-                    }
-                } else {
-                    try {
-                        stmt.executeUpdate("ALTER TABLE " + prefix + "daily_missions ADD COLUMN additional_targets TEXT");
-                    } catch (SQLException ignored) {
-                    }
+                DatabaseSchema.ensureColumns(conn, prefix + "season_data", Map.of(
+                        "start_date", "TEXT", "next_coins_distribution", "TEXT"));
+                // MySQL rejects TEXT DEFAULT ''; existing rows can safely use NULL instead.
+                DatabaseSchema.ensureColumns(conn, prefix + "daily_missions", Map.of("additional_targets", "TEXT"));
+                if (!isMySQL) {
                     stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_missions_uuid_date ON " + prefix + "missions(uuid, date)");
                 }
             }
@@ -413,22 +410,26 @@ public class DatabaseManager {
         }, databaseExecutor);
     }
 
-    public CompletableFuture<Void> saveSeasonData(LocalDateTime endDate, LocalDateTime missionResetTime, String currentMissionDate) {
-        return CompletableFuture.runAsync(() -> {
+    public synchronized CompletableFuture<Void> saveSeasonData(LocalDateTime startDate, LocalDateTime endDate,
+                                                               LocalDateTime missionResetTime, String currentMissionDate) {
+        // Preserve submission order even with MySQL's multi-threaded executor. An older mission
+        // save must never overwrite the deadline just published by a reset or config reload.
+        seasonSave = seasonSave.handle((ignored, failure) -> null).thenRunAsync(() -> {
             Connection conn = null;
             boolean shouldClose = isMySQL;
 
             try {
                 conn = getConnection();
                 String sql = isMySQL
-                        ? "INSERT INTO " + prefix + "season_data (id, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?) " +
-                          "ON DUPLICATE KEY UPDATE end_date = VALUES(end_date), mission_reset_time = VALUES(mission_reset_time), current_mission_date = VALUES(current_mission_date)"
-                        : "INSERT INTO " + prefix + "season_data (id, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?) " +
-                          "ON CONFLICT(id) DO UPDATE SET end_date = excluded.end_date, mission_reset_time = excluded.mission_reset_time, current_mission_date = excluded.current_mission_date";
+                        ? "INSERT INTO " + prefix + "season_data (id, start_date, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) " +
+                          "ON DUPLICATE KEY UPDATE start_date = VALUES(start_date), end_date = VALUES(end_date), mission_reset_time = VALUES(mission_reset_time), current_mission_date = VALUES(current_mission_date)"
+                        : "INSERT INTO " + prefix + "season_data (id, start_date, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) " +
+                          "ON CONFLICT(id) DO UPDATE SET start_date = excluded.start_date, end_date = excluded.end_date, mission_reset_time = excluded.mission_reset_time, current_mission_date = excluded.current_mission_date";
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, endDate != null ? endDate.toString() : "");
-                    ps.setString(2, missionResetTime != null ? missionResetTime.toString() : "");
-                    ps.setString(3, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
+                    ps.setString(1, startDate != null ? startDate.toString() : "");
+                    ps.setString(2, endDate != null ? endDate.toString() : "");
+                    ps.setString(3, missionResetTime != null ? missionResetTime.toString() : "");
+                    ps.setString(4, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
                     ps.executeUpdate();
                 }
 
@@ -440,6 +441,7 @@ public class DatabaseManager {
                 }
             }
         }, databaseExecutor);
+        return seasonSave;
     }
 
     public CompletableFuture<Void> saveCoinsDistributionTime(LocalDateTime nextDistribution) {
@@ -509,6 +511,14 @@ public class DatabaseManager {
                 try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + prefix + "season_data WHERE id = 1")) {
                     try (ResultSet rs = ps.executeQuery()) {
                         if (rs.next()) {
+                            String startDateStr = rs.getString("start_date");
+                            if (startDateStr != null && !startDateStr.isEmpty()) {
+                                try {
+                                    data.put("startDate", LocalDateTime.parse(startDateStr));
+                                } catch (Exception e) {
+                                    plugin.getLogger().warning("Invalid season start date in DB: " + startDateStr);
+                                }
+                            }
                             String endDateStr = rs.getString("end_date");
                             if (endDateStr != null && !endDateStr.isEmpty()) {
                                 try {
@@ -711,6 +721,14 @@ public class DatabaseManager {
     }
 
     public void shutdown() {
+        // Chained season writes may not have been submitted to the executor yet.
+        try {
+            seasonSave.get(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            plugin.getLogger().warning("Could not finish saving season data before shutdown: " + e.getMessage());
+        }
         databaseExecutor.shutdown();
         try {
             if (!databaseExecutor.awaitTermination(5, TimeUnit.SECONDS)) {

@@ -9,11 +9,13 @@ import org.bukkit.entity.Player;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
+import java.util.concurrent.CompletableFuture;
 
 public class MissionResetHandler {
 
     private final BattlePass plugin;
     private LocalDateTime nextMissionReset;
+    private LocalDateTime seasonStartDate;
     private LocalDateTime seasonEndDate;
 
     public MissionResetHandler(BattlePass plugin) {
@@ -46,14 +48,26 @@ public class MissionResetHandler {
     }
 
     public boolean shouldResetSeason() {
-        return seasonEndDate != null && LocalDateTime.now().isAfter(seasonEndDate);
+        return seasonEndDate != null && !LocalDateTime.now().isBefore(seasonEndDate);
     }
 
-    public void resetSeason() {
+    public CompletableFuture<Void> resetSeason() {
+        return resetSeason(false);
+    }
+
+    public CompletableFuture<Void> forceResetSeason() {
+        return resetSeason(true);
+    }
+
+    private CompletableFuture<Void> resetSeason(boolean forced) {
+        // Publish the new schedule before MissionManager saves it or checks for another reset.
+        calculateSeasonEndDate();
+        calculateNextReset();
         MessageManager messageManager = plugin.getMessageManager();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.season.reset"));
+            player.sendMessage(messageManager.getPrefix() + messageManager.getMessage(
+                    forced ? "messages.season.forced-reset" : "messages.season.reset"));
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
         }
 
@@ -61,40 +75,13 @@ public class MissionResetHandler {
 
         plugin.getPlayerDataManager().clearCache(true);
 
-        plugin.getDatabaseManager().resetSeason().thenRun(() -> {
+        return plugin.getDatabaseManager().resetSeason().thenRun(() -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     plugin.getPlayerDataManager().loadPlayer(player.getUniqueId());
                 }
-                calculateSeasonEndDate();
             });
         });
-    }
-
-    public void forceResetSeason() {
-        MessageManager messageManager = plugin.getMessageManager();
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.season.forced-reset"));
-            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
-        }
-
-        broadcastNewSeason();
-
-        plugin.getPlayerDataManager().clearCache(true);
-
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            plugin.getDatabaseManager().resetSeason().thenRun(() -> {
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    calculateSeasonEndDate();
-                    calculateNextReset();
-
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        plugin.getPlayerDataManager().loadPlayer(player.getUniqueId());
-                    }
-                });
-            });
-        }, 20L);
     }
 
     private void broadcastNewSeason() {
@@ -127,12 +114,36 @@ public class MissionResetHandler {
     }
 
     public void calculateSeasonEndDate() {
+        seasonStartDate = LocalDateTime.now();
+        recalculateSeasonEndDate();
+    }
+
+    public void restoreSeasonDates(LocalDateTime startDate, LocalDateTime endDate) {
+        seasonStartDate = startDate;
+        seasonEndDate = endDate;
+        if (seasonStartDate == null) {
+            // Old databases only stored the deadline, so the original start cannot be recovered.
+            // Give an existing duration season its configured time without clearing player progress.
+            if ("MONTH_START".equalsIgnoreCase(plugin.getConfigManager().getSeasonResetType())) {
+                seasonStartDate = seasonEndDate.minusMonths(1).withDayOfMonth(1).toLocalDate().atStartOfDay();
+            } else {
+                seasonStartDate = LocalDateTime.now();
+                plugin.getLogger().warning("Legacy season has no start date. Starting its configured " +
+                        plugin.getConfigManager().getSeasonDuration() + "-day countdown now, preserving player progress. " +
+                        "This migration runs once; previous deadline: " + seasonEndDate);
+            }
+        }
+        recalculateSeasonEndDate();
+    }
+
+    public void recalculateSeasonEndDate() {
+        if (seasonStartDate == null) return;
         String resetType = plugin.getConfigManager().getSeasonResetType();
 
         if (resetType.equalsIgnoreCase("MONTH_START")) {
-            seasonEndDate = LocalDateTime.now().plusMonths(1).with(TemporalAdjusters.firstDayOfMonth()).withHour(0).withMinute(0).withSecond(0);
+            seasonEndDate = seasonStartDate.plusMonths(1).with(TemporalAdjusters.firstDayOfMonth()).toLocalDate().atStartOfDay();
         } else {
-            seasonEndDate = LocalDateTime.now().plusDays(plugin.getConfigManager().getSeasonDuration());
+            seasonEndDate = seasonStartDate.plusDays(plugin.getConfigManager().getSeasonDuration());
         }
     }
 
@@ -159,8 +170,8 @@ public class MissionResetHandler {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        long days = ChronoUnit.DAYS.between(now, seasonEndDate);
-        long hours = ChronoUnit.HOURS.between(now, seasonEndDate) % 24;
+        long days = Math.max(0, ChronoUnit.DAYS.between(now, seasonEndDate));
+        long hours = Math.max(0, ChronoUnit.HOURS.between(now, seasonEndDate)) % 24;
 
         MessageManager messageManager = plugin.getMessageManager();
         String dayStr = days == 1 ? messageManager.getMessage("time.day") : messageManager.getMessage("time.days");
@@ -202,7 +213,7 @@ public class MissionResetHandler {
         return seasonEndDate;
     }
 
-    public void setSeasonEndDate(LocalDateTime seasonEndDate) {
-        this.seasonEndDate = seasonEndDate;
+    public LocalDateTime getSeasonStartDate() {
+        return seasonStartDate;
     }
 }
