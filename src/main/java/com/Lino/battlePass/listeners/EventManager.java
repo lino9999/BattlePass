@@ -2,6 +2,8 @@ package com.Lino.battlePass.listeners;
 
 import com.Lino.battlePass.BattlePass;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 public class EventManager {
 
@@ -27,6 +29,10 @@ public class EventManager {
         this.missionEditorListener = new MissionEditorListener(plugin);
 
         registerListeners();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            playerConnectionListener.initializePlayTime(player);
+            missionProgressListener.initializePlayerLocation(player.getUniqueId(), player.getLocation());
+        }
     }
 
     private void registerListeners() {
@@ -46,6 +52,12 @@ public class EventManager {
 
     public PlayerConnectionListener getPlayerConnectionListener() {
         return playerConnectionListener;
+    }
+
+    public void flushPlayTime() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            playerConnectionListener.updatePlayTime(player);
+        }
     }
 
     public MissionProgressListener getMissionProgressListener() {

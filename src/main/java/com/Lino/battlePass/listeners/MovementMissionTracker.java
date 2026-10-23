@@ -13,7 +13,7 @@ final class MovementMissionTracker {
 
     private final BattlePass plugin;
     private final Map<UUID, Location> lastLocations = new ConcurrentHashMap<>();
-    private final Map<UUID, Double> distanceBuffer = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<String, Double>> distanceBuffer = new ConcurrentHashMap<>();
 
     MovementMissionTracker(BattlePass plugin) {
         this.plugin = plugin;
@@ -22,7 +22,7 @@ final class MovementMissionTracker {
     void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        lastLocations.put(uuid, player.getLocation());
+        initializePlayerLocation(uuid, player.getLocation());
     }
 
     void onPlayerTeleport(PlayerTeleportEvent event) {
@@ -30,54 +30,49 @@ final class MovementMissionTracker {
 
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        Location from = event.getFrom();
         Location to = event.getTo();
 
         if (to == null) return;
 
-        if (from.getWorld() == null || to.getWorld() == null ||
-                !from.getWorld().equals(to.getWorld()) ||
-                from.distance(to) > 100) {
-            lastLocations.put(uuid, to);
-        }
+        initializePlayerLocation(uuid, to);
     }
 
     void onPlayerMove(PlayerMoveEvent event) {
-        Location from = event.getFrom();
-        Location to = event.getTo();
-
-        if (from.getBlockX() == to.getBlockX()
-                && from.getBlockY() == to.getBlockY()
-                && from.getBlockZ() == to.getBlockZ()) {
+        if (event.isCancelled()) return;
+        if (event instanceof PlayerTeleportEvent teleport) {
+            onPlayerTeleport(teleport);
             return;
         }
+        Location to = event.getTo();
+        if (to == null) return;
 
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
         Location last = lastLocations.get(uuid);
         if (last == null) {
-            lastLocations.put(uuid, to);
+            initializePlayerLocation(uuid, to);
             return;
         }
 
         if (last.getWorld() == null || to.getWorld() == null
-                || !last.getWorld().getName().equals(to.getWorld().getName())) {
-            lastLocations.put(uuid, to);
-            distanceBuffer.remove(uuid);
+                || !last.getWorld().equals(to.getWorld())
+                || plugin.getConfigManager().isMissionWorldDisabled(to.getWorld().getName())) {
+            initializePlayerLocation(uuid, to);
             return;
         }
+
+        if (last.getX() == to.getX() && last.getY() == to.getY() && last.getZ() == to.getZ()) return;
 
         double distance;
         try {
             distance = last.distance(to);
         } catch (IllegalArgumentException e) {
-            lastLocations.put(uuid, to);
-            distanceBuffer.remove(uuid);
+            initializePlayerLocation(uuid, to);
             return;
         }
 
-        if (distance > 0 && distance < 100) {
+        if (Double.isFinite(distance) && distance > 0 && distance < 100) {
 
             String mode;
             if (player.isFlying() || player.isGliding()) {
@@ -90,21 +85,24 @@ final class MovementMissionTracker {
                 mode = "WALK";
             }
 
-            double buf = distanceBuffer.getOrDefault(uuid, 0.0);
+            Map<String, Double> buffers = distanceBuffer.computeIfAbsent(uuid, ignored -> new HashMap<>());
+            double buf = buffers.getOrDefault(mode, 0.0);
             buf += distance;
             int whole = (int) buf;
+            buffers.put(mode, buf - whole);
+            lastLocations.put(uuid, to.clone());
+            // Mission callbacks may teleport the player; commit this sample first.
             if (whole > 0) {
                 plugin.getMissionManager().progressMission(player, "WALK_DISTANCE", mode, whole);
-                buf -= whole;
             }
-            distanceBuffer.put(uuid, buf);
+        } else {
+            initializePlayerLocation(uuid, to);
         }
-
-        lastLocations.put(uuid, to);
     }
 
     void initializePlayerLocation(UUID uuid, Location location) {
-        lastLocations.put(uuid, location);
+        lastLocations.put(uuid, location.clone());
+        distanceBuffer.remove(uuid);
     }
 
     void cleanupPlayer(UUID uuid) {

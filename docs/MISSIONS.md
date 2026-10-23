@@ -47,6 +47,16 @@ Temporary regression tests verified canonical/formatted/namespaced names, additi
 
 If a canonical target still does not count on a live server, collect the active mission target/type, server/plugin versions, disabled worlds, player-data loading status and plugins cancelling/replacing consumption. Check those before adding fallback statistic/right-click listeners, which could award duplicate or unconsumed items.
 
+## WALK_DISTANCE and PLAY_TIME
+
+`MovementMissionTracker` records coordinate changes (including within a block) with separate fractional buffers for WALK, FLY, SWIM and SNEAK. A whole block is sent through the normal mission path with that mode; ANY missions match those updates as usual. Fractions remain associated with their own mode. Teleports, world changes, invalid/large discontinuities and disabled worlds reset the baseline/fractions; cancelled movement/teleports do not. Stored Location objects are snapshots, not mutable event references.
+
+`listeners/PlayTimeTracker`, owned by `PlayerConnectionListener`, accounts elapsed milliseconds and retains partial minutes between updates. `BattlePassTask` delegates periodic updates to the connection listener. World changes delimit eligible and disabled-world time; teleport/respawn handlers sample departure time before leaving the current world. Only eligible time contributes, and pending eligible minutes wait for loaded player data, unpaused progress and a currently enabled world. Join/listener registration initialize timing; quit flushes whole eligible minutes before player saving and clears session state. Incomplete minutes are not persisted between sessions. The existing `getPlayTimeStart()` map exposes last sampling timestamps; uncredited milliseconds are held internally.
+
+`BattlePass.onDisable` flushes online timing before stopping XP events and saving players. Progress/XP can still be committed at shutdown; `MissionProgressTracker` avoids scheduling actionbars while the plugin is disabled. Do not restore separate minute arithmetic in the periodic task or quit handler, which would lose fractions or award elapsed time twice. See CODE_AUDIT for automated evidence and lifecycle limits.
+
+Commit movement/timing sample state before invoking mission progress: XP/mission callbacks can trigger another timer sample or teleport. Writing the old sample after those callbacks can duplicate time or undo the new teleport baseline.
+
 ## CRAFT_ITEM and TRADE_VILLAGER
 
 `MissionProgressListener.onStatisticIncrement` delegates to `InteractionMissionTracker` at MONITOR with `ignoreCancelled=true`. Positive `CRAFT_ITEM` statistic deltas count actual output only while a CraftingInventory is open; positive `TRADED_WITH_VILLAGER` deltas count transactions while a MerchantInventory with a Villager merchant is open. The trade target is the profession, with NONE mapped to VILLAGER.

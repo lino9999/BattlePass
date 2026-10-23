@@ -7,8 +7,6 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.UUID;
-
 public class BattlePassTask extends BukkitRunnable {
 
     private final BattlePass plugin;
@@ -61,26 +59,9 @@ public class BattlePassTask extends BukkitRunnable {
     }
 
     private void updatePlayTime() {
-        long currentTime = System.currentTimeMillis();
-
+        if (plugin.getEventManager() == null || plugin.getEventManager().getPlayerConnectionListener() == null) return;
         for (Player player : Bukkit.getOnlinePlayers()) {
-            UUID uuid = player.getUniqueId();
-
-            if (plugin.getEventManager() != null &&
-                    plugin.getEventManager().getPlayerConnectionListener() != null) {
-
-                Long startTime = plugin.getEventManager().getPlayerConnectionListener()
-                        .getPlayTimeStart().get(uuid);
-
-                if (startTime != null) {
-                    long playTime = (currentTime - startTime) / 60000;
-                    if (playTime > 0) {
-                        plugin.getMissionManager().progressMission(player, "PLAY_TIME", "ANY", (int) playTime);
-                        plugin.getEventManager().getPlayerConnectionListener()
-                                .getPlayTimeStart().put(uuid, currentTime);
-                    }
-                }
-            }
+            plugin.getEventManager().getPlayerConnectionListener().updatePlayTime(player);
         }
     }
 }

@@ -9,19 +9,28 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.LongSupplier;
 
 public class PlayerConnectionListener implements Listener {
 
     private final BattlePass plugin;
-    private final Map<UUID, Long> playTimeStart = new ConcurrentHashMap<>();
+    private final PlayTimeTracker playTime;
 
     public PlayerConnectionListener(BattlePass plugin) {
+        this(plugin, System::currentTimeMillis);
+    }
+
+    PlayerConnectionListener(BattlePass plugin, LongSupplier clock) {
         this.plugin = plugin;
+        this.playTime = new PlayTimeTracker(plugin, clock);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -29,7 +38,7 @@ public class PlayerConnectionListener implements Listener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
-        playTimeStart.put(uuid, System.currentTimeMillis());
+        initializePlayTime(player);
 
         if (plugin.getMissionProgressListener() != null) {
             plugin.getMissionProgressListener().initializePlayerLocation(uuid, player.getLocation());
@@ -63,13 +72,8 @@ public class PlayerConnectionListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
 
-        Long startTime = playTimeStart.remove(uuid);
-        if (startTime != null) {
-            long playTime = (System.currentTimeMillis() - startTime) / 60000;
-            if (playTime > 0) {
-                plugin.getMissionManager().progressMission(event.getPlayer(), "PLAY_TIME", "ANY", (int) playTime);
-            }
-        }
+        updatePlayTime(event.getPlayer());
+        playTime.cleanup(uuid);
 
         plugin.getXpEventManager().removePlayerFromBossBar(event.getPlayer());
         plugin.getSoundManager().stopItemSound(uuid);
@@ -83,6 +87,34 @@ public class PlayerConnectionListener implements Listener {
     }
 
     public Map<UUID, Long> getPlayTimeStart() {
-        return playTimeStart;
+        return playTime.getStartTimes();
+    }
+
+    void initializePlayTime(Player player) {
+        playTime.initialize(player);
+    }
+
+    public void updatePlayTime(Player player) {
+        playTime.update(player);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+        updatePlayTime(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        if (!event.isCancelled() && event.getTo() != null
+                && !Objects.equals(event.getFrom().getWorld(), event.getTo().getWorld())) {
+            updatePlayTime(event.getPlayer());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        if (!event.getPlayer().getWorld().equals(event.getRespawnLocation().getWorld())) {
+            updatePlayTime(event.getPlayer());
+        }
     }
 }

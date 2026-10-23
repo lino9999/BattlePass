@@ -162,6 +162,7 @@ public class MissionProgressTracker {
     }
 
     private void showProgressActionbar(Player player, String missionName, int current, int required) {
+        if (!plugin.isEnabled()) return;
         UUID uuid = player.getUniqueId();
 
         if (!lastActionbarUpdate.containsKey(uuid)) {
@@ -214,6 +215,7 @@ public class MissionProgressTracker {
     }
 
     private void showCompletedActionbar(Player player, String missionName) {
+        if (!plugin.isEnabled()) return;
         UUID uuid = player.getUniqueId();
 
         if (!actionbarTasks.containsKey(uuid)) {

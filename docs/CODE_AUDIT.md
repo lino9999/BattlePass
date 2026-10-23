@@ -64,6 +64,18 @@ Evidence: [Bukkit statistic event API](https://hub.spigotmc.org/javadocs/spigot/
 
 Validation: four initial SQLite/claim-read tests failed before correction. Thirteen temporary tests cover real SQLite rollback via aborting triggers, preserved player/mission state, empty replacement, retryable player writes, critical-write fences, ordered reads, shutdown draining, rollback failure, startup failure, delayed rotation and reset finalization during shutdown. All 54 tests passed together, including all 41 pre-existing tests. MySQL ordering/connection contracts were tested without a live MySQL server. This queue is local to one plugin instance, not a distributed lock across servers. Temporary tests are removed before delivery.
 
+## Verified fixes: movement and elapsed play time (2026-10-24)
+
+- All successful teleports reset the movement baseline and fractions, including short/same-world teleports. Changed worlds, large discontinuities and disabled-world movement also clear stale fractions. Cancelled events preserve valid state. Location snapshots are cloned and null destinations are ignored.
+- Movement samples coordinate changes within a block, so a later flying/swimming/sneaking step does not inherit earlier walking distance. Fractional distances accumulate separately for each movement target and are retained when returning to that mode. Whole blocks still use the existing WALK_DISTANCE mission path.
+- `PlayTimeTracker` centralizes periodic, world-change and quit accounting. Partial minutes survive periodic updates; elapsed time in a disabled world is excluded when the player returns. Teleport/respawn departure samples flush whole eligible minutes before leaving the current world. Eligible pending time waits for player data and for season-reset progress to resume. Session state is initialized for players already online when listeners register and is cleared on quit.
+- Shutdown samples online play time before stopping XP events or saving players. Actionbar creation skips disabled plugins, so final progress can be saved without scheduling forbidden Bukkit tasks. Enabled-plugin actionbars still run normally.
+- Movement/timing state is committed before calling mission progress. External event handlers may re-enter timing or teleport the player during a mission/XP callback; they cannot duplicate already-credited minutes or have their new teleport baseline overwritten by the old move.
+
+Validation: eight initial movement/time regressions failed before correction; separate lifecycle checks also reproduced lost shutdown time and rejected scheduling during disable. All 71 tests passed together (41 pre-existing plus 30 temporary tests). Coverage includes mode fractions/sub-block moves, teleport cancellation, world/disabled-world transitions, departure/respawn accounting, location aliasing, cleanup, clock rollback/overflow, delayed data, reset pauses, quit/save ordering, existing online players and shutdown/actionbar ordering. Temporary tests and generated artifacts are removed before delivery. No live server was used. Fractional movement is rounded per target; incomplete play-time minutes remain session-local. Pending eligible time is only delivered while the current world permits missions; any time still pending on quit is session-local.
+
+Two additional callback regressions then reproduced duplicate pending-minute credits and overwritten teleport baselines. After moving state acknowledgement before the callback, both pass together with the existing suite (43 tests). These additional temporary sources/artifacts are also removed before the final clean package.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
@@ -71,6 +83,6 @@ The audit is still active. Inspect and reproduce these candidates before changin
 - Extreme reward configuration and progression scalability (very sparse/high levels); verify no loops scale with untrusted numeric ranges unnecessarily.
 - GUI title collisions (including titles starting with a placeholder), reserved shop slots, item preview paths, pagination and malformed reward configuration.
 - Daily reset as a single transaction across the mission set, season row and progress cleanup; check restart/failure windows and same-calendar-date resets.
-- Playtime/world/teleport state, season reset/save ordering, async coin distribution, startup/shutdown/reload, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
+- Season reset/save ordering and time-accounting boundaries across daily/season resets; async coin distribution, other startup/shutdown/reload paths, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 
 Review every production source file and relevant resource; track further findings and verification here. A live Minecraft or MySQL server has not been exercised so far.

@@ -134,6 +134,9 @@ public class BattlePass extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (eventManager != null) {
+            eventManager.flushPlayTime();
+        }
         if (xpEventManager != null) {
             xpEventManager.stopEvent();
         }
