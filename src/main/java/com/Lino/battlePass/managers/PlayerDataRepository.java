@@ -5,6 +5,7 @@ import com.Lino.battlePass.models.PlayerData;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import java.util.function.Supplier;
 
@@ -121,7 +122,7 @@ final class PlayerDataRepository {
                     }
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to load claimed rewards", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
@@ -144,35 +145,38 @@ final class PlayerDataRepository {
             try {
                 String missionDate = currentMissionDate.get();
                 conn = connections.getConnection();
-                try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
-                    ps.setInt(1, data.xp);
-                    ps.setInt(2, data.level);
-                    ps.setString(3, data.claimedFreeRewards.stream().map(String::valueOf).collect(Collectors.joining(",")));
-                    ps.setString(4, data.claimedPremiumRewards.stream().map(String::valueOf).collect(Collectors.joining(",")));
-                    ps.setInt(5, data.lastNotification);
-                    ps.setInt(6, data.totalLevels);
-                    ps.setInt(7, data.hasPremium ? 1 : 0);
-                    ps.setLong(8, data.lastDailyReward);
-                    ps.setInt(9, data.battleCoins);
-                    ps.setInt(10, data.excludeFromTop ? 1 : 0);
-                    ps.setString(11, uuid.toString());
-                    ps.executeUpdate();
-                }
-
-                if (!data.missionProgress.isEmpty()) {
-                    try (PreparedStatement ps = conn.prepareStatement(missionSql)) {
-                        for (Map.Entry<String, Integer> mission : data.missionProgress.entrySet()) {
-                            ps.setString(1, uuid.toString());
-                            ps.setString(2, mission.getKey());
-                            ps.setInt(3, Math.max(0, mission.getValue()));
-                            ps.setString(4, missionDate);
-                            ps.addBatch();
-                        }
-                        ps.executeBatch();
+                try (DatabaseTransaction transaction = new DatabaseTransaction(conn)) {
+                    try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+                        ps.setInt(1, data.xp);
+                        ps.setInt(2, data.level);
+                        ps.setString(3, data.claimedFreeRewards.stream().map(String::valueOf).collect(Collectors.joining(",")));
+                        ps.setString(4, data.claimedPremiumRewards.stream().map(String::valueOf).collect(Collectors.joining(",")));
+                        ps.setInt(5, data.lastNotification);
+                        ps.setInt(6, data.totalLevels);
+                        ps.setInt(7, data.hasPremium ? 1 : 0);
+                        ps.setLong(8, data.lastDailyReward);
+                        ps.setInt(9, data.battleCoins);
+                        ps.setInt(10, data.excludeFromTop ? 1 : 0);
+                        ps.setString(11, uuid.toString());
+                        ps.executeUpdate();
                     }
+
+                    if (!data.missionProgress.isEmpty()) {
+                        try (PreparedStatement ps = conn.prepareStatement(missionSql)) {
+                            for (Map.Entry<String, Integer> mission : data.missionProgress.entrySet()) {
+                                ps.setString(1, uuid.toString());
+                                ps.setString(2, mission.getKey());
+                                ps.setInt(3, Math.max(0, mission.getValue()));
+                                ps.setString(4, missionDate);
+                                ps.addBatch();
+                            }
+                            ps.executeBatch();
+                        }
+                    }
+                    transaction.commit();
                 }
                 return true;
-            } catch (SQLException e) {
+            } catch (SQLException | CompletionException e) {
                 plugin.getLogger().severe("Failed to save data for " + uuid + ": " + e.getMessage());
                 e.printStackTrace();
                 return false;
@@ -197,7 +201,7 @@ final class PlayerDataRepository {
                     ps.executeUpdate();
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to update player coins", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
@@ -228,7 +232,7 @@ final class PlayerDataRepository {
                     }
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to load the leaderboard", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
@@ -245,19 +249,22 @@ final class PlayerDataRepository {
 
             try {
                 conn = connections.getConnection();
-                try (Statement stmt = conn.createStatement()) {
-                    boolean resetCoins = plugin.getConfigManager().isResetCoinsOnSeasonEnd();
+                try (DatabaseTransaction transaction = new DatabaseTransaction(conn)) {
+                    try (Statement stmt = conn.createStatement()) {
+                        boolean resetCoins = plugin.getConfigManager().isResetCoinsOnSeasonEnd();
 
-                    if (resetCoins) {
-                        stmt.executeUpdate("UPDATE " + connections.getPrefix() + "players SET xp = 0, level = 1, claimed_free = '', claimed_premium = '', has_premium = 0, last_daily_reward = 0, battle_coins = 0");
-                    } else {
-                        stmt.executeUpdate("UPDATE " + connections.getPrefix() + "players SET xp = 0, level = 1, claimed_free = '', claimed_premium = '', has_premium = 0, last_daily_reward = 0");
+                        if (resetCoins) {
+                            stmt.executeUpdate("UPDATE " + connections.getPrefix() + "players SET xp = 0, level = 1, claimed_free = '', claimed_premium = '', has_premium = 0, last_daily_reward = 0, battle_coins = 0");
+                        } else {
+                            stmt.executeUpdate("UPDATE " + connections.getPrefix() + "players SET xp = 0, level = 1, claimed_free = '', claimed_premium = '', has_premium = 0, last_daily_reward = 0");
+                        }
+                        stmt.executeUpdate("DELETE FROM " + connections.getPrefix() + "missions");
+                        stmt.executeUpdate("DELETE FROM " + connections.getPrefix() + "daily_missions");
                     }
-                    stmt.executeUpdate("DELETE FROM " + connections.getPrefix() + "missions");
-                    stmt.executeUpdate("DELETE FROM " + connections.getPrefix() + "daily_missions");
+                    transaction.commit();
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to reset season data", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}

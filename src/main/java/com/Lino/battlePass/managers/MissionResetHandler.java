@@ -60,9 +60,18 @@ public class MissionResetHandler {
     }
 
     private CompletableFuture<Void> resetSeason(boolean forced) {
-        // Publish the new schedule before MissionManager saves it or checks for another reset.
+        return beginSeasonReset().thenRun(() -> Bukkit.getScheduler().runTask(plugin, () -> completeSeasonReset(forced)));
+    }
+
+    CompletableFuture<Void> beginSeasonReset() {
+        plugin.getPlayerDataManager().clearCache(true);
+        // Prepare the schedule before MissionManager queues its save behind the reset transaction.
         calculateSeasonEndDate();
         calculateNextReset();
+        return plugin.getDatabaseManager().resetSeason();
+    }
+
+    void completeSeasonReset(boolean forced) {
         MessageManager messageManager = plugin.getMessageManager();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -73,15 +82,9 @@ public class MissionResetHandler {
 
         broadcastNewSeason();
 
-        plugin.getPlayerDataManager().clearCache(true);
-
-        return plugin.getDatabaseManager().resetSeason().thenRun(() -> {
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    plugin.getPlayerDataManager().loadPlayer(player.getUniqueId());
-                }
-            });
-        });
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            plugin.getPlayerDataManager().loadPlayer(player.getUniqueId());
+        }
     }
 
     private void broadcastNewSeason() {

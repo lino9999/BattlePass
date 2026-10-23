@@ -12,6 +12,8 @@ Dirty revisions are acknowledged individually: a completed write cannot clear a 
 
 `clearCache(true)` refuses to discard unsaved revisions after a failed flush. Season reset runs this preflight before rotation/deadline changes. Player repositories resolve the mission date before acquiring the player connection, avoiding nested MySQL leases when the pool has only one connection.
 
+`DatabaseWriteQueue` orders facade mutations and gates reads on earlier writes; callbacks compose futures rather than waiting on executor threads. Critical write exceptions fence subsequent operations and request plugin disable, while a player snapshot returning false remains retryable. Outstanding reads and writes are drained before closing connections. `DatabaseTransaction` owns an auto-commit connection for atomic snapshot/mission replacement/reset work and rolls back failures. Repositories must not join queued facade operations from inside their executor jobs.
+
 Do not hold the player-cache monitor while waiting for database futures. A load completion running on the shared SQLite executor also needs that monitor; blocking it can prevent queued writes from ever completing. Only the generation check/cache mutation uses the monitor during clear.
 
 `BattlePass.onDisable` stops XP events/sounds/coin work, saves players synchronously, shuts down missions and closes the database. Bukkit world, player and inventory operations belong on the server thread; database callbacks often schedule work back onto it.
@@ -53,6 +55,8 @@ The three public entry points keep their existing signatures. Their helpers are 
 | | `InteractionMissionTracker` | Food, crafting, fishing, trades, enchanting, XP pickup, animals |
 
 Keep event annotations and registration on `MissionProgressListener` so priorities, cancellation handling and registration order stay unchanged. Join/quit initialization and cleanup delegate to both movement and block state. `DatabaseManager.shutdown` waits for ordered season writes before stopping the shared executor and closing connections. Mission-date and villager-profession callbacks preserve dispatch through the original public methods.
+
+Season calendars are prepared before their queued save, but reward rotation/announcements/player reload wait for the reset transaction to commit. Mission progress is paused while resetting. The idempotent commit callback can run directly during main-thread shutdown after awaiting the raw database reset, avoiding dependence on a cancelled Bukkit task. Failure disables the plugin and leaves later database writes fenced.
 
 Crafting and villager trading use the facade's MONITOR/ignoreCancelled statistic handler for completed action counts. Their old public click methods remain deprecated, unregistered compatibility stubs. Do not restore click estimates alongside statistics; that would award twice.
 

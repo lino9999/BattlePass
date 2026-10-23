@@ -5,6 +5,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 /** Persists season dates and coin deadlines while preserving season save ordering. */
@@ -43,7 +44,7 @@ final class SeasonDataRepository {
                 }
 
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to save season dates", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
@@ -68,7 +69,7 @@ final class SeasonDataRepository {
                     ps.executeUpdate();
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to save the coin deadline", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
@@ -99,7 +100,7 @@ final class SeasonDataRepository {
                     }
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to load the coin deadline", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
@@ -163,7 +164,7 @@ final class SeasonDataRepository {
                     }
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to load season data", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
@@ -183,12 +184,13 @@ final class SeasonDataRepository {
             try (PreparedStatement ps = conn.prepareStatement("SELECT current_mission_date FROM " + connections.getPrefix() + "season_data WHERE id = 1")) {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        date = rs.getString("current_mission_date");
+                        String stored = rs.getString("current_mission_date");
+                        if (stored != null && !stored.isBlank()) date = stored;
                     }
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new CompletionException("Failed to load the current mission date", e);
         } finally {
             if (shouldClose && conn != null) {
                 try { conn.close(); } catch (SQLException e) {}

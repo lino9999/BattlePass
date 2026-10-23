@@ -10,6 +10,8 @@ import org.bukkit.entity.Player;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MissionManager {
 
@@ -25,7 +27,11 @@ public class MissionManager {
     private volatile List<Mission> dailyMissions = Collections.synchronizedList(new ArrayList<>());
     private volatile boolean missionsLoadAttempted = false;
     private String currentMissionDate;
-    private boolean seasonResetInProgress;
+    private volatile boolean seasonResetInProgress;
+    private volatile boolean shuttingDown;
+    private volatile boolean persistenceFailed;
+    private CompletableFuture<Void> pendingSeasonReset;
+    private Runnable pendingSeasonCommit;
 
     public MissionManager(BattlePass plugin, ConfigManager configManager, DatabaseManager databaseManager, PlayerDataManager playerDataManager) {
         this.plugin = plugin;
@@ -62,8 +68,7 @@ public class MissionManager {
             saveSeasonData();
             loadMissionsAfterSeasonData();
         })).exceptionally(ex -> {
-            plugin.getLogger().severe("Failed to load season data: " + ex.getMessage());
-            ex.printStackTrace();
+            persistenceFailure("load season data", ex);
             return null;
         });
     }
@@ -99,7 +104,10 @@ public class MissionManager {
                     saveSeasonData();
                 }
             }
-        }));
+        })).exceptionally(ex -> {
+            persistenceFailure("load daily missions", ex);
+            return null;
+        });
     }
 
     public void recalculateResetTimeOnReload() {
@@ -118,7 +126,7 @@ public class MissionManager {
     }
 
     public void checkMissionReset() {
-        if (seasonResetInProgress) return;
+        if (seasonResetInProgress || shuttingDown) return;
         if (resetHandler.shouldResetMissions()) {
             currentMissionDate = LocalDateTime.now().toLocalDate().toString();
 
@@ -148,7 +156,7 @@ public class MissionManager {
     }
 
     private void resetSeason(boolean forced) {
-        if (seasonResetInProgress) return;
+        if (seasonResetInProgress || shuttingDown || persistenceFailed) return;
         try {
             // Flush before rotating configuration or publishing a new season deadline.
             playerDataManager.clearCache(true);
@@ -157,28 +165,45 @@ public class MissionManager {
             return;
         }
         seasonResetInProgress = true;
-        SeasonRotationManager rotation = plugin.getSeasonRotationManager();
-        if (rotation != null && rotation.isRotationEnabled()) {
-            rotation.rotateToNextSeason();
-            plugin.getConfigManager().reload();
-            plugin.getRewardManager().loadRewards();
+        AtomicBoolean committed = new AtomicBoolean();
+        pendingSeasonCommit = () -> {
+            if (!committed.compareAndSet(false, true)) return;
+            try {
+                SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+                if (rotation != null && rotation.isRotationEnabled()) {
+                    rotation.rotateToNextSeason();
+                    plugin.getConfigManager().reload();
+                    plugin.getRewardManager().loadRewards();
+                }
+                seasonResetInProgress = false;
+                saveDailyMissions();
+                if (!shuttingDown && !persistenceFailed) {
+                    resetHandler.completeSeasonReset(forced);
+                    if (forced) plugin.startCoinsDistributionTask(null);
+                }
+                pendingSeasonReset = null;
+                pendingSeasonCommit = null;
+            } catch (Exception failure) {
+                persistenceFailure("finish the season reset", failure);
+            }
+        };
+        Runnable commit = pendingSeasonCommit;
+        try {
+            CompletableFuture<Void> reset = resetHandler.beginSeasonReset();
+            pendingSeasonReset = reset;
+            currentMissionDate = LocalDateTime.now().toLocalDate().toString();
+            generateDailyMissions();
+            saveSeasonData();
+            progressTracker.resetProgress();
+            reset.thenRun(() -> {
+                if (!shuttingDown) Bukkit.getScheduler().runTask(plugin, commit);
+            }).exceptionally(ex -> {
+                persistenceFailure("reset season data", ex);
+                return null;
+            });
+        } catch (Exception failure) {
+            persistenceFailure("start the season reset", failure);
         }
-
-        CompletableFuture<Void> reset = forced ? resetHandler.forceResetSeason() : resetHandler.resetSeason();
-        currentMissionDate = LocalDateTime.now().toLocalDate().toString();
-        generateDailyMissions();
-        saveSeasonData();
-        progressTracker.resetProgress();
-        // resetSeason deletes daily_missions; save the new set only after that deletion completes.
-        reset.thenRun(() -> Bukkit.getScheduler().runTask(plugin, () -> {
-            saveDailyMissions();
-            seasonResetInProgress = false;
-            if (forced) plugin.startCoinsDistributionTask(null);
-        })).exceptionally(ex -> {
-            plugin.getLogger().severe("Failed to reset season: " + ex.getMessage());
-            Bukkit.getScheduler().runTask(plugin, () -> seasonResetInProgress = false);
-            return null;
-        });
     }
 
     private volatile long lastForceSeasonReset = 0;
@@ -191,7 +216,7 @@ public class MissionManager {
     }
 
     public void forceResetMissions() {
-        if (seasonResetInProgress) return;
+        if (seasonResetInProgress || shuttingDown) return;
         currentMissionDate = LocalDateTime.now().toLocalDate().toString();
 
         generateDailyMissions();
@@ -211,13 +236,13 @@ public class MissionManager {
     }
 
     public void progressMission(Player player, String type, String target, int amount) {
-        if (amount <= 0) return;
+        if (amount <= 0 || seasonResetInProgress || shuttingDown) return;
         if (configManager.isMissionWorldDisabled(player.getWorld().getName())) return;
         progressTracker.trackProgress(player, type, target, amount, dailyMissions);
     }
 
     public void progressMission(Player player, String type, Collection<String> targets, int amount) {
-        if (amount <= 0) return;
+        if (amount <= 0 || seasonResetInProgress || shuttingDown) return;
         if (configManager.isMissionWorldDisabled(player.getWorld().getName())) return;
         progressTracker.trackProgress(player, type, targets, amount, dailyMissions);
     }
@@ -232,23 +257,55 @@ public class MissionManager {
 
     private void saveSeasonData() {
         if (resetHandler.getSeasonStartDate() == null || resetHandler.getSeasonEndDate() == null) return;
-        databaseManager.saveSeasonData(
+        observeWrite(databaseManager.saveSeasonData(
                 resetHandler.getSeasonStartDate(),
                 resetHandler.getSeasonEndDate(),
                 resetHandler.getNextMissionReset(),
                 currentMissionDate
-        );
+        ), "save season dates");
     }
 
     private void saveDailyMissions() {
         if (currentMissionDate == null) {
             currentMissionDate = LocalDateTime.now().toLocalDate().toString();
         }
-        databaseManager.saveDailyMissions(dailyMissions, currentMissionDate);
+        observeWrite(databaseManager.saveDailyMissions(dailyMissions, currentMissionDate), "save daily missions");
+    }
+
+    private void observeWrite(CompletableFuture<?> operation, String description) {
+        if (operation != null) operation.whenComplete((result, failure) -> {
+            if (failure != null) persistenceFailure(description, failure);
+        });
+    }
+
+    private synchronized void persistenceFailure(String operation, Throwable failure) {
+        if (persistenceFailed) return;
+        persistenceFailed = true;
+        seasonResetInProgress = true;
+        plugin.getLogger().severe("BattlePass cannot " + operation + ": " + failure.getMessage() +
+                ". Disabling the plugin to preserve persistent data.");
+        if (!shuttingDown) Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!shuttingDown) Bukkit.getPluginManager().disablePlugin(plugin);
+        });
     }
 
     public void shutdown() {
-        if (missionsLoadAttempted) {
+        shuttingDown = true;
+        CompletableFuture<Void> reset = pendingSeasonReset;
+        Runnable commit = pendingSeasonCommit;
+        if (reset != null && commit != null && !persistenceFailed) {
+            try {
+                // Finish a committed reset directly on shutdown's main thread, not through a cancelled task.
+                reset.get(30, TimeUnit.SECONDS);
+                commit.run();
+            } catch (InterruptedException failure) {
+                Thread.currentThread().interrupt();
+                persistenceFailure("finish a pending season reset during shutdown", failure);
+            } catch (Exception failure) {
+                persistenceFailure("finish a pending season reset during shutdown", failure);
+            }
+        }
+        if (missionsLoadAttempted && !persistenceFailed) {
             saveSeasonData();
             saveDailyMissions();
         }
@@ -276,6 +333,6 @@ public class MissionManager {
     }
 
     public boolean isInitialized() {
-        return currentMissionDate != null && missionsLoadAttempted && !seasonResetInProgress;
+        return currentMissionDate != null && missionsLoadAttempted && !seasonResetInProgress && !shuttingDown && !persistenceFailed;
     }
 }

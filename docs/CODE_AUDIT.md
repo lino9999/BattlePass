@@ -55,13 +55,22 @@ Validation: nine boundary acceptance tests failed before correction. Fourteen te
 
 Evidence: [Bukkit statistic event API](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/event/player/PlayerStatisticIncrementEvent.html), [Paper/CraftBukkit 1.21.4 statistic dispatch](https://raw.githubusercontent.com/PaperMC/Paper/ver/1.21.4/paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java) and [completed trade statistic placement](https://raw.githubusercontent.com/PaperMC/Paper/ver/1.21.4/paper-server/patches/sources/net/minecraft/world/inventory/MerchantResultSlot.java.patch). Eight temporary tests cover no-op clicks, actual shift output, cancellation/zero/unrelated statistics, profession targets, multiple trades and other inventory/merchant contexts. All 49 tests passed together. No live Minecraft server was used; a server/plugin that suppresses these statistics can also suppress this progress path.
 
+## Verified fixes: database ordering, rollback and season finalization
+
+- `DatabaseWriteQueue` orders mutations within this plugin instance and makes reads wait for earlier writes without blocking executor threads. It tracks outstanding reads/writes for shutdown and rejects new work once closing starts. Critical exceptional writes fence subsequent operations and request plugin disable; retryable player snapshot failures return false and remain retryable. Read-only failures do not poison the write lane.
+- `DatabaseTransaction` wraps player snapshot updates, daily mission replacement and season-reset table changes. Failure rolls back the complete operation; failed rollback closes the connection instead of enabling auto-commit and risking a partial commit. Snapshot inputs are copied at the facade boundary.
+- SQL errors loading claims/seasons/missions or performing critical writes now propagate instead of pretending success/empty data. Saving an empty active mission list clears the persisted list. A missing/blank current mission date retains the current-date fallback, while a failed query is an error.
+- Season reward rotation, announcements and player reload run after the reset transaction commits. Progress is paused during reset. Startup/reset/write failures are observed and stop the plugin safely. Shutdown can finalize a committed pending reset directly, without waiting for a main-thread task that shutdown would cancel, and the finalizer is idempotent.
+
+Validation: four initial SQLite/claim-read tests failed before correction. Thirteen temporary tests cover real SQLite rollback via aborting triggers, preserved player/mission state, empty replacement, retryable player writes, critical-write fences, ordered reads, shutdown draining, rollback failure, startup failure, delayed rotation and reset finalization during shutdown. All 54 tests passed together, including all 41 pre-existing tests. MySQL ordering/connection contracts were tested without a live MySQL server. This queue is local to one plugin instance, not a distributed lock across servers. Temporary tests are removed before delivery.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
 - Extreme reward configuration and progression scalability (very sparse/high levels); verify no loops scale with untrusted numeric ranges unnecessarily.
 - GUI title collisions (including titles starting with a placeholder), reserved shop slots, item preview paths, pagination and malformed reward configuration.
-- Repository exception propagation and reset/save barriers: avoid reporting failed writes/resets as successful, including MySQL concurrency and daily resets on the same calendar date.
+- Daily reset as a single transaction across the mission set, season row and progress cleanup; check restart/failure windows and same-calendar-date resets.
 - Playtime/world/teleport state, season reset/save ordering, async coin distribution, startup/shutdown/reload, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 
 Review every production source file and relevant resource; track further findings and verification here. A live Minecraft or MySQL server has not been exercised so far.

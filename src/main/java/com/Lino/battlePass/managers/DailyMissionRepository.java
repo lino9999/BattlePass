@@ -5,6 +5,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 
 /** Persists active daily missions and removes expired mission progress. */
@@ -20,8 +21,6 @@ final class DailyMissionRepository {
 
     public CompletableFuture<Void> saveDailyMissions(List<Mission> missions, String missionDate) {
         return CompletableFuture.runAsync(() -> {
-            if (missions.isEmpty()) return;
-
             String insertSql = connections.isMySQL()
                     ? "INSERT INTO " + connections.getPrefix() + "daily_missions (name, type, target, additional_targets, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name), type=VALUES(type), target=VALUES(target), additional_targets=VALUES(additional_targets), required=VALUES(required), xp_reward=VALUES(xp_reward)"
                     : "INSERT OR REPLACE INTO " + connections.getPrefix() + "daily_missions (name, type, target, additional_targets, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -31,25 +30,28 @@ final class DailyMissionRepository {
 
             try {
                 conn = connections.getConnection();
-                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM " + connections.getPrefix() + "daily_missions")) {
-                    ps.executeUpdate();
-                }
-
-                try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
-                    for (Mission mission : missions) {
-                        ps.setString(1, mission.name);
-                        ps.setString(2, mission.type);
-                        ps.setString(3, mission.target);
-                        ps.setString(4, String.join(",", mission.additionalTargets));
-                        ps.setInt(5, mission.required);
-                        ps.setInt(6, mission.xpReward);
-                        ps.setString(7, missionDate);
-                        ps.addBatch();
+                try (DatabaseTransaction transaction = new DatabaseTransaction(conn)) {
+                    try (PreparedStatement ps = conn.prepareStatement("DELETE FROM " + connections.getPrefix() + "daily_missions")) {
+                        ps.executeUpdate();
                     }
-                    ps.executeBatch();
+
+                    try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
+                        for (Mission mission : missions) {
+                            ps.setString(1, mission.name);
+                            ps.setString(2, mission.type);
+                            ps.setString(3, mission.target);
+                            ps.setString(4, String.join(",", mission.additionalTargets));
+                            ps.setInt(5, mission.required);
+                            ps.setInt(6, mission.xpReward);
+                            ps.setString(7, missionDate);
+                            ps.addBatch();
+                        }
+                        ps.executeBatch();
+                    }
+                    transaction.commit();
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to replace daily missions", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
@@ -91,7 +93,7 @@ final class DailyMissionRepository {
                     }
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to load daily missions", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
@@ -113,7 +115,7 @@ final class DailyMissionRepository {
                     ps.executeUpdate();
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new CompletionException("Failed to clear expired mission progress", e);
             } finally {
                 if (shouldClose && conn != null) {
                     try { conn.close(); } catch (SQLException e) {}
