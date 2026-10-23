@@ -21,7 +21,7 @@ final class SeasonDataRepository {
     }
 
     public synchronized CompletableFuture<Void> saveSeasonData(LocalDateTime startDate, LocalDateTime endDate,
-                                                               LocalDateTime missionResetTime, String currentMissionDate) {
+                                                               LocalDateTime missionResetTime, String currentMissionDate, LocalDateTime cycleStart) {
         // Preserve submission order even with MySQL's multi-threaded executor. An older mission
         // save must never overwrite the deadline just published by a reset or config reload.
         seasonSave = seasonSave.handle((ignored, failure) -> null).thenRunAsync(() -> {
@@ -30,7 +30,7 @@ final class SeasonDataRepository {
 
             try {
                 conn = connections.getConnection();
-                saveOnConnection(conn, startDate, endDate, missionResetTime, currentMissionDate);
+                saveOnConnection(conn, startDate, endDate, missionResetTime, currentMissionDate, cycleStart);
 
             } catch (SQLException e) {
                 throw new CompletionException("Failed to save season dates", e);
@@ -44,17 +44,18 @@ final class SeasonDataRepository {
     }
 
     void saveOnConnection(Connection conn, LocalDateTime startDate, LocalDateTime endDate,
-                          LocalDateTime missionResetTime, String currentMissionDate) throws SQLException {
+                          LocalDateTime missionResetTime, String currentMissionDate, LocalDateTime cycleStart) throws SQLException {
         String sql = connections.isMySQL()
-                ? "INSERT INTO " + connections.getPrefix() + "season_data (id, start_date, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) " +
-                  "ON DUPLICATE KEY UPDATE start_date = VALUES(start_date), end_date = VALUES(end_date), mission_reset_time = VALUES(mission_reset_time), current_mission_date = VALUES(current_mission_date)"
-                : "INSERT INTO " + connections.getPrefix() + "season_data (id, start_date, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) " +
-                  "ON CONFLICT(id) DO UPDATE SET start_date = excluded.start_date, end_date = excluded.end_date, mission_reset_time = excluded.mission_reset_time, current_mission_date = excluded.current_mission_date";
+                ? "INSERT INTO " + connections.getPrefix() + "season_data (id, start_date, end_date, mission_reset_time, current_mission_date, mission_cycle_start) VALUES (1, ?, ?, ?, ?, ?) " +
+                  "ON DUPLICATE KEY UPDATE start_date = VALUES(start_date), end_date = VALUES(end_date), mission_reset_time = VALUES(mission_reset_time), current_mission_date = VALUES(current_mission_date), mission_cycle_start = VALUES(mission_cycle_start)"
+                : "INSERT INTO " + connections.getPrefix() + "season_data (id, start_date, end_date, mission_reset_time, current_mission_date, mission_cycle_start) VALUES (1, ?, ?, ?, ?, ?) " +
+                  "ON CONFLICT(id) DO UPDATE SET start_date = excluded.start_date, end_date = excluded.end_date, mission_reset_time = excluded.mission_reset_time, current_mission_date = excluded.current_mission_date, mission_cycle_start = excluded.mission_cycle_start";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, startDate != null ? startDate.toString() : "");
             ps.setString(2, endDate != null ? endDate.toString() : "");
             ps.setString(3, missionResetTime != null ? missionResetTime.toString() : "");
             ps.setString(4, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
+            ps.setString(5, cycleStart != null ? cycleStart.toString() : "");
             ps.executeUpdate();
         }
     }
@@ -157,6 +158,14 @@ final class SeasonDataRepository {
                             }
 
                             String currentMissionDate = rs.getString("current_mission_date");
+                            String cycleStartStr = rs.getString("mission_cycle_start");
+                            if (cycleStartStr != null && !cycleStartStr.isBlank()) {
+                                try {
+                                    data.put("missionCycleStart", LocalDateTime.parse(cycleStartStr));
+                                } catch (Exception failure) {
+                                    plugin.getLogger().warning("Invalid mission cycle start in DB: " + cycleStartStr);
+                                }
+                            }
                             if (currentMissionDate != null && !currentMissionDate.isEmpty()) {
                                 data.put("currentMissionDate", currentMissionDate);
                             }

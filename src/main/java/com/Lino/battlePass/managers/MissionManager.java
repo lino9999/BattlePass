@@ -49,11 +49,14 @@ public class MissionManager {
     }
 
     public void initialize() {
-        databaseManager.loadSeasonData().thenAccept(data -> Bukkit.getScheduler().runTask(plugin, () -> {
+        if (shuttingDown || plugin.isStopping()) return;
+        databaseManager.loadSeasonData().thenAccept(data -> runInitializationStep(() -> {
             if (data.containsKey("endDate")) {
                 resetHandler.restoreSeasonDates((LocalDateTime) data.get("startDate"), (LocalDateTime) data.get("endDate"));
                 if (data.containsKey("missionResetTime")) {
-                    resetHandler.setNextMissionReset((LocalDateTime) data.get("missionResetTime"));
+                    resetHandler.restoreMissionSchedule((LocalDateTime) data.get("missionCycleStart"),
+                            (LocalDateTime) data.get("missionResetTime"));
+                    resetHandler.recalculateResetTimeOnReload();
                 }
                 if (data.containsKey("currentMissionDate")) {
                     currentMissionDate = (String) data.get("currentMissionDate");
@@ -78,7 +81,7 @@ public class MissionManager {
     }
 
     private void loadMissionsAfterSeasonData() {
-        databaseManager.loadDailyMissions().thenAccept(missions -> Bukkit.getScheduler().runTask(plugin, () -> {
+        databaseManager.loadDailyMissions().thenAccept(missions -> runInitializationStep(() -> {
             LocalDateTime now = LocalDateTime.now();
 
             if (currentMissionDate == null) {
@@ -86,7 +89,7 @@ public class MissionManager {
             }
 
             boolean needNewMissions = missions.isEmpty() ||
-                    (resetHandler.getNextMissionReset() != null && now.isAfter(resetHandler.getNextMissionReset()));
+                    (resetHandler.getNextMissionReset() != null && !now.isBefore(resetHandler.getNextMissionReset()));
 
             if (needNewMissions) {
                 resetDailyMissions(false, false);
@@ -105,8 +108,17 @@ public class MissionManager {
         });
     }
 
+    private void runInitializationStep(Runnable step) {
+        if (shuttingDown || persistenceFailed || plugin.isStopping()) return;
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (shuttingDown || persistenceFailed || plugin.isStopping()) return;
+            try { step.run(); }
+            catch (RuntimeException failure) { persistenceFailure("initialize missions", failure); }
+        });
+    }
+
     public void recalculateResetTimeOnReload() {
-        if (dailyResetInProgress) {
+        if (dailyResetInProgress || seasonResetInProgress) {
             calendarReloadPending = true;
             return;
         }
@@ -160,6 +172,7 @@ public class MissionManager {
                     plugin.getRewardManager().loadRewards();
                 }
                 seasonResetInProgress = false;
+                applyPendingCalendarReload();
                 saveDailyMissions();
                 if (!shuttingDown && !persistenceFailed) {
                     resetHandler.completeSeasonReset(forced);
@@ -207,10 +220,11 @@ public class MissionManager {
         if (isProgressPaused() || persistenceFailed) return;
         List<Mission> replacements;
         LocalDateTime nextReset;
-        String missionDate = LocalDateTime.now().toLocalDate().toString();
+        LocalDateTime cycleStart = LocalDateTime.now();
+        String missionDate = cycleStart.toLocalDate().toString();
         try {
             replacements = new ArrayList<>(missionGenerator.generateDailyMissions());
-            nextReset = LocalDateTime.now().plusHours(configManager.getMissionResetHours());
+            nextReset = cycleStart.plusHours(Math.max(1, configManager.getMissionResetHours()));
             // Drain old snapshots and invalidate old loads before submitting the cycle replacement.
             playerDataManager.clearCache(true);
         } catch (RuntimeException failure) {
@@ -224,16 +238,13 @@ public class MissionManager {
             try {
                 dailyMissions = new ArrayList<>(replacements);
                 currentMissionDate = missionDate;
-                resetHandler.setNextMissionReset(nextReset);
+                resetHandler.restoreMissionSchedule(cycleStart, nextReset);
                 missionsLoadAttempted = true;
                 progressTracker.resetProgress();
                 dailyResetInProgress = false;
                 pendingDailyReset = null;
                 pendingDailyCommit = null;
-                if (calendarReloadPending) {
-                    calendarReloadPending = false;
-                    recalculateResetTimeOnReload();
-                }
+                applyPendingCalendarReload();
                 if (!shuttingDown && !persistenceFailed) {
                     playerDataManager.loadOnlinePlayers();
                     if (notify) {
@@ -272,6 +283,13 @@ public class MissionManager {
         if (amount <= 0 || isProgressPaused()) return;
         if (configManager.isMissionWorldDisabled(player.getWorld().getName())) return;
         progressTracker.trackProgress(player, type, target, amount, dailyMissions);
+    }
+
+    private void applyPendingCalendarReload() {
+        if (calendarReloadPending) {
+            calendarReloadPending = false;
+            recalculateResetTimeOnReload();
+        }
     }
 
     public void progressMission(Player player, String type, Collection<String> targets, int amount) {
@@ -321,8 +339,8 @@ public class MissionManager {
         seasonResetInProgress = true;
         plugin.getLogger().severe("BattlePass cannot " + operation + ": " + failure.getMessage() +
                 ". Disabling the plugin to preserve persistent data.");
-        if (!shuttingDown) Bukkit.getScheduler().runTask(plugin, () -> {
-            if (!shuttingDown) Bukkit.getPluginManager().disablePlugin(plugin);
+        if (!shuttingDown && !plugin.isStopping()) Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!shuttingDown && !plugin.isStopping()) Bukkit.getPluginManager().disablePlugin(plugin);
         });
     }
 

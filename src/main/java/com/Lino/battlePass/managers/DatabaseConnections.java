@@ -158,6 +158,7 @@ final class DatabaseConnections {
                         "start_date TEXT," +
                         "end_date TEXT," +
                         "mission_reset_time TEXT," +
+                        "mission_cycle_start TEXT," +
                         "current_mission_date TEXT," +
                         "next_coins_distribution TEXT)"
                 );
@@ -174,7 +175,7 @@ final class DatabaseConnections {
                 );
 
                 DatabaseSchema.ensureColumns(conn, prefix + "season_data", Map.of(
-                        "start_date", "TEXT", "next_coins_distribution", "TEXT"));
+                        "start_date", "TEXT", "next_coins_distribution", "TEXT", "mission_cycle_start", "TEXT"));
                 // MySQL rejects TEXT DEFAULT ''; existing rows can safely use NULL instead.
                 DatabaseSchema.ensureColumns(conn, prefix + "daily_missions", Map.of("additional_targets", "TEXT"));
                 if (!isMySQL) {

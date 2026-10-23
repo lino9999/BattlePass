@@ -40,7 +40,8 @@ public class DatabaseManager {
 
     public synchronized CompletableFuture<Void> saveSeasonData(LocalDateTime startDate, LocalDateTime endDate,
                                                                LocalDateTime missionResetTime, String currentMissionDate) {
-        return operations.write(() -> seasonData.saveSeasonData(startDate, endDate, missionResetTime, currentMissionDate));
+        LocalDateTime cycleStart = missionCycleStart(missionResetTime);
+        return operations.write(() -> seasonData.saveSeasonData(startDate, endDate, missionResetTime, currentMissionDate, cycleStart));
     }
 
     public CompletableFuture<Void> saveCoinsDistributionTime(LocalDateTime nextDistribution) {
@@ -117,7 +118,13 @@ public class DatabaseManager {
     public CompletableFuture<Void> resetDailyMissions(List<Mission> missions, String missionDate, LocalDateTime startDate,
                                                      LocalDateTime endDate, LocalDateTime nextReset) {
         List<Mission> snapshot = snapshotMissions(missions);
-        return operations.write(() -> missionCycles.replace(snapshot, missionDate, startDate, endDate, nextReset));
+        LocalDateTime cycleStart = missionCycleStart(nextReset);
+        return operations.write(() -> missionCycles.replace(snapshot, missionDate, startDate, endDate, nextReset, cycleStart));
+    }
+
+    private LocalDateTime missionCycleStart(LocalDateTime nextReset) {
+        // Capture config at submission, before a queued write can outlive a reload.
+        return nextReset == null ? null : nextReset.minusHours(Math.max(1, plugin.getConfigManager().getMissionResetHours()));
     }
 
     private List<Mission> snapshotMissions(List<Mission> missions) {

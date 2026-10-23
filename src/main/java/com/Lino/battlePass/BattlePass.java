@@ -43,6 +43,7 @@ public class BattlePass extends JavaPlugin {
     private XPEventManager xpEventManager;
 
     private volatile boolean stopping;
+    private volatile long lifecycleGeneration;
     private boolean updateAvailable = false;
     private String latestVersion = "";
     private static final String SPIGOT_RESOURCE_ID = "125992";
@@ -50,6 +51,7 @@ public class BattlePass extends JavaPlugin {
     @Override
     public void onEnable() {
         stopping = false;
+        long generation = ++lifecycleGeneration;
         saveDefaultConfig();
         saveResourceIfNotExists("missions.yml");
         saveResourceIfNotExists("messages.yml");
@@ -77,50 +79,74 @@ public class BattlePass extends JavaPlugin {
         guiManager = new GuiManager(this, playerDataManager, missionManager, rewardManager, messageManager, configManager);
         rewardEditorManager = new RewardEditorManager(this);
         missionEditorManager = new MissionEditorManager(this);
-        rewardEditorManager = new RewardEditorManager(this);
 
         databaseManager.initialize().thenRun(() -> {
+            if (!isLifecycleActive(generation)) return;
             getServer().getScheduler().runTask(this, () -> {
-                rewardManager.loadRewards();
-                missionManager.initialize();
-
-                new BukkitRunnable() {
-                    private int attempts = 0;
-                    private static final int MAX_ATTEMPTS = 60;
-
-                    @Override
-                    public void run() {
-                        attempts++;
-
-                        if (missionManager.isInitialized()) {
-                            playerDataManager.loadOnlinePlayers();
-
-                            eventManager = new EventManager(BattlePass.this);
-                            getCommand("battlepass").setExecutor(new BattlePassCommand(BattlePass.this));
-                            getCommand("battlepass").setTabCompleter(new BattlePassTabCompleter());
-
-                            new BattlePassTask(BattlePass.this).runTaskTimer(BattlePass.this, 6000L, 1200L);
-
-                            restoreCoinsDistributionTask();
-
-                            registerPlaceholders();
-                            checkForUpdates();
-
-                            getLogger().info("✓ Battle Pass enabled successfully!");
-                            this.cancel();
-                        } else if (attempts >= MAX_ATTEMPTS) {
-                            getLogger().severe("Failed to initialize MissionManager after 30 seconds!");
-                            this.cancel();
-                        }
-                    }
-                }.runTaskTimer(this, 0L, 10L);
+                if (!isLifecycleActive(generation)) return;
+                try {
+                    rewardManager.loadRewards();
+                    missionManager.initialize();
+                    waitForMissions(generation);
+                } catch (RuntimeException failure) { failStartup(generation, failure); }
             });
         }).exceptionally(ex -> {
-            getLogger().severe("BattlePass could not start: " + ex.getMessage());
-            getServer().getScheduler().runTask(this, () -> getServer().getPluginManager().disablePlugin(this));
+            failStartup(generation, ex);
             return null;
         });
     }
+
+    private void waitForMissions(long generation) {
+        new BukkitRunnable() {
+            private int attempts;
+            private static final int MAX_ATTEMPTS = 60;
+
+            @Override
+            public void run() {
+                if (!isLifecycleActive(generation)) { cancel(); return; }
+                try {
+                    attempts++;
+                    if (missionManager.isInitialized()) {
+                        completeStartup();
+                        cancel();
+                    } else if (attempts >= MAX_ATTEMPTS) {
+                        getLogger().severe("Failed to initialize MissionManager after 30 seconds!");
+                        cancel();
+                        getServer().getPluginManager().disablePlugin(BattlePass.this);
+                    }
+                } catch (RuntimeException failure) {
+                    cancel();
+                    failStartup(generation, failure);
+                }
+            }
+        }.runTaskTimer(this, 0L, 10L);
+    }
+
+    private void completeStartup() {
+        playerDataManager.loadOnlinePlayers();
+        eventManager = new EventManager(this);
+        getCommand("battlepass").setExecutor(new BattlePassCommand(this));
+        getCommand("battlepass").setTabCompleter(new BattlePassTabCompleter());
+        new BattlePassTask(this).runTaskTimer(this, 6000L, 1200L);
+        restoreCoinsDistributionTask();
+        registerPlaceholders();
+        checkForUpdates();
+        getLogger().info("✓ Battle Pass enabled successfully!");
+    }
+
+    private boolean isLifecycleActive(long generation) {
+        return !stopping && lifecycleGeneration == generation && isEnabled();
+    }
+
+    private void failStartup(long generation, Throwable failure) {
+        if (!isLifecycleActive(generation)) return;
+        getLogger().severe("BattlePass could not start: " + failure.getMessage());
+        getServer().getScheduler().runTask(this, () -> {
+            if (isLifecycleActive(generation)) getServer().getPluginManager().disablePlugin(this);
+        });
+    }
+
+    public boolean isStopping() { return stopping; }
 
     private void saveResourceIfNotExists(String filename) {
         File file = new File(getDataFolder(), filename);
@@ -132,6 +158,7 @@ public class BattlePass extends JavaPlugin {
     @Override
     public void onDisable() {
         stopping = true;
+        lifecycleGeneration++;
         if (eventManager != null) {
             eventManager.flushPlayTime();
         }
@@ -159,12 +186,17 @@ public class BattlePass extends JavaPlugin {
     }
 
     private void restoreCoinsDistributionTask() {
+        long generation = lifecycleGeneration;
         databaseManager.loadCoinsDistributionTime()
-                .thenAccept(BattlePass.this::startCoinsDistributionTask)
+                .thenAccept(deadline -> {
+                    if (isLifecycleActive(generation)) startCoinsDistributionTask(deadline);
+                })
                 .exceptionally(ex -> {
+                    if (!isLifecycleActive(generation)) return null;
                     getLogger().severe("Could not load coins distribution time: " + ex.getMessage());
-                    if (!stopping) getServer().getScheduler().runTask(BattlePass.this,
-                            () -> getServer().getPluginManager().disablePlugin(BattlePass.this));
+                    getServer().getScheduler().runTask(BattlePass.this, () -> {
+                        if (isLifecycleActive(generation)) getServer().getPluginManager().disablePlugin(BattlePass.this);
+                    });
                     return null;
                 });
     }
@@ -323,7 +355,10 @@ public class BattlePass extends JavaPlugin {
     public void startCoinsDistributionTask(LocalDateTime savedTime) {
         if (stopping) return;
         if (!Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTask(this, () -> startCoinsDistributionTask(savedTime));
+            long generation = lifecycleGeneration;
+            Bukkit.getScheduler().runTask(this, () -> {
+                if (lifecycleGeneration == generation) startCoinsDistributionTask(savedTime);
+            });
             return;
         }
 

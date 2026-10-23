@@ -23,14 +23,14 @@ final class MissionCycleRepository {
     }
 
     CompletableFuture<Void> replace(List<Mission> replacements, String missionDate, LocalDateTime startDate,
-                                    LocalDateTime endDate, LocalDateTime nextReset) {
+                                    LocalDateTime endDate, LocalDateTime nextReset, LocalDateTime cycleStart) {
         return CompletableFuture.runAsync(() -> {
             Connection conn = null;
             try {
                 conn = connections.getConnection();
                 try (DatabaseTransaction transaction = new DatabaseTransaction(conn)) {
                     missions.replaceOnConnection(conn, replacements, missionDate);
-                    seasons.saveOnConnection(conn, startDate, endDate, nextReset, missionDate);
+                    seasons.saveOnConnection(conn, startDate, endDate, nextReset, missionDate, cycleStart);
                     try (PreparedStatement statement = conn.prepareStatement("DELETE FROM " + connections.getPrefix() + "missions")) {
                         statement.executeUpdate();
                     }

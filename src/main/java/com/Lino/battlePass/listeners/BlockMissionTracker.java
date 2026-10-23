@@ -36,7 +36,7 @@ final class BlockMissionTracker {
     void onBlockPlace(BlockPlaceEvent event) {
         Player player = event.getPlayer();
         String blockType = event.getBlock().getType().name();
-        Location blockLoc = event.getBlock().getLocation();
+        Location blockLoc = event.getBlock().getLocation().clone();
         UUID uuid = player.getUniqueId();
 
         Map<Location, Long> playerPlacedBlocks = recentlyPlacedBlocks.computeIfAbsent(uuid, k -> new HashMap<>());
@@ -45,13 +45,14 @@ final class BlockMissionTracker {
         long currentTime = System.currentTimeMillis();
 
         if (lastPlaced == null || currentTime - lastPlaced > 100) {
-            plugin.getMissionManager().progressMission(player, "PLACE_BLOCK", blockType, 1);
             playerPlacedBlocks.put(blockLoc, currentTime);
 
             final Map<Location, Long> finalPlayerPlacedBlocks = playerPlacedBlocks;
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                finalPlayerPlacedBlocks.remove(blockLoc);
+                finalPlayerPlacedBlocks.remove(blockLoc, currentTime);
             }, 20L);
+            // External progress callbacks can place another block or disable the plugin.
+            plugin.getMissionManager().progressMission(player, "PLACE_BLOCK", blockType, 1);
         }
     }
 

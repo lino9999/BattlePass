@@ -15,6 +15,7 @@ public class MissionResetHandler {
 
     private final BattlePass plugin;
     private LocalDateTime nextMissionReset;
+    private LocalDateTime missionCycleStart;
     private LocalDateTime seasonStartDate;
     private LocalDateTime seasonEndDate;
 
@@ -24,27 +25,16 @@ public class MissionResetHandler {
 
     public void calculateNextReset() {
         LocalDateTime now = LocalDateTime.now();
-        int hoursInterval = plugin.getConfigManager().getMissionResetHours();
-        nextMissionReset = now.plusHours(hoursInterval);
+        missionCycleStart = now;
+        nextMissionReset = now.plusHours(missionIntervalHours());
     }
 
     public void recalculateResetTimeOnReload() {
-        if (nextMissionReset != null) {
-            LocalDateTime now = LocalDateTime.now();
-            int hoursInterval = plugin.getConfigManager().getMissionResetHours();
-
-            LocalDateTime lastReset = nextMissionReset.minusHours(hoursInterval);
-
-            while (lastReset.plusHours(hoursInterval).isBefore(now)) {
-                lastReset = lastReset.plusHours(hoursInterval);
-            }
-
-            nextMissionReset = lastReset.plusHours(hoursInterval);
-        }
+        if (missionCycleStart != null) nextMissionReset = missionCycleStart.plusHours(missionIntervalHours());
     }
 
     public boolean shouldResetMissions() {
-        return nextMissionReset != null && LocalDateTime.now().isAfter(nextMissionReset);
+        return nextMissionReset != null && !LocalDateTime.now().isBefore(nextMissionReset);
     }
 
     public boolean shouldResetSeason() {
@@ -156,8 +146,8 @@ public class MissionResetHandler {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        long hours = ChronoUnit.HOURS.between(now, nextMissionReset);
-        long minutes = ChronoUnit.MINUTES.between(now, nextMissionReset) % 60;
+        long hours = Math.max(0, ChronoUnit.HOURS.between(now, nextMissionReset));
+        long minutes = Math.max(0, ChronoUnit.MINUTES.between(now, nextMissionReset)) % 60;
 
         MessageManager messageManager = plugin.getMessageManager();
         String hourStr = hours == 1 ? messageManager.getMessage("time.hour") : messageManager.getMessage("time.hours");
@@ -209,7 +199,18 @@ public class MissionResetHandler {
     }
 
     public void setNextMissionReset(LocalDateTime nextMissionReset) {
-        this.nextMissionReset = nextMissionReset;
+        restoreMissionSchedule(null, nextMissionReset);
+    }
+
+    void restoreMissionSchedule(LocalDateTime cycleStart, LocalDateTime nextReset) {
+        nextMissionReset = nextReset;
+        // Legacy rows have only a deadline; preserve it once rather than inventing a new countdown.
+        missionCycleStart = cycleStart != null ? cycleStart
+                : nextReset == null ? null : nextReset.minusHours(missionIntervalHours());
+    }
+
+    private int missionIntervalHours() {
+        return Math.max(1, plugin.getConfigManager().getMissionResetHours());
     }
 
     public LocalDateTime getSeasonEndDate() {

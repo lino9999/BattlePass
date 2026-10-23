@@ -6,6 +6,8 @@ All Java paths below are relative to `src/main/java/com/Lino/battlePass/`.
 
 `BattlePass.onEnable` creates managers, initializes the database asynchronously, then initializes missions on the Bukkit thread. Once missions are ready it loads online players, registers listeners/commands, starts scheduled work, and registers optional integrations. `listeners/EventManager` owns listener registration; MythicMobs is conditional.
 
+Startup callbacks capture `BattlePass.lifecycleGeneration`; shutdown invalidates it before saving. Database completions, queued startup/failure work, mission readiness polls and coin restore callbacks must belong to the current enabled generation. `waitForMissions` disables the partial plugin on timeout; `completeStartup` owns successful registrations. `MissionManager` also checks shutdown/stopping before scheduling and executing its season/mission load continuations. Do not let an old enable operation mutate managers created by a later enable.
+
 `models/PlayerData` is the cached mutable player state. `managers/PlayerDataManager` loads it, tracks dirty players via `markForSave(UUID)`, and saves snapshots. Changes to cached XP, coins, rewards or mission progress must be marked dirty. `managers/DatabaseManager` is the public facade for SQLite/MySQL persistence, delegating to the components below; `DatabaseSchema` handles additive migrations. Do not remove existing player data to fix a schema mismatch.
 
 Dirty revisions are acknowledged individually: a completed write cannot clear a newer revision. Only one player write may be in flight per UUID; synchronous flush waits for it and writes any newer state. Player loads are coalesced, and a cache generation prevents loads started before a cache clear from repopulating it afterwards.
@@ -70,11 +72,14 @@ Season calendars are prepared before their queued save, but reward rotation/anno
 
 Daily resets (automatic, forced and startup recovery) flush/invalidate player snapshots before one queued `resetDailyMissions` transaction. `MissionCycleRepository` uses the existing connection-level daily/season writers and clears all progress, including same-date rows. `MissionManager` publishes the replacement and next deadline only after commit; its pending daily finalizer also runs directly during shutdown. Calendar reloads defer while that reset is pending. Do not replace this with separate saves/deletes or clear progress by date alone. Season expiry takes precedence over a scheduled daily reset. Full season rotation still has separate persistence/filesystem steps; see CODE_AUDIT for remaining review work.
 
+`season_data.mission_cycle_start` is an additive nullable TEXT column storing the daily cycle's start alongside its deadline, including in the daily-reset transaction. `MissionResetHandler` recalculates `start + missions.reset-hours` on reload/restart, retaining overdue deadlines so the reset actually runs. Never advance past a missed reset in a loop. Legacy rows without this anchor preserve their stored deadline once by inferring a start using the current interval. Public database save/reset signatures stay unchanged: the facade derives/captures the anchor from the submitted deadline and current interval before queueing. During a pending daily or season reset, calendar reload is deferred until commit; the daily finalizer restores its captured start rather than inferring it from a possibly changed interval.
+
 Crafting and villager trading use the facade's MONITOR/ignoreCancelled statistic handler for completed action counts. Their old public click methods remain deprecated, unregistered compatibility stubs. Do not restore click estimates alongside statistics; that would award twice.
 
 ## Invariants worth preserving
 
 - Season duration is counted from the persisted season start. Reload/restart must not restart the countdown. Legacy duration seasons without a saved start get a one-time new countdown.
+- Daily reset intervals are counted from the persisted mission cycle start. A shorter interval may make the cycle due immediately; a longer interval may preserve the same cycle. Exact deadlines are due and overdue countdown text is clamped to zero.
 - Saves must not let an older season deadline overwrite a newer one. New missions are saved after season-reset deletion completes.
 - Coin distribution has one managed task. Rescheduling/manual season resets preserve an existing delivery deadline.
 - Coin delivery flushes/invalidate-loads before its atomic database commit, then updates cached balances and notifications. Never credit from the old leaderboard balance or advance a deadline before credit success. See COINS.md for cache gates and the synchronous commit boundary.
