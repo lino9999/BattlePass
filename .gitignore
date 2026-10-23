@@ -1,5 +1,30 @@
-.gradle
-.idea
-build
-target
+# Build output and local tools
+/.gradle/
+/build/
+/target/
+/.tools/
+/dependency-reduced-pom.xml
+*.class
+*.jar
+
+# Editors
+/.idea/
+/.vscode/
 *.iml
+
+# Local server data, logs and secrets
+/logs/
+/backups/
+*.log
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db

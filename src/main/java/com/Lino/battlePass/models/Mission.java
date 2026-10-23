@@ -1,5 +1,7 @@
 package com.Lino.battlePass.models;
 
+import org.bukkit.Material;
+
 import java.util.List;
 import java.util.ArrayList;
 
@@ -21,11 +23,25 @@ public class Mission {
     }
 
     public boolean isValidTarget(String actionTarget) {
-        if (target == null || "ANY".equals(target) || target.equalsIgnoreCase(actionTarget)) {
+        if (target == null || "ANY".equals(target) || matchesTarget(target, actionTarget)) {
             return true;
         }
         return additionalTargets.stream()
                 .filter(java.util.Objects::nonNull)
-                .anyMatch(additional -> additional.equalsIgnoreCase(actionTarget));
+                .anyMatch(additional -> matchesTarget(additional, actionTarget));
+    }
+
+    private boolean matchesTarget(String configuredTarget, String actionTarget) {
+        if (configuredTarget.equalsIgnoreCase(actionTarget)) {
+            return true;
+        }
+        if (!"EAT_ITEM".equals(type) || actionTarget == null) {
+            return false;
+        }
+
+        // Resolve food names at comparison time so persisted progress keys stay unchanged.
+        Material configuredMaterial = Material.matchMaterial(configuredTarget.trim());
+        return configuredMaterial != null
+                && configuredMaterial == Material.matchMaterial(actionTarget.trim());
     }
 }

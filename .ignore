@@ -1,0 +1,24 @@
+# Search exclusions for ripgrep and tools that honor .ignore.
+# Git-aware ripgrep also reads .gitignore. Keep source/config/docs searchable.
+.git/
+.idea/
+.vscode/
+.gradle/
+.tools/
+target/
+build/
+logs/
+backups/
+dependency-reduced-pom.xml
+*.iml
+*.class
+*.jar
+*.log
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
