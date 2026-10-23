@@ -4,253 +4,177 @@ import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.gui.LevelRewardEditGui;
 import com.Lino.battlePass.models.EditableReward;
 import com.Lino.battlePass.utils.GradientColorParser;
-import com.Lino.battlePass.utils.ItemSerializer;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
-
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RewardEditorManager {
+    public record EditorSnapshot(File file, int season, String signature, List<EditableReward> rewards) {
+        public EditorSnapshot { rewards = List.copyOf(rewards); }
+    }
 
     private final BattlePass plugin;
-    private final Map<UUID, LevelRewardEditGui> activeEditors;
-    private final Map<UUID, CommandInputState> commandInputStates;
-    private final Map<UUID, Integer> seasonEditingContext;
+    private final RewardEditorStorage storage = new RewardEditorStorage();
+    private final Map<UUID, LevelRewardEditGui> activeEditors = new ConcurrentHashMap<>();
+    private final Map<UUID, CommandInputState> commandInputStates = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> seasonEditingContext = new ConcurrentHashMap<>();
 
-    public RewardEditorManager(BattlePass plugin) {
-        this.plugin = plugin;
-        this.activeEditors = new ConcurrentHashMap<>();
-        this.commandInputStates = new ConcurrentHashMap<>();
-        this.seasonEditingContext = new ConcurrentHashMap<>();
+    public RewardEditorManager(BattlePass plugin) { this.plugin = plugin; }
+
+    public EditorSnapshot loadEditorSnapshot(Player player, int level, boolean premium) {
+        if (level < 1) throw new IllegalArgumentException("Reward levels must be positive");
+        int season = getSeasonEditingContext(player.getUniqueId());
+        SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+        if (season < 1 && rotation != null && rotation.isRotationEnabled()) season = rotation.getCurrentSeason();
+        File file = season > 0 ? rotation.getSeasonRewardFile(season, premium)
+                : new File(plugin.getDataFolder(), premium ? "BattlePassPREMIUM.yml" : "BattlePassFREE.yml");
+        try { return storage.load(file, Math.max(0, season), level); }
+        catch (Exception failure) { throw new IllegalStateException("Could not load reward editor: " + failure.getMessage(), failure); }
     }
 
-    public void openLevelEditor(Player player, int level, boolean isPremium) {
-        LevelRewardEditGui editor = new LevelRewardEditGui(plugin, player, level, isPremium);
-        activeEditors.put(player.getUniqueId(), editor);
-        editor.open();
+    public void openLevelEditor(Player player, int level, boolean premium) {
+        if (!canEdit(player)) return;
+        try {
+            LevelRewardEditGui editor = new LevelRewardEditGui(plugin, player, level, premium);
+            commandInputStates.remove(player.getUniqueId());
+            activeEditors.put(player.getUniqueId(), editor);
+            editor.open();
+        } catch (RuntimeException failure) { report(player, "open reward editor", failure); }
     }
 
-    public LevelRewardEditGui getActiveEditor(UUID uuid) {
-        return activeEditors.get(uuid);
+    public LevelRewardEditGui getActiveEditor(UUID uuid) { return activeEditors.get(uuid); }
+    public void removeActiveEditor(UUID uuid) { activeEditors.remove(uuid); commandInputStates.remove(uuid); }
+    public void setSeasonEditingContext(UUID uuid, int season) { removeActiveEditor(uuid); seasonEditingContext.put(uuid, season); }
+    public void clearSeasonEditingContext(UUID uuid) { removeActiveEditor(uuid); seasonEditingContext.remove(uuid); }
+    public int getSeasonEditingContext(UUID uuid) { return seasonEditingContext.getOrDefault(uuid, -1); }
+    public boolean isEditingSeason(UUID uuid) { return seasonEditingContext.containsKey(uuid); }
+    public void cleanupPlayer(UUID uuid) { clearSeasonEditingContext(uuid); }
+
+    public void startCommandInput(Player player, int level, boolean premium) {
+        if (!canEdit(player)) return;
+        try {
+            LevelRewardEditGui editor = getActiveEditor(player.getUniqueId());
+            if (editor == null || editor.getLevel() != level || editor.isPremium() != premium) {
+                editor = new LevelRewardEditGui(plugin, player, level, premium);
+                activeEditors.put(player.getUniqueId(), editor);
+            }
+            commandInputStates.put(player.getUniqueId(), new CommandInputState(editor));
+            editor.invalidatePendingClose();
+            player.closeInventory();
+            player.sendMessage(GradientColorParser.parse(plugin.getMessageManager().getPrefix()
+                    + "<gradient:#FFD700:#FF6B6B>Enter command reward format:</gradient>"));
+            player.sendMessage(GradientColorParser.parse("&7Example: &e$1000 | eco give <player> 1000"));
+            player.sendMessage(GradientColorParser.parse("&7Type &c'cancel' &7to cancel"));
+        } catch (RuntimeException failure) { report(player, "start reward command input", failure); }
     }
 
-    public void removeActiveEditor(UUID uuid) {
-        activeEditors.remove(uuid);
-    }
-
-    public void setSeasonEditingContext(UUID uuid, int seasonNumber) {
-        seasonEditingContext.put(uuid, seasonNumber);
-    }
-
-    public void clearSeasonEditingContext(UUID uuid) {
-        seasonEditingContext.remove(uuid);
-    }
-
-    public int getSeasonEditingContext(UUID uuid) {
-        return seasonEditingContext.getOrDefault(uuid, -1);
-    }
-
-    public boolean isEditingSeason(UUID uuid) {
-        return seasonEditingContext.containsKey(uuid);
-    }
-
-    public void startCommandInput(Player player, int level, boolean isPremium) {
-        commandInputStates.put(player.getUniqueId(), new CommandInputState(level, isPremium));
-
-        player.closeInventory();
-        player.sendMessage(GradientColorParser.parse(
-                plugin.getMessageManager().getPrefix() +
-                        "<gradient:#FFD700:#FF6B6B>Enter command reward format:</gradient>"));
-        player.sendMessage(GradientColorParser.parse(
-                "&7Example: &e$1000 | eco give <player> 1000"));
-        player.sendMessage(GradientColorParser.parse(
-                "&7Type &c'cancel' &7to cancel"));
-    }
+    public boolean hasCommandInput(UUID uuid) { return commandInputStates.containsKey(uuid); }
+    public Object getCommandInputToken(UUID uuid) { return commandInputStates.get(uuid); }
 
     public boolean handleCommandInput(Player player, String message) {
-        CommandInputState state = commandInputStates.get(player.getUniqueId());
-        if (state == null) {
-            return false;
-        }
+        return handleCommandInput(player, message, getCommandInputToken(player.getUniqueId()));
+    }
 
-        commandInputStates.remove(player.getUniqueId());
-
+    public boolean handleCommandInput(Player player, String message, Object expectedToken) {
+        UUID uuid = player.getUniqueId();
+        CommandInputState state = commandInputStates.get(uuid);
+        if (state == null || state != expectedToken || getActiveEditor(uuid) != state.editor
+                || !commandInputStates.remove(uuid, state)) return false;
+        if (!player.isOnline()) return true;
+        if (!player.hasPermission("battlepass.admin")) { canEdit(player); return true; }
         if (message.equalsIgnoreCase("cancel")) {
-            player.sendMessage(GradientColorParser.parse(
-                    plugin.getMessageManager().getPrefix() +
-                            "<gradient:#FF6B6B:#FF0000>Command input cancelled</gradient>"));
-            openLevelEditor(player, state.level, state.isPremium);
+            player.sendMessage(GradientColorParser.parse(plugin.getMessageManager().getPrefix()
+                    + "<gradient:#FF6B6B:#FF0000>Command input cancelled</gradient>"));
+            state.editor.open();
             return true;
         }
-
         String[] parts = message.split("\\|", 2);
-        if (parts.length != 2) {
-            player.sendMessage(GradientColorParser.parse(
-                    plugin.getMessageManager().getPrefix() +
-                            "<gradient:#FF6B6B:#FF0000>Invalid format! Use: display | command</gradient>"));
-            openLevelEditor(player, state.level, state.isPremium);
+        if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
+            player.sendMessage(GradientColorParser.parse(plugin.getMessageManager().getPrefix()
+                    + "<gradient:#FF6B6B:#FF0000>Invalid format! Use: display | command</gradient>"));
+            state.editor.open();
             return true;
         }
-
-        String display = parts[0].trim();
-        String command = parts[1].trim();
-
-        LevelRewardEditGui editor = getActiveEditor(player.getUniqueId());
-        if (editor == null) {
-            editor = new LevelRewardEditGui(plugin, player, state.level, state.isPremium);
-            activeEditors.put(player.getUniqueId(), editor);
-        }
-
-        editor.addReward(new EditableReward(command, display));
-
-        player.sendMessage(GradientColorParser.parse(
-                plugin.getMessageManager().getPrefix() +
-                        "<gradient:#00FF88:#45B7D1>✓ Command reward added!</gradient>"));
-
-        final LevelRewardEditGui finalEditor = editor;
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (player.isOnline()) {
-                    finalEditor.open();
-                }
-            }
-        }.runTaskLater(plugin, 20L);
-
+        state.editor.addReward(new EditableReward(parts[1].trim(), parts[0].trim()));
+        player.sendMessage(GradientColorParser.parse(plugin.getMessageManager().getPrefix()
+                + "<gradient:#00FF88:#45B7D1>✓ Command reward added!</gradient>"));
+        var returnTo = player.getOpenInventory().getTopInventory();
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline() && player.hasPermission("battlepass.admin") && getActiveEditor(uuid) == state.editor
+                    && !hasCommandInput(uuid) && player.getOpenInventory().getTopInventory() == returnTo) state.editor.open();
+        }, 20L);
         return true;
     }
 
-    public void saveRewards(Player player, int level, boolean isPremium, List<EditableReward> rewards) {
-        int editingSeason = getSeasonEditingContext(player.getUniqueId());
-        File file;
-
-        if (editingSeason > 0) {
-            file = plugin.getSeasonRotationManager().getSeasonRewardFile(editingSeason, isPremium);
-        } else {
-            String fileName = isPremium ? "BattlePassPREMIUM.yml" : "BattlePassFREE.yml";
-            file = new File(plugin.getDataFolder(), fileName);
-        }
-
-        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-        String levelPath = "level-" + level;
-        config.set(levelPath, null);
-
-        if (rewards.isEmpty()) {
-            saveConfig(file, config);
-            if (editingSeason > 0) {
-                syncSeasonIfActive(editingSeason, player);
-            } else {
-                plugin.reload();
-            }
-            player.sendMessage(GradientColorParser.parse(
-                    plugin.getMessageManager().getPrefix() +
-                            "<gradient:#00FF88:#45B7D1>✓ Level " + level + " rewards cleared!</gradient>"));
-            return;
-        }
-
-        if (rewards.size() == 1) {
-            EditableReward reward = rewards.get(0);
-            if (reward.isCommand()) {
-                config.set(levelPath + ".command", reward.getCommand());
-                config.set(levelPath + ".display", reward.getDisplayName());
-            } else {
-                ItemSerializer.saveItemToConfig(config.createSection(levelPath), reward.getItemStack());
-            }
-        } else {
-            ConfigurationSection itemsSection = config.createSection(levelPath + ".items");
-            int index = 1;
-
-            for (EditableReward reward : rewards) {
-                String itemKey = "reward" + index;
-
-                if (reward.isCommand()) {
-                    itemsSection.set(itemKey + ".command", reward.getCommand());
-                    itemsSection.set(itemKey + ".display", reward.getDisplayName());
-                } else {
-                    ItemSerializer.saveItemToConfig(
-                            itemsSection.createSection(itemKey),
-                            reward.getItemStack()
-                    );
-                }
-                index++;
-            }
-        }
-
-        saveConfig(file, config);
-
-        if (editingSeason > 0) {
-            syncSeasonIfActive(editingSeason, player);
-        } else {
-            plugin.reload();
-        }
-
-        player.sendMessage(GradientColorParser.parse(
-                plugin.getMessageManager().getPrefix() +
-                        "<gradient:#00FF88:#45B7D1>✓ Level " + level + " rewards saved!" +
-                        (editingSeason > 0 ? " (Season " + editingSeason + ")" : "") +
-                        "</gradient>"));
+    public boolean saveEditor(Player player, LevelRewardEditGui editor) {
+        if (!canEdit(player) || getActiveEditor(player.getUniqueId()) != editor) return false;
+        EditorSnapshot saved;
+        try {
+            saved = storage.save(editor.getSnapshot(), editor.getLevel(), List.copyOf(editor.getCurrentRewards()));
+            editor.acceptSnapshot(saved);
+        } catch (Exception failure) { report(player, "save rewards", failure); return false; }
+        return applySaved(player, saved, editor.getLevel(), editor.getCurrentRewards().isEmpty());
     }
 
-    private void syncSeasonIfActive(int editingSeason, Player player) {
-        SeasonRotationManager rotation = plugin.getSeasonRotationManager();
-        if (rotation.getCurrentSeason() == editingSeason) {
-            rotation.reapplyCurrentSeason();
-            plugin.getConfigManager().reload();
-            plugin.getRewardManager().loadRewards();
-            plugin.getGuiManager().clearCache();
+    /** Programmatic save against the currently selected source; interactive saves use their captured snapshot. */
+    public void saveRewards(Player player, int level, boolean premium, List<EditableReward> rewards) {
+        if (!canEdit(player)) return;
+        try {
+            EditorSnapshot saved = storage.save(loadEditorSnapshot(player, level, premium), level, List.copyOf(rewards));
+            applySaved(player, saved, level, rewards.isEmpty());
+        } catch (Exception failure) { report(player, "save rewards", failure); }
+    }
+
+    private boolean applySaved(Player player, EditorSnapshot source, int level, boolean empty) {
+        try {
+            if (source.season() > 0) syncSeasonIfActive(source.season());
+            else plugin.reload();
+            String suffix = source.season() > 0 ? " (Season " + source.season() + ")" : "";
+            player.sendMessage(GradientColorParser.parse(plugin.getMessageManager().getPrefix()
+                    + "<gradient:#00FF88:#45B7D1>✓ Level " + level + (empty ? " rewards cleared!" : " rewards saved!") + suffix + "</gradient>"));
+            return true;
+        } catch (RuntimeException failure) {
+            plugin.getLogger().severe("Rewards were saved, but applying them failed: " + failure.getMessage());
+            player.sendMessage(plugin.getMessageManager().getPrefix() + "§cRewards were saved, but applying them failed. Fix the error and reload.");
+            return false;
         }
+    }
+
+    private void syncSeasonIfActive(int season) {
+        SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+        if (rotation != null && rotation.isRotationEnabled() && rotation.getCurrentSeason() == season) plugin.reload();
     }
 
     public void saveAllRewards(Player player) {
-        if (isEditingSeason(player.getUniqueId())) {
-            int editingSeason = getSeasonEditingContext(player.getUniqueId());
-            syncSeasonIfActive(editingSeason, player);
-            player.sendMessage(GradientColorParser.parse(
-                    plugin.getMessageManager().getPrefix() +
-                            "<gradient:#00FF88:#45B7D1>✓ Season " + editingSeason + " rewards saved!</gradient>"));
-        } else {
-            plugin.reload();
-            player.sendMessage(GradientColorParser.parse(
-                    plugin.getMessageManager().getPrefix() +
-                            "<gradient:#00FF88:#45B7D1>✓ All rewards saved and plugin reloaded!</gradient>"));
-        }
-
-        for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
-            if (!onlinePlayer.equals(player)) {
-                onlinePlayer.sendMessage(GradientColorParser.parse(
-                        plugin.getMessageManager().getPrefix() +
-                                "<gradient:#FFD700:#FF6B6B>Battle Pass rewards have been updated by an admin!</gradient>"));
-            }
-        }
-    }
-
-    private void saveConfig(File file, FileConfiguration config) {
+        if (!canEdit(player)) return;
         try {
-            config.save(file);
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save rewards configuration: " + e.getMessage());
-        }
+            if (isEditingSeason(player.getUniqueId())) syncSeasonIfActive(getSeasonEditingContext(player.getUniqueId()));
+            else plugin.reload();
+            player.sendMessage(GradientColorParser.parse(plugin.getMessageManager().getPrefix()
+                    + "<gradient:#00FF88:#45B7D1>✓ All saved rewards applied!</gradient>"));
+            for (Player online : plugin.getServer().getOnlinePlayers()) {
+                if (!online.equals(player)) online.sendMessage(GradientColorParser.parse(plugin.getMessageManager().getPrefix()
+                        + "<gradient:#FFD700:#FF6B6B>Battle Pass rewards have been updated by an admin!</gradient>"));
+            }
+        } catch (RuntimeException failure) { report(player, "apply rewards", failure); }
     }
 
-    public boolean hasCommandInput(UUID uuid) {
-        return commandInputStates.containsKey(uuid);
+    private boolean canEdit(Player player) {
+        if (player.hasPermission("battlepass.admin")) return true;
+        player.sendMessage(plugin.getMessageManager().getPrefix() + plugin.getMessageManager().getMessage("messages.no-permission"));
+        return false;
     }
 
-    private static class CommandInputState {
-        final int level;
-        final boolean isPremium;
+    private void report(Player player, String operation, Exception failure) {
+        plugin.getLogger().severe("Could not " + operation + ": " + failure.getMessage());
+        player.sendMessage(plugin.getMessageManager().getPrefix() + "§cCould not " + operation + ": " + failure.getMessage());
+    }
 
-        CommandInputState(int level, boolean isPremium) {
-            this.level = level;
-            this.isPremium = isPremium;
-        }
+    private static final class CommandInputState {
+        final LevelRewardEditGui editor;
+        CommandInputState(LevelRewardEditGui editor) { this.editor = editor; }
     }
 }

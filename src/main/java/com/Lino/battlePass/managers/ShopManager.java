@@ -83,6 +83,7 @@ public class ShopManager {
     }
 
     public void purchaseItem(Player player, int slot) {
+        if (!plugin.getConfigManager().isShopEnabled()) return;
         ShopItem item = shopItems.get(slot);
         if (item == null) return;
 

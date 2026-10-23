@@ -14,6 +14,12 @@ public class EditableReward {
         this.isCommand = false;
     }
 
+    public static EditableReward itemWithDisplay(ItemStack itemStack, String displayName) {
+        EditableReward reward = new EditableReward(itemStack);
+        reward.displayName = displayName;
+        return reward;
+    }
+
     public EditableReward(String command, String displayName) {
         this.command = command;
         this.displayName = displayName;

@@ -32,9 +32,7 @@ public class MissionEditorListener implements Listener {
             event.setCancelled(true);
             String message = event.getMessage();
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                if (player.isOnline() && (player.hasPermission("battlepass.admin") || "cancel".equalsIgnoreCase(message))) {
-                    plugin.getMissionEditorManager().handleChatInput(player, message);
-                }
+                if (player.isOnline()) plugin.getMissionEditorManager().handleChatInput(player, message, state);
             });
         }
     }

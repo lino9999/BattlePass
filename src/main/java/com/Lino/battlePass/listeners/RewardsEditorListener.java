@@ -41,7 +41,8 @@ public class RewardsEditorListener implements Listener {
             return;
         }
         if (context.type() == BaseHolder.MenuType.REWARD_LEVEL_EDITOR) {
-            if (context.editor() != null && context.editor() == plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId())) {
+            if (context.editor() != null && context.editor() == plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId())
+                    && context.page() == context.editor().getRewardPage()) {
                 handleLevelEditClick(player, event);
             } else event.setCancelled(true);
             return;
@@ -81,12 +82,15 @@ public class RewardsEditorListener implements Listener {
         Player player = (Player) event.getPlayer();
         BaseHolder.MenuContext context = BaseHolder.contextOf(event.getView().getTopInventory());
         if (context == null || context.type() != BaseHolder.MenuType.REWARD_LEVEL_EDITOR) return;
-        if (context.editor() != plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId())) return;
+        if (context.editor() == null || context.editor() != plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId())) return;
         if (!plugin.getRewardEditorManager().hasCommandInput(player.getUniqueId())) {
+            long viewRevision = context.editor().getViewRevision();
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 InventoryView view = player.getOpenInventory();
                 BaseHolder.MenuContext current = BaseHolder.contextOf(view == null ? null : view.getTopInventory());
-                if ((current == null || current.editor() != context.editor())
+                if (context.editor().getViewRevision() == viewRevision
+                        && !plugin.getRewardEditorManager().hasCommandInput(player.getUniqueId())
+                        && (current == null || current.editor() != context.editor())
                         && plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId()) == context.editor()) {
                     plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
                 }
@@ -105,13 +109,12 @@ public class RewardsEditorListener implements Listener {
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
 
-        if (plugin.getRewardEditorManager().hasCommandInput(player.getUniqueId())) {
+        Object token = plugin.getRewardEditorManager().getCommandInputToken(player.getUniqueId());
+        if (token != null) {
             event.setCancelled(true);
             String message = event.getMessage();
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                if (player.isOnline() && (player.hasPermission("battlepass.admin") || "cancel".equalsIgnoreCase(message))) {
-                    plugin.getRewardEditorManager().handleCommandInput(player, message);
-                }
+                if (player.isOnline()) plugin.getRewardEditorManager().handleCommandInput(player, message, token);
             });
         }
     }
@@ -209,7 +212,7 @@ public class RewardsEditorListener implements Listener {
 
         int clickedSlot = event.getRawSlot();
 
-        if (clickedSlot >= 0 && clickedSlot < 45) {
+        if (clickedSlot >= 0 && clickedSlot < LevelRewardEditGui.REWARDS_PER_PAGE) {
             ItemStack cursor = event.getCursor();
             ItemStack clicked = event.getCurrentItem();
 
@@ -217,7 +220,7 @@ public class RewardsEditorListener implements Listener {
                 editor.addReward(new EditableReward(cursor.clone()));
                 refreshEditor(player, editor);
             } else if (clicked != null && !clicked.getType().isAir()) {
-                editor.removeReward(clickedSlot);
+                editor.removeReward(editor.getVisibleRewardIndex(clickedSlot));
                 refreshEditor(player, editor);
             }
         } else if (clickedSlot >= 46 && clickedSlot < 54) {
@@ -234,6 +237,14 @@ public class RewardsEditorListener implements Listener {
                 plugin.getRewardEditorManager().startCommandInput(player, editor.getLevel(), editor.isPremium());
                 break;
 
+            case 47:
+                editor.setRewardPage(editor.getRewardPage() - 1);
+                refreshEditor(player, editor);
+                break;
+            case 51:
+                editor.setRewardPage(editor.getRewardPage() + 1);
+                refreshEditor(player, editor);
+                break;
             case 48:
                 plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
                 player.closeInventory();
@@ -244,8 +255,7 @@ public class RewardsEditorListener implements Listener {
                 break;
 
             case 49:
-                plugin.getRewardEditorManager().saveRewards(player, editor.getLevel(),
-                        editor.isPremium(), editor.getCurrentRewards());
+                if (!plugin.getRewardEditorManager().saveEditor(player, editor)) return;
                 plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
                 player.closeInventory();
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -265,8 +275,11 @@ public class RewardsEditorListener implements Listener {
     }
 
     private void refreshEditor(Player player, LevelRewardEditGui editor) {
+        var displayed = player.getOpenInventory().getTopInventory();
         plugin.getServer().getScheduler().runTask(plugin, () -> {
-            editor.open();
+            if (player.isOnline() && player.hasPermission("battlepass.admin")
+                    && plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId()) == editor
+                    && player.getOpenInventory().getTopInventory() == displayed) editor.open();
         });
     }
 }

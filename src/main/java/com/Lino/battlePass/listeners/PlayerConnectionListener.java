@@ -74,6 +74,8 @@ public class PlayerConnectionListener implements Listener {
 
         updatePlayTime(event.getPlayer());
         playTime.cleanup(uuid);
+        if (plugin.getRewardEditorManager() != null) plugin.getRewardEditorManager().cleanupPlayer(uuid);
+        if (plugin.getMissionEditorManager() != null) plugin.getMissionEditorManager().cleanupPlayer(uuid);
 
         plugin.getXpEventManager().removePlayerFromBossBar(event.getPlayer());
         plugin.getSoundManager().stopItemSound(uuid);

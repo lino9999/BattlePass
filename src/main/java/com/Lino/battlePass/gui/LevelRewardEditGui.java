@@ -2,10 +2,9 @@ package com.Lino.battlePass.gui;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.EditableReward;
-import com.Lino.battlePass.models.Reward;
+import com.Lino.battlePass.managers.RewardEditorManager;
+import com.Lino.battlePass.utils.Pagination;
 import com.Lino.battlePass.utils.GradientColorParser;
-import com.Lino.battlePass.utils.ItemSerializer;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -21,7 +20,11 @@ public class LevelRewardEditGui {
     private final Player player;
     private final int level;
     private final boolean isPremium;
+    public static final int REWARDS_PER_PAGE = 36;
     private final List<EditableReward> currentRewards;
+    private RewardEditorManager.EditorSnapshot snapshot;
+    private int rewardPage = 1;
+    private long viewRevision;
 
     public LevelRewardEditGui(BattlePass plugin, Player player, int level, boolean isPremium) {
         this.plugin = plugin;
@@ -33,14 +36,21 @@ public class LevelRewardEditGui {
     }
 
     private void loadCurrentRewards() {
-        try {
-            List<EditableReward> rewards = plugin.getRewardManager().getEditableRewards(level, isPremium);
-            if (rewards != null) {
-                currentRewards.addAll(rewards);
-            }
-        } catch (Exception e) {
-            // Se il metodo non esiste, lascia la lista vuota
-        }
+        snapshot = plugin.getRewardEditorManager().loadEditorSnapshot(player, level, isPremium);
+        currentRewards.addAll(snapshot.rewards());
+    }
+
+    public RewardEditorManager.EditorSnapshot getSnapshot() { return snapshot; }
+    public long getViewRevision() { return viewRevision; }
+    public void invalidatePendingClose() { viewRevision++; }
+    public void acceptSnapshot(RewardEditorManager.EditorSnapshot saved) { snapshot = saved; }
+    public int getRewardPage() { return rewardPage; }
+    public int getRewardPageCount() { return Pagination.pageCount(currentRewards.size(), REWARDS_PER_PAGE); }
+    public void setRewardPage(int page) { rewardPage = Pagination.clampPage(page, currentRewards.size(), REWARDS_PER_PAGE); }
+    public int getVisibleRewardIndex(int slot) {
+        if (slot < 0 || slot >= REWARDS_PER_PAGE) return -1;
+        int index = (rewardPage - 1) * REWARDS_PER_PAGE + slot;
+        return index < currentRewards.size() ? index : -1;
     }
 
     public void open() {
@@ -50,6 +60,8 @@ public class LevelRewardEditGui {
             return;
         }
 
+        setRewardPage(rewardPage);
+        invalidatePendingClose();
         String gradient = isPremium ?
                 "<gradient:#FFD700:#FF6B6B>" :
                 "<gradient:#4ECDC4:#45B7D1>";
@@ -60,8 +72,10 @@ public class LevelRewardEditGui {
         Inventory gui = BaseGui.createInventory(54, title, BaseHolder.MenuContext.editor(this));
 
         int slot = 0;
-        for (EditableReward reward : currentRewards) {
-            if (slot >= 36) break;
+        int start = (rewardPage - 1) * REWARDS_PER_PAGE;
+        int end = (int) Math.min((long) start + REWARDS_PER_PAGE, currentRewards.size());
+        for (int index = start; index < end; index++) {
+            EditableReward reward = currentRewards.get(index);
 
             if (reward.isCommand()) {
                 ItemStack commandItem = new ItemStack(Material.COMMAND_BLOCK);
@@ -183,6 +197,7 @@ public class LevelRewardEditGui {
         infoLore.add("");
         infoLore.add(GradientColorParser.parse("&7Type: " + (isPremium ? "&6Premium" : "&bFree")));
         infoLore.add(GradientColorParser.parse("&7Current rewards: &f" + currentRewards.size()));
+        infoLore.add(GradientColorParser.parse("&7Page: &f" + rewardPage + "/" + getRewardPageCount()));
         infoLore.add("");
         infoLore.add(GradientColorParser.parse("&8Drag items to add"));
         infoLore.add(GradientColorParser.parse("&8Click items to remove"));
@@ -191,7 +206,18 @@ public class LevelRewardEditGui {
         info.setItemMeta(infoMeta);
         gui.setItem(53, info);
 
+        if (rewardPage > 1) gui.setItem(47, pageButton("← Previous Rewards", rewardPage - 1));
+        if (rewardPage < getRewardPageCount()) gui.setItem(51, pageButton("Next Rewards →", rewardPage + 1));
         player.openInventory(gui);
+    }
+
+    private ItemStack pageButton(String name, int page) {
+        ItemStack item = new ItemStack(Material.ARROW);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(GradientColorParser.parse("&e" + name));
+        meta.setLore(List.of(GradientColorParser.parse("&7Page " + page + "/" + getRewardPageCount())));
+        item.setItemMeta(meta);
+        return item;
     }
 
     public List<EditableReward> getCurrentRewards() {
@@ -200,16 +226,19 @@ public class LevelRewardEditGui {
 
     public void addReward(EditableReward reward) {
         currentRewards.add(reward);
+        rewardPage = getRewardPageCount();
     }
 
     public void removeReward(int index) {
         if (index >= 0 && index < currentRewards.size()) {
             currentRewards.remove(index);
+            setRewardPage(rewardPage);
         }
     }
 
     public void clearRewards() {
         currentRewards.clear();
+        rewardPage = 1;
     }
 
     public int getLevel() {

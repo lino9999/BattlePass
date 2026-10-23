@@ -27,7 +27,7 @@ public class BaseHolder implements InventoryHolder {
         public static MenuContext page(MenuType type, int page) { return new MenuContext(type, page, false, null, null); }
         public static MenuContext rewards(int page, boolean premium) { return new MenuContext(MenuType.REWARDS_CATEGORY, page, premium, null, null); }
         public static MenuContext mission(String key) { return new MenuContext(MenuType.MISSION_DETAILS, 1, false, key, null); }
-        public static MenuContext editor(LevelRewardEditGui editor) { return new MenuContext(MenuType.REWARD_LEVEL_EDITOR, 1, editor.isPremium(), null, editor); }
+        public static MenuContext editor(LevelRewardEditGui editor) { return new MenuContext(MenuType.REWARD_LEVEL_EDITOR, editor.getRewardPage(), editor.isPremium(), null, editor); }
         public static MenuContext missions(int page, Map<Integer, String> entries) { return new MenuContext(MenuType.MISSION_EDITOR, page, false, null, null, entries); }
     }
 

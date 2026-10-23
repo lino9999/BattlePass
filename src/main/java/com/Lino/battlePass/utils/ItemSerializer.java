@@ -52,6 +52,14 @@ public class ItemSerializer {
     }
 
     public static ItemStack loadItemFromConfig(ConfigurationSection section) {
+        return loadItemFromConfig(section, false);
+    }
+
+    public static ItemStack loadItemFromConfigStrict(ConfigurationSection section) {
+        return loadItemFromConfig(section, true);
+    }
+
+    private static ItemStack loadItemFromConfig(ConfigurationSection section, boolean strict) {
         if (section == null) {
             return null;
         }
@@ -65,6 +73,7 @@ public class ItemSerializer {
                 dataInput.close();
                 return item;
             } catch (Exception e) {
+                if (strict) throw new IllegalStateException("Invalid serialized reward item", e);
                 e.printStackTrace();
             }
         }

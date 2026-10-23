@@ -55,6 +55,10 @@ public class GuiManager {
     }
 
     public void openShopGUI(Player player) {
+        if (!configManager.isShopEnabled()) {
+            openBattlePassGUI(player, currentPages.getOrDefault(player.getEntityId(), 1));
+            return;
+        }
         if (!isPlayerDataReady(player)) return;
 
         ShopGui gui = new ShopGui(plugin, player);
