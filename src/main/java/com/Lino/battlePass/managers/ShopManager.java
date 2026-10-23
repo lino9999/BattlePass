@@ -113,7 +113,7 @@ public class ShopManager {
         }
 
         for (ItemStack itemStack : item.items) {
-            Map<Integer, ItemStack> leftover = player.getInventory().addItem(itemStack);
+            Map<Integer, ItemStack> leftover = player.getInventory().addItem(itemStack.clone());
             for (ItemStack drop : leftover.values()) {
                 player.getWorld().dropItemNaturally(player.getLocation(), drop);
             }

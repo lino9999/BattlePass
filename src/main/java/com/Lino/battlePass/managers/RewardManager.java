@@ -113,7 +113,7 @@ public class RewardManager {
             try {
                 Material mat = Material.valueOf(material.toUpperCase());
                 String displayName = config.getString(path + ".display", amount + "x " + formatMaterial(mat));
-                return new Reward(level, mat, displayName, amount, isFree);
+                return new Reward(level, mat, displayName, amount, isFree, path);
             } catch (IllegalArgumentException e) {
                 plugin.getLogger().warning("Invalid material for " + (isFree ? "free" : "premium") +
                         " level " + level + ": " + material);
@@ -125,6 +125,21 @@ public class RewardManager {
 
     public void claimRewards(Player player, PlayerData data, List<Reward> rewards,
                              int level, boolean isPremium) {
+
+        MessageManager messages = plugin.getMessageManager();
+        if (data == null) {
+            player.sendMessage(messages.getPrefix() + messages.getMessage("messages.data-loading"));
+            return;
+        }
+        if (level < 1 || data.level < level || (isPremium && !data.hasPremium) || rewards == null || rewards.isEmpty()) {
+            player.sendMessage(messages.getPrefix() + messages.getMessage("messages.rewards.cannot-claim"));
+            return;
+        }
+        Set<Integer> claimed = isPremium ? data.claimedPremiumRewards : data.claimedFreeRewards;
+        if (claimed.contains(level)) {
+            player.sendMessage(messages.getPrefix() + messages.getMessage("messages.rewards.already-claimed-error"));
+            return;
+        }
 
         Map<String, Set<Integer>> dbClaimedData;
         try {
@@ -182,7 +197,9 @@ public class RewardManager {
                         "%reward%", reward.displayName));
             } else {
                 ItemStack item = null;
-                if (config.contains(levelPath)) {
+                if (reward.configurationPath != null) {
+                    item = ItemSerializer.loadItemFromConfig(config.getConfigurationSection(reward.configurationPath));
+                } else if (config.contains(levelPath)) {
                     ConfigurationSection levelSection = config.getConfigurationSection(levelPath);
                     if (levelSection != null) {
                         if (levelSection.contains("serialized-item")) {
@@ -209,6 +226,7 @@ public class RewardManager {
                     item = new ItemStack(reward.material, reward.amount);
                 }
 
+                int amount = item.getAmount();
                 HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(item);
                 String itemName = reward.displayName;
 
@@ -217,11 +235,11 @@ public class RewardManager {
                         player.getWorld().dropItemNaturally(player.getLocation(), drop);
                     }
                     message.append("\n").append(messageManager.getMessage("messages.rewards.item-reward-dropped",
-                            "%amount%", String.valueOf(item.getAmount()),
+                            "%amount%", String.valueOf(amount),
                             "%item%", itemName));
                 } else {
                     message.append("\n").append(messageManager.getMessage("messages.rewards.item-reward",
-                            "%amount%", String.valueOf(item.getAmount()),
+                            "%amount%", String.valueOf(amount),
                             "%item%", itemName));
                 }
             }

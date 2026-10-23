@@ -9,6 +9,10 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class XPEventManager {
 
     private final BattlePass plugin;
@@ -17,19 +21,23 @@ public class XPEventManager {
     private BossBar bossBar;
     private BukkitRunnable countdownTask;
     private long totalDuration = 0;
+    private static final Pattern DURATION_TOKEN = Pattern.compile("(\\d+)([hms])");
 
     public XPEventManager(BattlePass plugin) {
         this.plugin = plugin;
     }
 
     public boolean startEvent(int multiplier, long durationMillis) {
-        if (isEventActive()) {
-            stopEvent();
+        long now = System.currentTimeMillis();
+        if (multiplier < 2 || multiplier > 100 || durationMillis <= 0 || durationMillis > Long.MAX_VALUE - now) {
+            return false;
         }
+        // Expired events can still own a bar/task until their next scheduled tick.
+        stopEvent();
 
         this.multiplier = multiplier;
         this.totalDuration = durationMillis;
-        this.endTime = System.currentTimeMillis() + durationMillis;
+        this.endTime = now + durationMillis;
 
         bossBar = Bukkit.createBossBar(
                 formatBossBarTitle(),
@@ -155,30 +163,32 @@ public class XPEventManager {
     }
 
     public static long parseDuration(String input) {
-        input = input.toLowerCase().trim();
+        if (input == null) return 0;
+        input = input.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
         long total = 0;
-
-        StringBuilder number = new StringBuilder();
-        for (char c : input.toCharArray()) {
-            if (Character.isDigit(c)) {
-                number.append(c);
-            } else if (c == 'h' && number.length() > 0) {
-                total += Long.parseLong(number.toString()) * 3600000;
-                number.setLength(0);
-            } else if (c == 'm' && number.length() > 0) {
-                total += Long.parseLong(number.toString()) * 60000;
-                number.setLength(0);
-            } else if (c == 's' && number.length() > 0) {
-                total += Long.parseLong(number.toString()) * 1000;
-                number.setLength(0);
+        int end = 0;
+        Matcher matcher = DURATION_TOKEN.matcher(input);
+        try {
+            while (matcher.find()) {
+                if (matcher.start() != end) return 0;
+                long unit = switch (matcher.group(2)) {
+                    case "h" -> 3600000L;
+                    case "m" -> 60000L;
+                    default -> 1000L;
+                };
+                long amount = Long.parseLong(matcher.group(1));
+                total = Math.addExact(total, Math.multiplyExact(amount, unit));
+                end = matcher.end();
             }
+        } catch (NumberFormatException | ArithmeticException invalid) {
+            return 0;
         }
-
-        return total;
+        return end == input.length() ? total : 0;
     }
 
     public static int parseMultiplier(String input) {
-        input = input.toLowerCase().trim().replace("x", "");
+        if (input == null) return -1;
+        input = input.toLowerCase(Locale.ROOT).trim().replace("x", "");
         try {
             int val = Integer.parseInt(input);
             if (val < 2 || val > 100) return -1;

@@ -20,14 +20,23 @@ Validation: the initial 10 temporary regression checks reproduced six failures i
 
 Validation: four temporary boundary tests cover failed flush/retry, reset preflight and read/write connection acquisition order. All 45 tests passed together; MySQL lease behavior was verified through mocked JDBC/connection ownership, without a live MySQL server.
 
+## Verified fixes: rewards, shop templates and XP event input
+
+- Loaded item rewards retain their exact configuration path. Two items of the same material no longer both resolve to the first entry, and a single plain YAML item also goes through the metadata loader. Existing Reward constructors remain available.
+- Reward claiming checks cached claims, level eligibility and premium ownership at the manager boundary. Direct/repeated calls cannot bypass those checks while a database save is pending. Reward messages retain the original delivered amount even if inventory insertion mutates the stack.
+- Shop insertion receives a cloned item stack, keeping the configured template intact across repeated purchases.
+- XP duration parsing accepts complete h/m/s sequences (case-insensitive, whitespace allowed), rejecting malformed/overflowing values without exceptions. API starts validate multiplier, duration and end-time overflow before touching a running event; the command handles a rejected start.
+- Replacing an expired XP event also removes its bar/task, even when its scheduled expiration tick has not run yet.
+
+Validation: 23 temporary tests cover distinct same-material rewards, metadata-loader selection, duplicate/premium claims, repeated purchases with a mutating inventory, duration formats/overflow, API rejection and expired-event cleanup. All 64 tests passed together; temporary tests are removed before delivery. Bukkit registries, inventory insertion and item deserialization were mocked; no live server was used.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
-- `RewardManager`: multiple reward items sharing a material select the first matching configuration entry; plain YAML item metadata and duplicate claim guards.
-- `ShopManager`: reusable item templates passed directly to inventory insertion; check repeated purchases when the insertion mutates its argument.
-- `XPEventManager.parseDuration`: oversized numbers, arithmetic overflow and malformed input reaching admin commands.
 - Mission generation/progress and XP/coin arithmetic: integer bounds and invalid configuration.
+- Reward/menu icon collisions with configurable materials; item preview paths, pagination and malformed reward configuration.
+- Repository exception propagation and reset/save barriers: avoid reporting failed writes/resets as successful, including MySQL concurrency and daily resets on the same calendar date.
 - Crafting/trading progress: actual items taken versus potential output, shift clicks and full inventories.
 - Playtime/world/teleport state, season reset/save ordering, async coin distribution, startup/shutdown/reload, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 

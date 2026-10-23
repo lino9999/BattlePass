@@ -43,7 +43,11 @@ final class XPEventCommands {
             return true;
         }
 
-        plugin.getXpEventManager().startEvent(multiplier, duration);
+        if (!plugin.getXpEventManager().startEvent(multiplier, duration)) {
+            sender.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.event.invalid-duration"));
+            return true;
+        }
 
         String durationFormatted = plugin.getXpEventManager().getTimeRemaining();
 

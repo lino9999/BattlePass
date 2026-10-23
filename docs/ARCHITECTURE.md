@@ -59,6 +59,8 @@ Keep event annotations and registration on `MissionProgressListener` so prioriti
 - Coin distribution has one managed task. Rescheduling/manual season resets preserve an existing delivery deadline.
 - XP grants fire `BattlePassXPGainEvent`; cancellation and modified nonnegative amounts are respected.
 - Custom item identity comes from persistent tags, not material/name alone. Redeeming a stack must consume the same quantity used for the reward and the correct hand.
+- Loaded item rewards use `Reward.configurationPath` for exact item/metadata selection. Do not rediscover an entry by material: multiple rewards may share a material. Claims enforce cached claim/level/premium eligibility in `RewardManager`; shop delivery must clone configured item stacks.
+- XP event duration input must be fully consumed and checked for overflow. Invalid API starts preserve the current event; replacing an expired event still releases its pending task and bossbar.
 - GUI handlers check `BaseHolder.isBattlePassInventory` before cancelling or altering another inventory.
 - Read-only menu actions use top-inventory raw slots; bottom inventory clicks must never trigger a button. Top-inventory drags are blocked while bottom-only and foreign drags remain independent.
 - Version comes from `pom.xml` and is filtered into `plugin.yml`. Do not hardcode a second descriptor version.
