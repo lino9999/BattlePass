@@ -10,6 +10,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | Commands and permissions | [ARCHITECTURE.md](ARCHITECTURE.md) | `BattlePassCommand` router; `PlayerAdminCommands`, `RewardAdminCommands`, `SeasonAdminCommands`, `XPEventCommands` |
 | Battle Pass rendering | [ARCHITECTURE.md](ARCHITECTURE.md) | `gui/BattlePassGui` facade; `BattlePassRewardRenderer` for reward icons/lore; `BattlePassMenuControls` for navigation/actions |
 | Reward loading or claims | [ARCHITECTURE.md](ARCHITECTURE.md) | `managers/RewardManager` for loading/maps; `RewardClaimHandler` for eligibility/delivery |
+| Periodic coin deliveries / saved deadline | [COINS.md](COINS.md) | `CoinsDistributionTask`, `CoinDistributionRepository`, `PlayerDataManager` preflight and `BattlePass` timer lifecycle |
 | Other menus, custom items, coins | [ARCHITECTURE.md](ARCHITECTURE.md) | Use the feature table |
 | Build, regression tests, push | [DEVELOPMENT.md](DEVELOPMENT.md) | `pom.xml`, `AGENTS.md` |
 | Active bug/optimization audit | [CODE_AUDIT.md](CODE_AUDIT.md) | Verified fixes, pending investigations and test evidence |

@@ -66,13 +66,7 @@ final class SeasonDataRepository {
 
             try {
                 conn = connections.getConnection();
-                String sql = connections.isMySQL()
-                        ? "INSERT INTO " + connections.getPrefix() + "season_data (id, next_coins_distribution) VALUES (1, ?) ON DUPLICATE KEY UPDATE next_coins_distribution = VALUES(next_coins_distribution)"
-                        : "INSERT INTO " + connections.getPrefix() + "season_data (id, next_coins_distribution) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET next_coins_distribution = excluded.next_coins_distribution";
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, nextDistribution.toString());
-                    ps.executeUpdate();
-                }
+                saveCoinsOnConnection(conn, nextDistribution);
             } catch (SQLException e) {
                 throw new CompletionException("Failed to save the coin deadline", e);
             } finally {
@@ -81,6 +75,16 @@ final class SeasonDataRepository {
                 }
             }
         }, connections.getExecutor());
+    }
+
+    void saveCoinsOnConnection(Connection conn, LocalDateTime nextDistribution) throws SQLException {
+        String sql = connections.isMySQL()
+                ? "INSERT INTO " + connections.getPrefix() + "season_data (id, next_coins_distribution) VALUES (1, ?) ON DUPLICATE KEY UPDATE next_coins_distribution = VALUES(next_coins_distribution)"
+                : "INSERT INTO " + connections.getPrefix() + "season_data (id, next_coins_distribution) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET next_coins_distribution = excluded.next_coins_distribution";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nextDistribution.toString());
+            ps.executeUpdate();
+        }
     }
 
     public CompletableFuture<LocalDateTime> loadCoinsDistributionTime() {

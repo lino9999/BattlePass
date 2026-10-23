@@ -25,7 +25,7 @@ Do not hold the player-cache monitor while waiting for database futures. A load 
 | Missions and progress | `listeners/MissionProgressListener`, `managers/MissionManager`, `MissionGenerator`, `MissionProgressTracker`, `models/Mission` | `missions.yml`, `config.yml` |
 | Daily and season deadlines | `MissionResetHandler`, `SeasonRotationManager`, `MissionManager` | `config.yml`; saved season start/end and mission date |
 | Session movement/play time | `listeners/MovementMissionTracker`, `PlayTimeTracker`, `PlayerConnectionListener`, `tasks/BattlePassTask` | `missions.disabled-worlds`; WALK_DISTANCE/PLAY_TIME pool targets |
-| Periodic coins | `tasks/CoinsDistributionTask`, `BattlePass.startCoinsDistributionTask` | `config.yml`; saved next-distribution deadline |
+| Periodic coins | `tasks/CoinsDistributionTask`, `managers/CoinDistributionRepository`, `BattlePass.startCoinsDistributionTask` | `config.yml`; saved next-distribution deadline; [COINS.md](COINS.md) |
 | Rewards and claims | `managers/RewardManager`, `models/Reward`, `gui/BattlePassGui` | `BattlePassFREE.yml`, `BattlePassPREMIUM.yml` |
 | Custom vouchers/tokens/elixirs | `managers/CustomItemManager`, `listeners/CustomItemsListener` | PersistentDataContainer keys, `messages.yml` |
 | Shop | `managers/ShopManager`, `gui/ShopGui`, `models/ShopItem` | `shop.yml` |
@@ -47,6 +47,7 @@ Public entry points keep their existing signatures. Their helpers are package-pr
 | | `SeasonDataRepository` | Season dates, current mission date, coin deadline, ordered season save chain |
 | | `DailyMissionRepository` | Active mission load/save and expired progress cleanup |
 | | `MissionCycleRepository` | Atomic daily mission replacement, calendar/current date update and full mission-progress deletion |
+| | `CoinDistributionRepository` | Expected-deadline check, locked current-wallet credits and atomic next-deadline update |
 | `commands/BattlePassCommand` | `PlayerAdminCommands` | Player reset, premium, XP, coins, leaderboard inclusion |
 | | `RewardAdminCommands` | Reward editor and custom item delivery |
 | | `SeasonAdminCommands` | Reload and season/daily mission resets |
@@ -76,6 +77,7 @@ Crafting and villager trading use the facade's MONITOR/ignoreCancelled statistic
 - Season duration is counted from the persisted season start. Reload/restart must not restart the countdown. Legacy duration seasons without a saved start get a one-time new countdown.
 - Saves must not let an older season deadline overwrite a newer one. New missions are saved after season-reset deletion completes.
 - Coin distribution has one managed task. Rescheduling/manual season resets preserve an existing delivery deadline.
+- Coin delivery flushes/invalidate-loads before its atomic database commit, then updates cached balances and notifications. Never credit from the old leaderboard balance or advance a deadline before credit success. See COINS.md for cache gates and the synchronous commit boundary.
 - XP grants fire `BattlePassXPGainEvent`; cancellation and modified nonnegative amounts are respected.
 - Use `utils/ExperienceProgression` for XP accumulation/level conversion so the wide total survives until levels are deducted; its callback preserves per-level feedback. XP events/storage remain int-valued and lifetime counts/remaining XP cap at the representable maximum.
 - Credit currency through `PlayerData.addBattleCoins` and use the returned credited amount. Coin-token redemption must retain any uncredited tokens at the wallet limit; configured distributions cannot be negative.

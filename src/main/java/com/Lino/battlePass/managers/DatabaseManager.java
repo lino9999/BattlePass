@@ -21,6 +21,7 @@ public class DatabaseManager {
     private final PlayerDataRepository players;
     private final DailyMissionRepository missions;
     private final MissionCycleRepository missionCycles;
+    private final CoinDistributionRepository coinDistributions;
 
     public DatabaseManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -30,6 +31,7 @@ public class DatabaseManager {
         players = new PlayerDataRepository(plugin, connections, this::getCurrentMissionDate);
         missions = new DailyMissionRepository(connections, this::getCurrentMissionDate);
         missionCycles = new MissionCycleRepository(connections, missions, seasonData);
+        coinDistributions = new CoinDistributionRepository(connections, seasonData);
     }
 
     public CompletableFuture<Void> initialize() {
@@ -43,6 +45,31 @@ public class DatabaseManager {
 
     public CompletableFuture<Void> saveCoinsDistributionTime(LocalDateTime nextDistribution) {
         return operations.write(() -> seasonData.saveCoinsDistributionTime(nextDistribution));
+    }
+
+    /** Completes the short commit phase before cached balances become spendable. Never hold the cache monitor here. */
+    public void commitCoinsDistribution(LocalDateTime expectedDeadline, LocalDateTime nextDeadline, Map<UUID, Integer> credits) {
+        if (expectedDeadline == null || nextDeadline == null || !nextDeadline.isAfter(expectedDeadline)) {
+            throw new IllegalArgumentException("A coin delivery must advance its expected deadline");
+        }
+        Map<UUID, Integer> snapshot = new LinkedHashMap<>(credits);
+        snapshot.forEach((uuid, amount) -> { Objects.requireNonNull(uuid); Objects.requireNonNull(amount); });
+        CoinDistributionRepository.Result result = operations.write(() ->
+                coinDistributions.distribute(expectedDeadline, nextDeadline, snapshot)).join();
+        if (!result.applied()) throw new CoinsDeadlineChangedException(result.nextDeadline());
+        credits.clear();
+        credits.putAll(result.credits());
+    }
+
+    public static final class CoinsDeadlineChangedException extends IllegalStateException {
+        private final LocalDateTime nextDeadline;
+
+        CoinsDeadlineChangedException(LocalDateTime nextDeadline) {
+            super("The coin delivery deadline changed before commit");
+            this.nextDeadline = nextDeadline;
+        }
+
+        public LocalDateTime getNextDeadline() { return nextDeadline; }
     }
 
     public CompletableFuture<LocalDateTime> loadCoinsDistributionTime() {

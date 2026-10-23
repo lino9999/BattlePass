@@ -42,12 +42,14 @@ public class BattlePass extends JavaPlugin {
     private SeasonRotationManager seasonRotationManager;
     private XPEventManager xpEventManager;
 
+    private volatile boolean stopping;
     private boolean updateAvailable = false;
     private String latestVersion = "";
     private static final String SPIGOT_RESOURCE_ID = "125992";
 
     @Override
     public void onEnable() {
+        stopping = false;
         saveDefaultConfig();
         saveResourceIfNotExists("missions.yml");
         saveResourceIfNotExists("messages.yml");
@@ -99,12 +101,7 @@ public class BattlePass extends JavaPlugin {
 
                             new BattlePassTask(BattlePass.this).runTaskTimer(BattlePass.this, 6000L, 1200L);
 
-                            databaseManager.loadCoinsDistributionTime()
-                                    .exceptionally(ex -> {
-                                        getLogger().warning("Could not load coins distribution time: " + ex.getMessage());
-                                        return null;
-                                    })
-                                    .thenAccept(nextDist -> startCoinsDistributionTask(nextDist));
+                            restoreCoinsDistributionTask();
 
                             registerPlaceholders();
                             checkForUpdates();
@@ -134,6 +131,7 @@ public class BattlePass extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        stopping = true;
         if (eventManager != null) {
             eventManager.flushPlayTime();
         }
@@ -158,6 +156,17 @@ public class BattlePass extends JavaPlugin {
         if (databaseManager != null) {
             databaseManager.shutdown();
         }
+    }
+
+    private void restoreCoinsDistributionTask() {
+        databaseManager.loadCoinsDistributionTime()
+                .thenAccept(BattlePass.this::startCoinsDistributionTask)
+                .exceptionally(ex -> {
+                    getLogger().severe("Could not load coins distribution time: " + ex.getMessage());
+                    if (!stopping) getServer().getScheduler().runTask(BattlePass.this,
+                            () -> getServer().getPluginManager().disablePlugin(BattlePass.this));
+                    return null;
+                });
     }
 
     private void registerPlaceholders() {
@@ -328,6 +337,7 @@ public class BattlePass extends JavaPlugin {
     }
 
     public void startCoinsDistributionTask(LocalDateTime savedTime) {
+        if (stopping) return;
         if (!Bukkit.isPrimaryThread()) {
             Bukkit.getScheduler().runTask(this, () -> startCoinsDistributionTask(savedTime));
             return;

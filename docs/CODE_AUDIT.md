@@ -85,6 +85,14 @@ Two additional callback regressions then reproduced duplicate pending-minute cre
 
 Validation: six of seven initial temporary tests reproduced early publication, failed-preflight handling, partial calendar/mission replacement and retained same-day progress. The expanded suite passes 60 tests (41 existing plus 19 temporary): SQLite aborting triggers at each transaction stage, empty cycles, snapshot isolation, next-date reload, preserved player/coin state, one prefixed MySQL connection/commit, startup, reset guards, failure/disable, reload/shutdown completion and season priority. Temporary sources and generated artifacts are deleted before delivery. MySQL was tested through JDBC mocks, not a live database; transaction guarantees require transactional tables. The full season transition still uses its separate reset/calendar/mission operations and remains under review.
 
+## Verified fixes: committed coin deliveries and timer lifecycle (2026-10-24)
+
+- Pending/failed ranking reads no longer consume the delivery deadline. One pending attempt is allowed; cancellation, rescheduling, disabled shop and reset pauses prevent late/overlapping delivery. Startup deadline-read failure stops the plugin instead of silently creating another countdown. A lifecycle stop flag prevents a delayed callback from restarting the timer after disable.
+- `CoinDistributionRepository` commits locked current-balance credits and the new deadline together. Offline balances no longer come from the older ranking snapshot. Amounts cap at wallet capacity and the actual credited amounts are returned for cache/messages; SQL failures roll back all wallets and the deadline. An expected-deadline conflict suppresses repeat credit without poisoning later writes.
+- Player-cache preflight drains snapshots without holding the cache monitor, rejects unsaved data, invalidates old loads and defers new uncached loads/snapshots during the commit. Cached balances are changed only after success. Deferred loads resume afterwards, preventing a pre-credit load from restoring a stale balance or a post-credit load from being credited twice.
+
+Validation: all three initial temporary task checks failed before correction (failed/pending read deadline loss and cancelled late delivery). All 71 tests now pass (41 existing plus 30 temporary). They cover SQLite rollback on wallet/deadline errors, competing connections for one deadline, current balances, caps/missing players/empty deliveries, retry/conflicts, MySQL row-lock SQL/single lease, cache load/save races and monitor ordering, stop/start callbacks, and integrated task/cache/database success/failure with a deposit made while ranking is pending. Temporary sources and generated artifacts are removed before delivery. MySQL was tested via JDBC mocks, not a live instance. The ranking read is asynchronous; player flushes and the wallet commit (at most ten recipients) wait on the main thread for consistency. This does not establish multi-server cache coherence for all player-state writes.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
@@ -92,6 +100,6 @@ The audit is still active. Inspect and reproduce these candidates before changin
 - Extreme reward configuration and progression scalability (very sparse/high levels); verify no loops scale with untrusted numeric ranges unnecessarily.
 - GUI title collisions (including titles starting with a placeholder), reserved shop slots, item preview paths, pagination and malformed reward configuration.
 - Full season transition atomicity across player reset, calendar, missions and filesystem reward rotation; daily/season time-accounting boundaries and reset-interval changes on reload/restart.
-- Season reset/save ordering and time-accounting boundaries across daily/season resets; async coin distribution, other startup/shutdown/reload paths, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
+- Season reset/save ordering and time-accounting boundaries across daily/season resets; other startup/shutdown/reload paths, shared-database cache assumptions, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 
 Review every production source file and relevant resource; track further findings and verification here. A live Minecraft or MySQL server has not been exercised so far.

@@ -22,6 +22,8 @@ public class PlayerDataManager {
     private final Set<UUID> loadingPlayers = ConcurrentHashMap.newKeySet();
     private final AtomicLong nextVersion = new AtomicLong();
     private long cacheGeneration;
+    private boolean coinDistributionInProgress;
+    private final Set<UUID> deferredLoads = ConcurrentHashMap.newKeySet();
 
     public PlayerDataManager(BattlePass plugin, DatabaseManager databaseManager) {
         this.plugin = plugin;
@@ -29,7 +31,12 @@ public class PlayerDataManager {
     }
 
     public synchronized void loadPlayer(UUID uuid) {
-        if (playerCache.containsKey(uuid) || !loadingPlayers.add(uuid)) return;
+        if (playerCache.containsKey(uuid)) return;
+        if (coinDistributionInProgress) {
+            deferredLoads.add(uuid);
+            return;
+        }
+        if (!loadingPlayers.add(uuid)) return;
         long generation = cacheGeneration;
         try {
             databaseManager.loadPlayerData(uuid).whenComplete((data, failure) -> {
@@ -59,6 +66,7 @@ public class PlayerDataManager {
     }
 
     private synchronized CompletableFuture<Boolean> saveSnapshot(UUID uuid) {
+        if (coinDistributionInProgress) return CompletableFuture.completedFuture(false);
         CompletableFuture<Boolean> pending = pendingSaves.get(uuid);
         if (pending != null && !pending.isDone()) return pending;
         PlayerData data = playerCache.get(uuid);
@@ -136,6 +144,7 @@ public class PlayerDataManager {
         // Never hold the cache monitor while waiting for work on the shared database executor:
         // a load completing on that executor also needs this monitor before it can finish.
         synchronized (this) {
+            if (coinDistributionInProgress) throw new IllegalStateException("A coin distribution is being committed");
             if (save && dirtyVersions.keySet().stream().anyMatch(playerCache::containsKey)) {
                 throw new IllegalStateException("Cannot clear the player cache while player changes remain unsaved");
             }
@@ -148,6 +157,32 @@ public class PlayerDataManager {
 
     public void clearCache() {
         clearCache(true);
+    }
+
+    public void prepareCoinsDistribution() {
+        synchronized (this) {
+            if (coinDistributionInProgress) throw new IllegalStateException("A coin distribution is already in progress");
+        }
+        saveAllPlayersSync();
+        synchronized (this) {
+            if (coinDistributionInProgress || dirtyVersions.keySet().stream().anyMatch(playerCache::containsKey)) {
+                throw new IllegalStateException("Player changes must be saved before distributing coins");
+            }
+            coinDistributionInProgress = true;
+            cacheGeneration++;
+            deferredLoads.addAll(loadingPlayers);
+            loadingPlayers.clear();
+        }
+    }
+
+    public void finishCoinsDistribution() {
+        Set<UUID> reload;
+        synchronized (this) {
+            coinDistributionInProgress = false;
+            reload = Set.copyOf(deferredLoads);
+            deferredLoads.clear();
+        }
+        reload.forEach(this::loadPlayer);
     }
 
     public void cleanupStaleEntries() {
