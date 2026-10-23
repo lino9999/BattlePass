@@ -4,6 +4,7 @@
 - Java 21, Maven, Spigot 1.21.4 API. Root package: `com.Lino.battlePass`.
 - Use `rg` for focused searches; avoid reading the entire repository or generated output.
 - For bug fixes, reproduce the failure in a regression test where feasible, then run the relevant tests and `mvn clean package`.
+- Owner instruction: do not commit or push test files. Newly created regression tests are temporary: after verification, delete their sources and generated classes/reports from the PC before staging changes. Preserve pre-existing tests unless the owner asks to remove them. Summarize the verification in the relevant guide instead.
 - Preserve mission progress keys, player data, server configuration and existing GUI ownership checks.
 - Update the relevant guide when changing flows, settings, build requirements or invariants.
 - Owner instruction: after a task changes source code, commit the completed, verified changes and push to `https://github.com/lino9999/BattlePass` before finishing. Do not leave source fixes local only. This is authorization for routine commits and pushes; no repeated confirmation is needed.

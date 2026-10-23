@@ -4,7 +4,7 @@
 
 ### Food mission targets
 - `EAT_ITEM` now resolves food targets as Bukkit materials, so names such as `Golden Apple` and `minecraft:enchanted_golden_apple` count correctly alongside canonical material IDs. Additional targets use the same matching, and persisted mission progress keys are preserved.
-- Added regression coverage for both golden apple variants, both hands, full hunger, cancelled consumption and one increment per consumed item.
+- Verified both golden apple variants, both hands, full hunger, cancelled consumption and one increment per consumed item using temporary regression tests, removed after verification per the owner's policy.
 
 ## 8.6
 

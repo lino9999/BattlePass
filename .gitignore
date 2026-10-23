@@ -7,6 +7,10 @@
 *.class
 *.jar
 
+# New tests are temporary; remove them after verification (see AGENTS.md).
+# Already tracked historical tests remain tracked.
+/src/test/
+
 # Editors
 /.idea/
 /.vscode/

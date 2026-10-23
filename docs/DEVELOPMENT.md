@@ -5,7 +5,7 @@
 Use JDK 21 and Maven 3.9.x (`java -version`, `mvn -version`). There is no checked-in Maven wrapper. The project compiles against Spigot API `1.21.4-R0.1-SNAPSHOT` and declares `api-version: '1.21'`. Do not assume compatibility with older Minecraft versions.
 
 ```powershell
-mvn '-Dtest=EatMissionTargetTest,EatMissionProgressTest' test
+mvn test
 mvn clean package
 ```
 
@@ -17,7 +17,6 @@ First builds need network access to the repositories declared in `pom.xml`, incl
 
 | Area | Tests (class names) |
 | --- | --- |
-| Food targets and consumption | `EatMissionTargetTest`, `EatMissionProgressTest` |
 | Season countdown/reload/reset ordering | `MissionManagerSeasonTest`, `DatabaseSeasonDataTest` |
 | Schema migration/preserved data | `DatabaseSchemaTest` |
 | Coins and single task/deadline | `CoinsDistributionTaskTest`, `CoinsDistributionSchedulingTest` |
@@ -27,6 +26,8 @@ First builds need network access to the repositories declared in `pom.xml`, incl
 | Version and descriptor | `VersionUtilsTest`, `PluginMetadataTest` |
 
 JUnit Jupiter + Mockito are configured in `pom.xml`. SQLite tests use a real temporary database; MySQL uses mocked JDBC. Surefire excludes Mythic-Dist because its bundled SLF4J classes conflict with the test runtime. New listener tests can mock static `Bukkit` and the scheduler; use `RegisteredListener` when checking `ignoreCancelled`, since invoking the handler directly bypasses Bukkit's dispatch rules.
+
+Owner policy: never commit or push test files. Create any new regression tests temporarily under `src/test/` (ignored for new files), run them, then delete their sources and generated classes/reports before staging. Keep pre-existing tracked tests unless explicitly asked to remove them. Record the tested behavior and result in documentation; temporary tests are not part of the delivered repository.
 
 Automated tests do not replace a live Minecraft smoke test. Report exactly what was run and distinguish a reproduced failure from a suspected customer environment issue.
 
