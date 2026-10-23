@@ -8,7 +8,9 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | Daily missions, season dates, resets | [ARCHITECTURE.md](ARCHITECTURE.md) | `MissionManager`, `MissionResetHandler`, `SeasonRotationManager` |
 | Database, player cache, saving | [ARCHITECTURE.md](ARCHITECTURE.md) | `DatabaseManager` facade; `DatabaseConnections`, `PlayerDataRepository`, `SeasonDataRepository`, `DailyMissionRepository` |
 | Commands and permissions | [ARCHITECTURE.md](ARCHITECTURE.md) | `BattlePassCommand` router; `PlayerAdminCommands`, `RewardAdminCommands`, `SeasonAdminCommands`, `XPEventCommands` |
-| Menus, rewards, custom items, coins | [ARCHITECTURE.md](ARCHITECTURE.md) | Use the feature table |
+| Battle Pass rendering | [ARCHITECTURE.md](ARCHITECTURE.md) | `gui/BattlePassGui` facade; `BattlePassRewardRenderer` for reward icons/lore; `BattlePassMenuControls` for navigation/actions |
+| Reward loading or claims | [ARCHITECTURE.md](ARCHITECTURE.md) | `managers/RewardManager` for loading/maps; `RewardClaimHandler` for eligibility/delivery |
+| Other menus, custom items, coins | [ARCHITECTURE.md](ARCHITECTURE.md) | Use the feature table |
 | Build, regression tests, push | [DEVELOPMENT.md](DEVELOPMENT.md) | `pom.xml`, `AGENTS.md` |
 | Active bug/optimization audit | [CODE_AUDIT.md](CODE_AUDIT.md) | Verified fixes, pending investigations and test evidence |
 | Previously investigated reports | [ISSUE_REVIEW.md](ISSUE_REVIEW.md) | Historical findings dated 2026-09-29; not live issue status |

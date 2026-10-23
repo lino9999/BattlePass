@@ -37,7 +37,7 @@ Do not hold the player-cache monitor while waiting for database futures. A load 
 
 ## Internal components: read the relevant file first
 
-The three public entry points keep their existing signatures. Their helpers are package-private, share the existing state/executor, and are not additional Bukkit listeners or command registrations.
+Public entry points keep their existing signatures. Their helpers are package-private, share existing dependencies/state, and are not additional Bukkit listeners or command registrations.
 
 | Entry point | Internal component | Responsibility |
 | --- | --- | --- |
@@ -53,6 +53,11 @@ The three public entry points keep their existing signatures. Their helpers are 
 | | `BlockMissionTracker` | Place/break/mine, ore types, recent placements |
 | | `CombatMissionTracker` | Damage, deaths, kills, projectile/entity targets |
 | | `InteractionMissionTracker` | Food, crafting, fishing, trades, enchanting, XP pickup, animals |
+| `gui/BattlePassGui` | `BattlePassRewardRenderer` | Free/premium reward rows, available/locked/claimed icons, reward lore and row separator |
+| | `BattlePassMenuControls` | Progress summary, navigation tags and action buttons |
+| `managers/RewardManager` | `RewardClaimHandler` | Claim eligibility, persisted claim checks, command/item delivery, feedback and dirty marking |
+
+`BattlePassGui` owns the existing player-data/page/max-level snapshot and inventory creation/opening. It passes that same snapshot to its renderers and preserves rendering order: progress, rewards, separator, navigation, actions. Renderers only populate the inventory; click handling stays in the existing listeners. `RewardManager` retains reward loading, reward maps, level/page limits and editable reward conversion; its public claim method delegates to `RewardClaimHandler` with unchanged arguments. Neither extraction changes configuration paths, slot numbers, persistent tags or claim/save ordering.
 
 Keep event annotations and registration on `MissionProgressListener` so priorities, cancellation handling and registration order stay unchanged. Join/quit initialization and cleanup delegate to both movement and block state. `DatabaseManager.shutdown` waits for ordered season writes before stopping the shared executor and closing connections. Mission-date and villager-profession callbacks preserve dispatch through the original public methods.
 
