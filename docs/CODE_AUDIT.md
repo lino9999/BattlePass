@@ -38,11 +38,20 @@ Validation: 23 temporary tests cover distinct same-material rewards, metadata-lo
 
 Validation: 12 temporary tests cover six reward-icon material collisions, a purchasable barrier shop item, maximum mission bounds, overflowing progress, controlled load/write lock ordering, failed-flush retention and stale-load invalidation. All 53 tests passed together. Temporary tests are removed before delivery.
 
+## Verified fixes: experience and currency arithmetic
+
+- `ExperienceProgression` centralizes XP accumulation for missions, admin grants, daily rewards and elixirs. A long accumulator preserves the full sum through level conversion; callback feedback still runs once per gained level. Stored XP and lifetime level counts cannot wrap negative at the integer limit.
+- Mission XP multipliers/elixir stack multiplication widen before conversion to the int-valued XP event API. Admin XP removal uses a long total and direct level/remainder calculation rather than an overflow-prone total and a level-by-level subtraction loop.
+- `PlayerData.addBattleCoins` caps the persisted balance at `Integer.MAX_VALUE` and returns the actual credited amount. Commands/distribution report that amount. Coin tokens consume only the amount that fits; a full wallet keeps the tokens. Negative configured coin distributions are clamped to zero.
+- MessageManager reads packaged defaults for missing messages while retaining custom values and leaving the server file untouched; this also makes the new full-wallet message available to existing installations.
+
+Validation: nine boundary acceptance tests failed before correction. Fourteen temporary tests now cover the command/mission/daily/elixir XP paths, lifetime levels, normal gains, XP cancellation, full/partial token redemption, negative distribution configuration and translation fallback. One test compares 512 deterministic XP cases to an independent long-arithmetic oracle, including callback order. All 55 tests passed together. Temporary tests are removed before delivery. The database/API storage types remain int; amounts beyond representable stored capacity are capped instead of wrapping.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
-- XP grants, XP removal, lifetime levels and coin arithmetic: integer bounds and negative configured distribution amounts.
+- Extreme reward configuration and progression scalability (very sparse/high levels); verify no loops scale with untrusted numeric ranges unnecessarily.
 - GUI title collisions (including titles starting with a placeholder), reserved shop slots, item preview paths, pagination and malformed reward configuration.
 - Repository exception propagation and reset/save barriers: avoid reporting failed writes/resets as successful, including MySQL concurrency and daily resets on the same calendar date.
 - Crafting/trading progress: actual items taken versus potential output, shift clicks and full inventories.

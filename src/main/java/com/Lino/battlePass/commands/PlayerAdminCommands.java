@@ -3,6 +3,7 @@ package com.Lino.battlePass.commands;
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.utils.GradientColorParser;
+import com.Lino.battlePass.utils.ExperienceProgression;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
@@ -145,8 +146,7 @@ final class PlayerAdminCommands {
             int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
 
             if (add) {
-                data.xp += amount;
-                checkLevelUp(target, data, xpPerLevel);
+                checkLevelUp(target, data, xpPerLevel, amount);
                 sender.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.xp.added-sender",
                                 "%amount%", String.valueOf(amount), "%target%", target.getName()));
@@ -154,16 +154,11 @@ final class PlayerAdminCommands {
                         plugin.getMessageManager().getMessage("messages.xp.added-target",
                                 "%amount%", String.valueOf(amount)));
             } else {
-                int totalXP = (data.level - 1) * xpPerLevel + data.xp;
-                totalXP = Math.max(0, totalXP - amount);
-
-                int newLevel = 1;
-                while (totalXP >= xpPerLevel && newLevel < plugin.getRewardManager().getMaxLevel()) {
-                    totalXP -= xpPerLevel;
-                    newLevel++;
-                }
+                long totalXP = Math.max(0L, ((long) data.level - 1) * xpPerLevel + data.xp - amount);
+                int newLevel = (int) Math.min(plugin.getRewardManager().getMaxLevel(), 1 + totalXP / xpPerLevel);
+                totalXP -= (long) (newLevel - 1) * xpPerLevel;
                 data.level = newLevel;
-                data.xp = totalXP;
+                data.xp = (int) Math.min(Integer.MAX_VALUE, totalXP);
 
                 sender.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.xp.removed-sender",
@@ -220,7 +215,7 @@ final class PlayerAdminCommands {
             }
 
             if (add) {
-                data.battleCoins += amount;
+                amount = data.addBattleCoins(amount);
                 sender.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.coins.added-sender",
                                 "%amount%", String.valueOf(amount), "%target%", target.getName()));
@@ -298,15 +293,8 @@ final class PlayerAdminCommands {
         return true;
     }
 
-    private void checkLevelUp(Player player, PlayerData data, int xpPerLevel) {
-        boolean leveled = false;
-
-        while (data.xp >= xpPerLevel && data.level < plugin.getRewardManager().getMaxLevel()) {
-            data.xp -= xpPerLevel;
-            data.level++;
-            data.totalLevels++;
-            leveled = true;
-
+    private void checkLevelUp(Player player, PlayerData data, int xpPerLevel, int amount) {
+        int levels = ExperienceProgression.add(data, amount, xpPerLevel, plugin.getRewardManager().getMaxLevel(), () -> {
             player.sendMessage(plugin.getMessageManager().getPrefix() +
                     plugin.getMessageManager().getMessage("messages.level-up",
                             "%level%", String.valueOf(data.level)));
@@ -317,9 +305,9 @@ final class PlayerAdminCommands {
                 player.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.new-rewards"));
             }
-        }
+        });
 
-        if (leveled) {
+        if (levels > 0) {
             plugin.getPlayerDataManager().markForSave(player.getUniqueId());
         }
     }

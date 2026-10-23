@@ -60,6 +60,8 @@ Keep event annotations and registration on `MissionProgressListener` so prioriti
 - Saves must not let an older season deadline overwrite a newer one. New missions are saved after season-reset deletion completes.
 - Coin distribution has one managed task. Rescheduling/manual season resets preserve an existing delivery deadline.
 - XP grants fire `BattlePassXPGainEvent`; cancellation and modified nonnegative amounts are respected.
+- Use `utils/ExperienceProgression` for XP accumulation/level conversion so the wide total survives until levels are deducted; its callback preserves per-level feedback. XP events/storage remain int-valued and lifetime counts/remaining XP cap at the representable maximum.
+- Credit currency through `PlayerData.addBattleCoins` and use the returned credited amount. Coin-token redemption must retain any uncredited tokens at the wallet limit; configured distributions cannot be negative.
 - Custom item identity comes from persistent tags, not material/name alone. Redeeming a stack must consume the same quantity used for the reward and the correct hand.
 - Loaded item rewards use `Reward.configurationPath` for exact item/metadata selection. Do not rediscover an entry by material: multiple rewards may share a material. Claims enforce cached claim/level/premium eligibility in `RewardManager`; shop delivery must clone configured item stacks.
 - XP event duration input must be fully consumed and checked for overflow. Invalid API starts preserve the current event; replacing an expired event still releases its pending task and bossbar.
@@ -67,3 +69,4 @@ Keep event annotations and registration on `MissionProgressListener` so prioriti
 - Read-only menu actions use top-inventory raw slots; bottom inventory clicks must never trigger a button. Top-inventory drags are blocked while bottom-only and foreign drags remain independent.
 - Reward rows take precedence over material-based buttons; configurable reward icons may use action-button materials. Controls/back buttons require their fixed slots.
 - Version comes from `pom.xml` and is filtered into `plugin.yml`. Do not hardcode a second descriptor version.
+- `MessageManager` loads packaged message defaults in memory for missing keys; custom translations win and the server's file is not rewritten.

@@ -147,6 +147,7 @@ messages:
     already-have-premium: "<gradient:#FF6B6B:#FF0000>✗ You already have the Premium Battle Pass!</gradient>"
     premium-activated: "<gradient:#FFD93D:#FF6B6B>★ PREMIUM ACTIVATED ★</gradient>\n<gradient:#F7B731:#FC4A1A>You now have access to all premium rewards!</gradient>"
     coins-redeemed: "<gradient:#00FF88:#45B7D1>✓ Redeemed %amount% Battle Coins!</gradient>"
+    coins-full: "&cYour Battle Coins balance is full. Your tokens have been kept."
     max-level-reached: "<gradient:#FF6B6B:#FF0000>✗ You have already reached the maximum level!</gradient>"
     xp-boost-used: "<gradient:#00FF88:#45B7D1>★ XP BOOST!</gradient>\n<gradient:#4ECDC4:#45B7D1>Consumed %items% elixir(s) and gained %amount% XP!</gradient>"
     xp-event-activated: "<gradient:#FFD700:#FF4500>XP EVENT!</gradient> <gradient:#4ECDC4:#45B7D1>%player%</gradient> &fhas activated a <gradient:#FFD93D:#FF6B6B>2x XP Event</gradient> for <gradient:#4ECDC4:#45B7D1>%duration%</gradient>!"

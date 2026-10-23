@@ -4,6 +4,7 @@ import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.events.BattlePassXPGainEvent;
 import com.Lino.battlePass.gui.BaseHolder;
 import com.Lino.battlePass.models.PlayerData;
+import com.Lino.battlePass.utils.ExperienceProgression;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -238,17 +239,12 @@ public class GuiClickListener implements Listener {
             Bukkit.getPluginManager().callEvent(xpGainEvent);
             xpReward = xpGainEvent.isCancelled() ? 0 : Math.max(0, xpGainEvent.getAmount());
 
-            data.xp += xpReward;
             data.lastDailyReward = now;
 
             int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
             int maxLevel = plugin.getRewardManager().getMaxLevel();
 
-            while (data.xp >= xpPerLevel && data.level < maxLevel) {
-                data.xp -= xpPerLevel;
-                data.level++;
-                data.totalLevels++;
-
+            ExperienceProgression.add(data, xpReward, xpPerLevel, maxLevel, () -> {
                 player.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.level-up",
                                 "%level%", String.valueOf(data.level)));
@@ -259,7 +255,7 @@ public class GuiClickListener implements Listener {
                     player.sendMessage(plugin.getMessageManager().getPrefix() +
                             plugin.getMessageManager().getMessage("messages.new-rewards"));
                 }
-            }
+            });
 
             plugin.getPlayerDataManager().markForSave(player.getUniqueId());
 

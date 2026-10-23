@@ -6,6 +6,10 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,10 +26,18 @@ public class MessageManager {
     public void reload() {
         File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
         messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
+        try (InputStream defaults = plugin.getResource("messages.yml")) {
+            if (defaults != null) {
+                messagesConfig.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defaults, StandardCharsets.UTF_8)));
+            }
+        } catch (IOException failure) {
+            plugin.getLogger().warning("Could not load default messages: " + failure.getMessage());
+        }
     }
 
     public String getMessage(String path, Object... replacements) {
-        String message = messagesConfig.getString(path, path);
+        String message = messagesConfig.getString(path);
+        if (message == null) message = path;
 
         if (replacements.length > 0 && replacements.length % 2 == 0) {
             for (int i = 0; i < replacements.length; i += 2) {

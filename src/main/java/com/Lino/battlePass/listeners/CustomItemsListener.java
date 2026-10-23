@@ -3,6 +3,7 @@ package com.Lino.battlePass.listeners;
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.events.BattlePassXPGainEvent;
 import com.Lino.battlePass.models.PlayerData;
+import com.Lino.battlePass.utils.ExperienceProgression;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -144,11 +145,19 @@ public class CustomItemsListener implements Listener {
             return;
         }
 
-        int amount = itemInHand.getAmount();
-        data.battleCoins += amount;
+        int amount = data.addBattleCoins(itemInHand.getAmount());
+        if (amount == 0) {
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.items.coins-full"));
+            return;
+        }
         plugin.getPlayerDataManager().markForSave(player.getUniqueId());
 
-        consumeEntireHeldItem(event, player);
+        if (amount == itemInHand.getAmount()) {
+            consumeEntireHeldItem(event, player);
+        } else {
+            itemInHand.setAmount(itemInHand.getAmount() - amount);
+        }
 
         player.sendMessage(plugin.getMessageManager().getPrefix() +
                 plugin.getMessageManager().getMessage("messages.items.coins-redeemed",
@@ -189,7 +198,7 @@ public class CustomItemsListener implements Listener {
         }
 
         int amount = itemInHand.getAmount();
-        int totalXP = amount * 100;
+        int totalXP = (int) Math.min(Integer.MAX_VALUE, (long) amount * 100);
 
         BattlePassXPGainEvent xpGainEvent = new BattlePassXPGainEvent(player, BattlePassXPGainEvent.XPSource.LEVEL_BOOST, totalXP);
         Bukkit.getPluginManager().callEvent(xpGainEvent);
@@ -197,22 +206,13 @@ public class CustomItemsListener implements Listener {
 
         consumeEntireHeldItem(event, player);
 
-        data.xp += totalXP;
-
         int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
-        int levelsGained = 0;
-
-        while (data.xp >= xpPerLevel && data.level < maxLevel) {
-            data.xp -= xpPerLevel;
-            data.level++;
-            data.totalLevels++;
-            levelsGained++;
-
+        int levelsGained = ExperienceProgression.add(data, totalXP, xpPerLevel, maxLevel, () -> {
             player.sendMessage(plugin.getMessageManager().getPrefix() +
                     plugin.getMessageManager().getMessage("messages.level-up",
                             "%level%", String.valueOf(data.level)));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-        }
+        });
 
         plugin.getPlayerDataManager().markForSave(player.getUniqueId());
 

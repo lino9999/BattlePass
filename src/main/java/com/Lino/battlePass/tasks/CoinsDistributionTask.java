@@ -57,10 +57,10 @@ public class CoinsDistributionTask extends BukkitRunnable {
 
                     PlayerData onlineData = plugin.getPlayerDataManager().getPlayerData(topPlayer.uuid);
                     if (onlineData != null) {
-                        onlineData.battleCoins += coins;
+                        coins = onlineData.addBattleCoins(coins);
                         plugin.getPlayerDataManager().markForSave(topPlayer.uuid);
                     } else {
-                        topPlayer.battleCoins += coins;
+                        coins = topPlayer.addBattleCoins(coins);
                         plugin.getDatabaseManager().updatePlayerCoins(topPlayer.uuid, topPlayer.battleCoins);
                     }
 

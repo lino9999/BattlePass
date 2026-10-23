@@ -115,7 +115,7 @@ public class ConfigManager {
 
         coinsDistribution.clear();
         for (int i = 1; i <= 10; i++) {
-            coinsDistribution.add(config.getInt("battle-coins.distribution." + i, 11 - i));
+            coinsDistribution.add(Math.max(0, config.getInt("battle-coins.distribution." + i, 11 - i)));
         }
 
         File missionsFile = new File(plugin.getDataFolder(), "missions.yml");

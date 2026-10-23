@@ -5,6 +5,7 @@ import com.Lino.battlePass.events.BattlePassXPGainEvent;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.utils.GradientColorParser;
+import com.Lino.battlePass.utils.ExperienceProgression;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -77,15 +78,14 @@ public class MissionProgressTracker {
                 completedKeys.add(missionKey);
 
                 int eventMultiplier = plugin.getXpEventManager().getMultiplier();
-                int xpToAdd = mission.xpReward * eventMultiplier;
+                int xpToAdd = (int) Math.min(Integer.MAX_VALUE, (long) mission.xpReward * eventMultiplier);
 
                 BattlePassXPGainEvent xpGainEvent = new BattlePassXPGainEvent(player, BattlePassXPGainEvent.XPSource.MISSION, xpToAdd);
                 Bukkit.getPluginManager().callEvent(xpGainEvent);
                 xpToAdd = xpGainEvent.isCancelled() ? 0 : Math.max(0, xpGainEvent.getAmount());
 
                 if (xpToAdd > 0) {
-                    data.xp += xpToAdd;
-                    checkLevelUp(player, data);
+                    checkLevelUp(player, data, xpToAdd);
                 }
 
                 String xpText = String.valueOf(xpToAdd);
@@ -130,18 +130,12 @@ public class MissionProgressTracker {
         }
     }
 
-    private void checkLevelUp(Player player, PlayerData data) {
-        boolean leveled = false;
+    private void checkLevelUp(Player player, PlayerData data, int amount) {
         MessageManager messageManager = plugin.getMessageManager();
         int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
         int maxLevel = plugin.getRewardManager().getMaxLevel();
 
-        while (data.xp >= xpPerLevel && data.level < maxLevel) {
-            data.xp -= xpPerLevel;
-            data.level++;
-            data.totalLevels++;
-            leveled = true;
-
+        int levels = ExperienceProgression.add(data, amount, xpPerLevel, maxLevel, () -> {
             player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.level-up",
                     "%level%", String.valueOf(data.level)));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
@@ -150,9 +144,9 @@ public class MissionProgressTracker {
             if (available > 0) {
                 player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.new-rewards"));
             }
-        }
+        });
 
-        if (leveled) {
+        if (levels > 0) {
             plugin.getPlayerDataManager().markForSave(player.getUniqueId());
         }
     }

@@ -23,6 +23,14 @@ public class PlayerData {
         this.uuid = uuid;
     }
 
+    /** Credits only the amount representable by the persisted integer balance. */
+    public int addBattleCoins(int amount) {
+        int current = Math.max(0, battleCoins);
+        int credited = Math.min(Math.max(0, amount), Integer.MAX_VALUE - current);
+        battleCoins = current + credited;
+        return credited;
+    }
+
     public PlayerData copy() {
         PlayerData snapshot = new PlayerData(this.uuid);
         snapshot.xp = this.xp;
