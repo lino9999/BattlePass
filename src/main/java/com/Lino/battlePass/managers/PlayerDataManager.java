@@ -132,6 +132,9 @@ public class PlayerDataManager {
     public synchronized void clearCache(boolean save) {
         if (save) {
             saveAllPlayersSync();
+            if (dirtyVersions.keySet().stream().anyMatch(playerCache::containsKey)) {
+                throw new IllegalStateException("Cannot clear the player cache while player changes remain unsaved");
+            }
         } else {
             clearDirtyPlayers();
         }

@@ -12,12 +12,18 @@ Status: in progress. This is a source review and regression-test record, not a c
 
 Validation: the initial 10 temporary regression checks reproduced six failures in the old code. After the fixes, all 52 tests passed (41 pre-existing plus 11 temporary tests; the drag test covers 12 combinations). Temporary test sources/classes/reports are removed before delivery as required by the owner.
 
+## Verified fixes: failed flush and single-connection pools
+
+- `clearCache(true)` retains the cache and reports failure if revisions remain unsaved after flushing. An explicit `clearCache(false)` still discards state intentionally.
+- Season reset performs that flush before rotating configuration or changing deadlines. A failed flush postpones the reset and preserves player state for retry.
+- Player reads/writes resolve the current mission date before borrowing their player connection. The date lookup uses its own lease, so MySQL pool size one no longer causes nested connection acquisition and timeouts.
+
+Validation: four temporary boundary tests cover failed flush/retry, reset preflight and read/write connection acquisition order. All 45 tests passed together; MySQL lease behavior was verified through mocked JDBC/connection ownership, without a live MySQL server.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
-- `PlayerDataManager.clearCache(true)`: what happens when the flush fails? Ensure season reset cannot discard unsaved state.
-- `PlayerDataRepository`: mission-date lookup while holding a pooled MySQL connection; check behavior with pool size one.
 - `RewardManager`: multiple reward items sharing a material select the first matching configuration entry; plain YAML item metadata and duplicate claim guards.
 - `ShopManager`: reusable item templates passed directly to inventory insertion; check repeated purchases when the insertion mutates its argument.
 - `XPEventManager.parseDuration`: oversized numbers, arithmetic overflow and malformed input reaching admin commands.

@@ -33,6 +33,7 @@ final class PlayerDataRepository {
             boolean shouldClose = connections.isMySQL();
 
             try {
+                String missionDate = currentMissionDate.get();
                 conn = connections.getConnection();
 
                 try (PreparedStatement ps = conn.prepareStatement(sqlInsert)) {
@@ -70,7 +71,6 @@ final class PlayerDataRepository {
                     }
                 }
 
-                String missionDate = currentMissionDate.get();
                 try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + connections.getPrefix() + "missions WHERE uuid = ? AND date = ?")) {
                     ps.setString(1, uuid.toString());
                     ps.setString(2, missionDate);
@@ -142,6 +142,7 @@ final class PlayerDataRepository {
             boolean shouldClose = connections.isMySQL();
 
             try {
+                String missionDate = currentMissionDate.get();
                 conn = connections.getConnection();
                 try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
                     ps.setInt(1, data.xp);
@@ -158,7 +159,6 @@ final class PlayerDataRepository {
                     ps.executeUpdate();
                 }
 
-                String missionDate = currentMissionDate.get();
                 if (!data.missionProgress.isEmpty()) {
                     try (PreparedStatement ps = conn.prepareStatement(missionSql)) {
                         for (Map.Entry<String, Integer> mission : data.missionProgress.entrySet()) {
