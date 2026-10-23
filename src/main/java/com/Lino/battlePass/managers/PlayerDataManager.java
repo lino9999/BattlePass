@@ -129,18 +129,21 @@ public class PlayerDataManager {
         }
     }
 
-    public synchronized void clearCache(boolean save) {
+    public void clearCache(boolean save) {
         if (save) {
             saveAllPlayersSync();
-            if (dirtyVersions.keySet().stream().anyMatch(playerCache::containsKey)) {
+        }
+        // Never hold the cache monitor while waiting for work on the shared database executor:
+        // a load completing on that executor also needs this monitor before it can finish.
+        synchronized (this) {
+            if (save && dirtyVersions.keySet().stream().anyMatch(playerCache::containsKey)) {
                 throw new IllegalStateException("Cannot clear the player cache while player changes remain unsaved");
             }
-        } else {
-            clearDirtyPlayers();
+            if (!save) clearDirtyPlayers();
+            cacheGeneration++;
+            loadingPlayers.clear();
+            playerCache.clear();
         }
-        cacheGeneration++;
-        loadingPlayers.clear();
-        playerCache.clear();
     }
 
     public void clearCache() {

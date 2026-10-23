@@ -12,6 +12,8 @@ Dirty revisions are acknowledged individually: a completed write cannot clear a 
 
 `clearCache(true)` refuses to discard unsaved revisions after a failed flush. Season reset runs this preflight before rotation/deadline changes. Player repositories resolve the mission date before acquiring the player connection, avoiding nested MySQL leases when the pool has only one connection.
 
+Do not hold the player-cache monitor while waiting for database futures. A load completion running on the shared SQLite executor also needs that monitor; blocking it can prevent queued writes from ever completing. Only the generation check/cache mutation uses the monitor during clear.
+
 `BattlePass.onDisable` stops XP events/sounds/coin work, saves players synchronously, shuts down missions and closes the database. Bukkit world, player and inventory operations belong on the server thread; database callbacks often schedule work back onto it.
 
 ## Feature map
@@ -63,4 +65,5 @@ Keep event annotations and registration on `MissionProgressListener` so prioriti
 - XP event duration input must be fully consumed and checked for overflow. Invalid API starts preserve the current event; replacing an expired event still releases its pending task and bossbar.
 - GUI handlers check `BaseHolder.isBattlePassInventory` before cancelling or altering another inventory.
 - Read-only menu actions use top-inventory raw slots; bottom inventory clicks must never trigger a button. Top-inventory drags are blocked while bottom-only and foreign drags remain independent.
+- Reward rows take precedence over material-based buttons; configurable reward icons may use action-button materials. Controls/back buttons require their fixed slots.
 - Version comes from `pom.xml` and is filtered into `plugin.yml`. Do not hardcode a second descriptor version.

@@ -53,7 +53,7 @@ public class GuiClickListener implements Listener {
         if (isBattlePassGUI) {
             handleBattlePassClick(player, clicked, event.getSlot());
         } else if (title.equals(plugin.getMessageManager().getMessage("gui.leaderboard"))) {
-            if (clicked.getType() == Material.BARRIER) {
+            if (clicked.getType() == Material.BARRIER && event.getSlot() == 49) {
                 int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
                 plugin.getGuiManager().openBattlePassGUI(player, page);
             }
@@ -81,7 +81,7 @@ public class GuiClickListener implements Listener {
     }
 
     private void handleMissionsClick(Player player, ItemStack clicked, int slot) {
-        if (clicked.getType() == Material.BARRIER) {
+        if (clicked.getType() == Material.BARRIER && slot == 49) {
             int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
             plugin.getGuiManager().openBattlePassGUI(player, page);
         } else if (clicked.getType() == Material.TNT && slot == 45) {
@@ -105,6 +105,14 @@ public class GuiClickListener implements Listener {
     private void handleBattlePassClick(Player player, ItemStack clicked, int slot) {
         int currentPage = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
 
+        // Reward materials are configurable and may also be used by action buttons.
+        if ((slot >= 9 && slot <= 17) || (slot >= 27 && slot <= 35)) {
+            if (clicked.getType() == plugin.getConfigManager().getGuiRewardAvailableMaterial()) {
+                handleRewardClaim(player, slot, currentPage);
+            }
+            return;
+        }
+
         if (clicked.getType() == Material.ARROW && clicked.hasItemMeta()) {
             var meta = clicked.getItemMeta();
             if (meta.getPersistentDataContainer().has(plugin.getEventManager().getNavigationKey(), PersistentDataType.STRING)) {
@@ -125,19 +133,19 @@ public class GuiClickListener implements Listener {
 
         switch (clicked.getType()) {
             case BOOK:
-                plugin.getGuiManager().openMissionsGUI(player);
+                if (slot == 49) plugin.getGuiManager().openMissionsGUI(player);
                 break;
 
             case GOLDEN_HELMET:
-                plugin.getGuiManager().openLeaderboardGUI(player);
+                if (slot == 48) plugin.getGuiManager().openLeaderboardGUI(player);
                 break;
 
             case GOLD_INGOT:
-                plugin.getGuiManager().openShopGUI(player);
+                if (slot == 47 && plugin.getConfigManager().isShopEnabled()) plugin.getGuiManager().openShopGUI(player);
                 break;
 
             case SUNFLOWER:
-                handleDailyRewardClaim(player, currentPage);
+                if (slot == 50) handleDailyRewardClaim(player, currentPage);
                 break;
 
             case COMMAND_BLOCK:
@@ -147,15 +155,12 @@ public class GuiClickListener implements Listener {
                 break;
 
             default:
-                if (clicked.getType() == plugin.getConfigManager().getGuiRewardAvailableMaterial()) {
-                    handleRewardClaim(player, slot, currentPage);
-                }
                 break;
         }
     }
 
     private void handleShopClick(Player player, ItemStack clicked, int slot) {
-        if (clicked.getType() == Material.BARRIER) {
+        if (clicked.getType() == Material.BARRIER && slot == 49) {
             int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
             plugin.getGuiManager().openBattlePassGUI(player, page);
             return;

@@ -30,12 +30,20 @@ Validation: four temporary boundary tests cover failed flush/retry, reset prefli
 
 Validation: 23 temporary tests cover distinct same-material rewards, metadata-loader selection, duplicate/premium claims, repeated purchases with a mutating inventory, duration formats/overflow, API rejection and expired-event cleanup. All 64 tests passed together; temporary tests are removed before delivery. Bukkit registries, inventory insertion and item deserialization were mocked; no live server was used.
 
+## Verified fixes: menu materials, mission bounds and cache lock ordering
+
+- Reward rows are handled before material-based action buttons. Available/locked reward icons may share materials with books, navigation arrows, gold, sunflowers or command blocks without becoming unrelated controls. Action/back buttons also require their intended slots; a shop item using BARRIER outside the back slot remains purchasable.
+- Mission ranges use a long upper bound so `Integer.MAX_VALUE` remains a valid inclusive maximum. Weight totals/selection use long arithmetic. Positive progress increments use long arithmetic before clamping to the requirement, preventing wraparound to zero.
+- The earlier cache-generation fix exposed a lock-order issue: a synchronous cache clear could hold the cache monitor while waiting for a write behind a load whose completion needed that monitor. The flush now runs outside the monitor; generation checking and clearing remain inside it. A controlled single-thread database executor reproduced the timeout before correction.
+
+Validation: 12 temporary tests cover six reward-icon material collisions, a purchasable barrier shop item, maximum mission bounds, overflowing progress, controlled load/write lock ordering, failed-flush retention and stale-load invalidation. All 53 tests passed together. Temporary tests are removed before delivery.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
-- Mission generation/progress and XP/coin arithmetic: integer bounds and invalid configuration.
-- Reward/menu icon collisions with configurable materials; item preview paths, pagination and malformed reward configuration.
+- XP grants, XP removal, lifetime levels and coin arithmetic: integer bounds and negative configured distribution amounts.
+- GUI title collisions (including titles starting with a placeholder), reserved shop slots, item preview paths, pagination and malformed reward configuration.
 - Repository exception propagation and reset/save barriers: avoid reporting failed writes/resets as successful, including MySQL concurrency and daily resets on the same calendar date.
 - Crafting/trading progress: actual items taken versus potential output, shift clicks and full inventories.
 - Playtime/world/teleport state, season reset/save ordering, async coin distribution, startup/shutdown/reload, editors, GUI caches, serialization, placeholders, configuration and optional integrations.

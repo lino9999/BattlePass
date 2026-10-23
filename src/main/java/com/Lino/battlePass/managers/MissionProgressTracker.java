@@ -68,7 +68,7 @@ public class MissionProgressTracker {
                 continue;
             }
 
-            int newProgress = Math.min(currentProgress + amount, mission.required);
+            int newProgress = (int) Math.min((long) currentProgress + amount, mission.required);
             newProgress = Math.max(0, newProgress);
             data.missionProgress.put(missionKey, newProgress);
             changed = true;

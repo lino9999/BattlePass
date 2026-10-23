@@ -64,14 +64,14 @@ public class MissionGenerator {
     private WeightedMissionTemplate selectWeightedRandom(List<WeightedMissionTemplate> weightedTemplates) {
         if (weightedTemplates.isEmpty()) return null;
 
-        int totalWeight = weightedTemplates.stream().mapToInt(w -> w.weight).sum();
+        long totalWeight = weightedTemplates.stream().mapToLong(w -> w.weight).sum();
 
         if (totalWeight <= 0) {
             return weightedTemplates.get(ThreadLocalRandom.current().nextInt(weightedTemplates.size()));
         }
 
-        int randomValue = ThreadLocalRandom.current().nextInt(totalWeight);
-        int currentWeight = 0;
+        long randomValue = ThreadLocalRandom.current().nextLong(totalWeight);
+        long currentWeight = 0;
 
         for (WeightedMissionTemplate weighted : weightedTemplates) {
             currentWeight += weighted.weight;
@@ -97,7 +97,7 @@ public class MissionGenerator {
     private int randomInRange(int min, int max) {
         int low = Math.min(min, max);
         int high = Math.max(min, max);
-        return ThreadLocalRandom.current().nextInt(low, high + 1);
+        return (int) ThreadLocalRandom.current().nextLong(low, (long) high + 1);
     }
 
     private String formatTarget(String target) {

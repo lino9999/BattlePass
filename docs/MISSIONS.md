@@ -12,6 +12,8 @@ Editing a pool or using `/bp reload` does not replace the already active daily m
 
 Progress keys are `type + "_" + target + "_" + required + "_" + name.hashCode()`. Keep stored fields unchanged when improving comparison; normalizing stored fields can orphan existing progress. Primary target `ANY` or null is a wildcard; `additional-targets` are alternatives, and one action counts once even if multiple alternatives match.
 
+Mission range upper bounds and weight totals use long arithmetic even though configured/generated values are ints. Progress additions also widen before clamping to `required`; do not reintroduce int overflow by adding first and clamping afterwards.
+
 ## EAT_ITEM
 
 `MissionProgressListener.onPlayerConsume` listens at `MONITOR`, with `ignoreCancelled=true`, and delegates to `InteractionMissionTracker.onPlayerConsume`, which reads `event.getItem().getType()`. A successful `PlayerItemConsumeEvent` contributes **one** item, regardless of stack size or hand. Do not count right-clicks, inspect only the main hand, or require the food level to increase: golden apples are usable at full hunger. Cancelled consumption must not grant progress.
