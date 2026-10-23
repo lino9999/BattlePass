@@ -76,13 +76,22 @@ Validation: eight initial movement/time regressions failed before correction; se
 
 Two additional callback regressions then reproduced duplicate pending-minute credits and overwritten teleport baselines. After moving state acknowledgement before the callback, both pass together with the existing suite (43 tests). These additional temporary sources/artifacts are also removed before the final clean package.
 
+## Verified fixes: atomic daily mission cycles (2026-10-24)
+
+- `DatabaseManager.resetDailyMissions` delegates to `MissionCycleRepository`: active missions, season calendar/current mission date and deletion of all mission progress share one connection/transaction. Same-calendar-date resets also clear progress; a date-only `< currentDate` cleanup cannot distinguish two cycles on the same day. Player XP, levels, premium, claims, coins and the coin deadline are preserved.
+- Regular, forced and overdue/missing-mission startup resets use that operation. Player snapshots are flushed and the cache generation invalidated first; failed preflight preserves the previous cycle. New missions/deadline/announcements/player reload are published after commit, while progress, duplicate daily resets and overlapping season resets are paused.
+- Reload during a pending daily reset defers calendar recalculation until the new cycle is published, preventing an old date/deadline save from following the transaction. Shutdown can finalize a committed reset directly; its queued completion is idempotent. Scheduled checks prioritize the season reset when both deadlines expire.
+- Existing separate save APIs remain available for saving unchanged state. Connection-level daily/season writers are shared with the composite operation; neither joins another queued job or borrows a nested MySQL connection.
+
+Validation: six of seven initial temporary tests reproduced early publication, failed-preflight handling, partial calendar/mission replacement and retained same-day progress. The expanded suite passes 60 tests (41 existing plus 19 temporary): SQLite aborting triggers at each transaction stage, empty cycles, snapshot isolation, next-date reload, preserved player/coin state, one prefixed MySQL connection/commit, startup, reset guards, failure/disable, reload/shutdown completion and season priority. Temporary sources and generated artifacts are deleted before delivery. MySQL was tested through JDBC mocks, not a live database; transaction guarantees require transactional tables. The full season transition still uses its separate reset/calendar/mission operations and remains under review.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
 - Extreme reward configuration and progression scalability (very sparse/high levels); verify no loops scale with untrusted numeric ranges unnecessarily.
 - GUI title collisions (including titles starting with a placeholder), reserved shop slots, item preview paths, pagination and malformed reward configuration.
-- Daily reset as a single transaction across the mission set, season row and progress cleanup; check restart/failure windows and same-calendar-date resets.
+- Full season transition atomicity across player reset, calendar, missions and filesystem reward rotation; daily/season time-accounting boundaries and reset-interval changes on reload/restart.
 - Season reset/save ordering and time-accounting boundaries across daily/season resets; async coin distribution, other startup/shutdown/reload paths, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 
 Review every production source file and relevant resource; track further findings and verification here. A live Minecraft or MySQL server has not been exercised so far.

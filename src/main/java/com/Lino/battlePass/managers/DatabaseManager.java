@@ -20,6 +20,7 @@ public class DatabaseManager {
     private final SeasonDataRepository seasonData;
     private final PlayerDataRepository players;
     private final DailyMissionRepository missions;
+    private final MissionCycleRepository missionCycles;
 
     public DatabaseManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -28,6 +29,7 @@ public class DatabaseManager {
         seasonData = new SeasonDataRepository(plugin, connections);
         players = new PlayerDataRepository(plugin, connections, this::getCurrentMissionDate);
         missions = new DailyMissionRepository(connections, this::getCurrentMissionDate);
+        missionCycles = new MissionCycleRepository(connections, missions, seasonData);
     }
 
     public CompletableFuture<Void> initialize() {
@@ -81,9 +83,19 @@ public class DatabaseManager {
     }
 
     public CompletableFuture<Void> saveDailyMissions(List<Mission> missions, String missionDate) {
-        List<Mission> snapshot = missions.stream().map(mission -> new Mission(mission.name, mission.type, mission.target,
-                new ArrayList<>(mission.additionalTargets), mission.required, mission.xpReward)).toList();
+        List<Mission> snapshot = snapshotMissions(missions);
         return operations.write(() -> this.missions.saveDailyMissions(snapshot, missionDate));
+    }
+
+    public CompletableFuture<Void> resetDailyMissions(List<Mission> missions, String missionDate, LocalDateTime startDate,
+                                                     LocalDateTime endDate, LocalDateTime nextReset) {
+        List<Mission> snapshot = snapshotMissions(missions);
+        return operations.write(() -> missionCycles.replace(snapshot, missionDate, startDate, endDate, nextReset));
+    }
+
+    private List<Mission> snapshotMissions(List<Mission> missions) {
+        return missions.stream().map(mission -> new Mission(mission.name, mission.type, mission.target,
+                new ArrayList<>(mission.additionalTargets), mission.required, mission.xpReward)).toList();
     }
 
     public CompletableFuture<List<Mission>> loadDailyMissions() {

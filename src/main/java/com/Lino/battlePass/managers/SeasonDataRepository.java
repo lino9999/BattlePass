@@ -30,18 +30,7 @@ final class SeasonDataRepository {
 
             try {
                 conn = connections.getConnection();
-                String sql = connections.isMySQL()
-                        ? "INSERT INTO " + connections.getPrefix() + "season_data (id, start_date, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) " +
-                          "ON DUPLICATE KEY UPDATE start_date = VALUES(start_date), end_date = VALUES(end_date), mission_reset_time = VALUES(mission_reset_time), current_mission_date = VALUES(current_mission_date)"
-                        : "INSERT INTO " + connections.getPrefix() + "season_data (id, start_date, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) " +
-                          "ON CONFLICT(id) DO UPDATE SET start_date = excluded.start_date, end_date = excluded.end_date, mission_reset_time = excluded.mission_reset_time, current_mission_date = excluded.current_mission_date";
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, startDate != null ? startDate.toString() : "");
-                    ps.setString(2, endDate != null ? endDate.toString() : "");
-                    ps.setString(3, missionResetTime != null ? missionResetTime.toString() : "");
-                    ps.setString(4, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
-                    ps.executeUpdate();
-                }
+                saveOnConnection(conn, startDate, endDate, missionResetTime, currentMissionDate);
 
             } catch (SQLException e) {
                 throw new CompletionException("Failed to save season dates", e);
@@ -52,6 +41,22 @@ final class SeasonDataRepository {
             }
         }, connections.getExecutor());
         return seasonSave;
+    }
+
+    void saveOnConnection(Connection conn, LocalDateTime startDate, LocalDateTime endDate,
+                          LocalDateTime missionResetTime, String currentMissionDate) throws SQLException {
+        String sql = connections.isMySQL()
+                ? "INSERT INTO " + connections.getPrefix() + "season_data (id, start_date, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) " +
+                  "ON DUPLICATE KEY UPDATE start_date = VALUES(start_date), end_date = VALUES(end_date), mission_reset_time = VALUES(mission_reset_time), current_mission_date = VALUES(current_mission_date)"
+                : "INSERT INTO " + connections.getPrefix() + "season_data (id, start_date, end_date, mission_reset_time, current_mission_date) VALUES (1, ?, ?, ?, ?) " +
+                  "ON CONFLICT(id) DO UPDATE SET start_date = excluded.start_date, end_date = excluded.end_date, mission_reset_time = excluded.mission_reset_time, current_mission_date = excluded.current_mission_date";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, startDate != null ? startDate.toString() : "");
+            ps.setString(2, endDate != null ? endDate.toString() : "");
+            ps.setString(3, missionResetTime != null ? missionResetTime.toString() : "");
+            ps.setString(4, currentMissionDate != null ? currentMissionDate : LocalDateTime.now().toLocalDate().toString());
+            ps.executeUpdate();
+        }
     }
 
     public CompletableFuture<Void> saveCoinsDistributionTime(LocalDateTime nextDistribution) {

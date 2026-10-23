@@ -46,6 +46,7 @@ Public entry points keep their existing signatures. Their helpers are package-pr
 | | `PlayerDataRepository` | Player load/save, claims, coins, leaderboard, season player reset |
 | | `SeasonDataRepository` | Season dates, current mission date, coin deadline, ordered season save chain |
 | | `DailyMissionRepository` | Active mission load/save and expired progress cleanup |
+| | `MissionCycleRepository` | Atomic daily mission replacement, calendar/current date update and full mission-progress deletion |
 | `commands/BattlePassCommand` | `PlayerAdminCommands` | Player reset, premium, XP, coins, leaderboard inclusion |
 | | `RewardAdminCommands` | Reward editor and custom item delivery |
 | | `SeasonAdminCommands` | Reload and season/daily mission resets |
@@ -65,6 +66,8 @@ Keep event annotations and registration on `MissionProgressListener` so prioriti
 `EventManager` also seeds movement/timing for players already online at listener registration. `PlayerConnectionListener` owns `PlayTimeTracker`; periodic, world-change, quit and shutdown updates share one elapsed-time accumulator. Partial minutes and per-mode movement fractions are session-local, with disabled-world time excluded. `MissionManager.isProgressPaused()` exposes the existing reset/shutdown gate so timed credits can wait rather than disappear during a reset.
 
 Season calendars are prepared before their queued save, but reward rotation/announcements/player reload wait for the reset transaction to commit. Mission progress is paused while resetting. The idempotent commit callback can run directly during main-thread shutdown after awaiting the raw database reset, avoiding dependence on a cancelled Bukkit task. Failure disables the plugin and leaves later database writes fenced.
+
+Daily resets (automatic, forced and startup recovery) flush/invalidate player snapshots before one queued `resetDailyMissions` transaction. `MissionCycleRepository` uses the existing connection-level daily/season writers and clears all progress, including same-date rows. `MissionManager` publishes the replacement and next deadline only after commit; its pending daily finalizer also runs directly during shutdown. Calendar reloads defer while that reset is pending. Do not replace this with separate saves/deletes or clear progress by date alone. Season expiry takes precedence over a scheduled daily reset. Full season rotation still has separate persistence/filesystem steps; see CODE_AUDIT for remaining review work.
 
 Crafting and villager trading use the facade's MONITOR/ignoreCancelled statistic handler for completed action counts. Their old public click methods remain deprecated, unregistered compatibility stubs. Do not restore click estimates alongside statistics; that would award twice.
 

@@ -30,6 +30,10 @@ public class MissionManager {
     private volatile boolean seasonResetInProgress;
     private volatile boolean shuttingDown;
     private volatile boolean persistenceFailed;
+    private volatile boolean dailyResetInProgress;
+    private boolean calendarReloadPending;
+    private CompletableFuture<Void> pendingDailyReset;
+    private Runnable pendingDailyCommit;
     private CompletableFuture<Void> pendingSeasonReset;
     private Runnable pendingSeasonCommit;
 
@@ -85,16 +89,7 @@ public class MissionManager {
                     (resetHandler.getNextMissionReset() != null && now.isAfter(resetHandler.getNextMissionReset()));
 
             if (needNewMissions) {
-                if (resetHandler.getNextMissionReset() != null && now.isAfter(resetHandler.getNextMissionReset())) {
-                    currentMissionDate = now.toLocalDate().toString();
-                    databaseManager.clearOldMissionProgress(currentMissionDate);
-                    progressTracker.resetProgress();
-                }
-
-                generateDailyMissions();
-                resetHandler.calculateNextReset();
-                saveDailyMissions();
-                saveSeasonData();
+                resetDailyMissions(false, false);
             } else {
                 dailyMissions = new ArrayList<>(missions);
                 missionsLoadAttempted = true;
@@ -111,6 +106,10 @@ public class MissionManager {
     }
 
     public void recalculateResetTimeOnReload() {
+        if (dailyResetInProgress) {
+            calendarReloadPending = true;
+            return;
+        }
         resetHandler.recalculateResetTimeOnReload();
         resetHandler.recalculateSeasonEndDate();
         saveSeasonData();
@@ -126,23 +125,8 @@ public class MissionManager {
     }
 
     public void checkMissionReset() {
-        if (seasonResetInProgress || shuttingDown) return;
-        if (resetHandler.shouldResetMissions()) {
-            currentMissionDate = LocalDateTime.now().toLocalDate().toString();
-
-            generateDailyMissions();
-            resetHandler.calculateNextReset();
-            saveDailyMissions();
-            saveSeasonData();
-
-            MessageManager messageManager = plugin.getMessageManager();
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.reset"));
-            }
-
-            progressTracker.resetProgress();
-            databaseManager.clearOldMissionProgress(currentMissionDate);
-        }
+        if (isProgressPaused() || resetHandler.shouldResetSeason()) return;
+        if (resetHandler.shouldResetMissions()) resetDailyMissions(false, true);
     }
 
     public void checkSeasonReset() {
@@ -156,7 +140,7 @@ public class MissionManager {
     }
 
     private void resetSeason(boolean forced) {
-        if (seasonResetInProgress || shuttingDown || persistenceFailed) return;
+        if (isProgressPaused() || persistenceFailed) return;
         try {
             // Flush before rotating configuration or publishing a new season deadline.
             playerDataManager.clearCache(true);
@@ -210,29 +194,78 @@ public class MissionManager {
 
     public void forceResetSeason() {
         long now = System.currentTimeMillis();
-        if (seasonResetInProgress || now - lastForceSeasonReset < 5000) return;
+        if (isProgressPaused() || now - lastForceSeasonReset < 5000) return;
         lastForceSeasonReset = now;
         resetSeason(true);
     }
 
     public void forceResetMissions() {
-        if (seasonResetInProgress || shuttingDown) return;
-        currentMissionDate = LocalDateTime.now().toLocalDate().toString();
+        resetDailyMissions(true, true);
+    }
 
-        generateDailyMissions();
-        resetHandler.calculateNextReset();
-        saveDailyMissions();
-        saveSeasonData();
-
-        MessageManager messageManager = plugin.getMessageManager();
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.forced-reset"));
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+    private void resetDailyMissions(boolean forced, boolean notify) {
+        if (isProgressPaused() || persistenceFailed) return;
+        List<Mission> replacements;
+        LocalDateTime nextReset;
+        String missionDate = LocalDateTime.now().toLocalDate().toString();
+        try {
+            replacements = new ArrayList<>(missionGenerator.generateDailyMissions());
+            nextReset = LocalDateTime.now().plusHours(configManager.getMissionResetHours());
+            // Drain old snapshots and invalidate old loads before submitting the cycle replacement.
+            playerDataManager.clearCache(true);
+        } catch (RuntimeException failure) {
+            plugin.getLogger().severe("Daily mission reset postponed to preserve player data: " + failure.getMessage());
+            return;
         }
-
-        progressTracker.resetProgress();
-        databaseManager.clearOldMissionProgress(LocalDateTime.now().plusDays(1).toLocalDate().toString());
+        dailyResetInProgress = true;
+        AtomicBoolean committed = new AtomicBoolean();
+        pendingDailyCommit = () -> {
+            if (!committed.compareAndSet(false, true)) return;
+            try {
+                dailyMissions = new ArrayList<>(replacements);
+                currentMissionDate = missionDate;
+                resetHandler.setNextMissionReset(nextReset);
+                missionsLoadAttempted = true;
+                progressTracker.resetProgress();
+                dailyResetInProgress = false;
+                pendingDailyReset = null;
+                pendingDailyCommit = null;
+                if (calendarReloadPending) {
+                    calendarReloadPending = false;
+                    recalculateResetTimeOnReload();
+                }
+                if (!shuttingDown && !persistenceFailed) {
+                    playerDataManager.loadOnlinePlayers();
+                    if (notify) {
+                        MessageManager messages = plugin.getMessageManager();
+                        for (Player player : Bukkit.getOnlinePlayers()) {
+                            player.sendMessage(messages.getPrefix() + messages.getMessage(
+                                    forced ? "messages.mission.forced-reset" : "messages.mission.reset"));
+                            if (forced) player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                        }
+                    }
+                }
+            } catch (RuntimeException failure) {
+                persistenceFailure("finish the daily mission reset", failure);
+            }
+        };
+        Runnable commit = pendingDailyCommit;
+        try {
+            pendingDailyReset = databaseManager.resetDailyMissions(replacements, missionDate,
+                    resetHandler.getSeasonStartDate(), resetHandler.getSeasonEndDate(), nextReset);
+            pendingDailyReset.whenComplete((ignored, failure) -> {
+                if (failure != null) persistenceFailure("reset daily missions", failure);
+                else if (!shuttingDown) {
+                    try {
+                        Bukkit.getScheduler().runTask(plugin, commit);
+                    } catch (RuntimeException schedulingFailure) {
+                        if (!shuttingDown) persistenceFailure("schedule the daily reset completion", schedulingFailure);
+                    }
+                }
+            });
+        } catch (RuntimeException failure) {
+            persistenceFailure("start the daily mission reset", failure);
+        }
     }
 
     public void progressMission(Player player, String type, String target, int amount) {
@@ -252,7 +285,7 @@ public class MissionManager {
     }
 
     public boolean isProgressPaused() {
-        return seasonResetInProgress || shuttingDown;
+        return seasonResetInProgress || dailyResetInProgress || shuttingDown;
     }
 
     public int getCompletedMissionsCount(PlayerData data) {
@@ -295,8 +328,18 @@ public class MissionManager {
 
     public void shutdown() {
         shuttingDown = true;
+        finishPendingReset(pendingDailyReset, pendingDailyCommit, "finish a pending daily reset during shutdown");
         CompletableFuture<Void> reset = pendingSeasonReset;
         Runnable commit = pendingSeasonCommit;
+        finishPendingReset(reset, commit, "finish a pending season reset during shutdown");
+        if (missionsLoadAttempted && !persistenceFailed) {
+            saveSeasonData();
+            saveDailyMissions();
+        }
+        progressTracker.shutdown();
+    }
+
+    private void finishPendingReset(CompletableFuture<Void> reset, Runnable commit, String description) {
         if (reset != null && commit != null && !persistenceFailed) {
             try {
                 // Finish a committed reset directly on shutdown's main thread, not through a cancelled task.
@@ -304,16 +347,11 @@ public class MissionManager {
                 commit.run();
             } catch (InterruptedException failure) {
                 Thread.currentThread().interrupt();
-                persistenceFailure("finish a pending season reset during shutdown", failure);
+                persistenceFailure(description, failure);
             } catch (Exception failure) {
-                persistenceFailure("finish a pending season reset during shutdown", failure);
+                persistenceFailure(description, failure);
             }
         }
-        if (missionsLoadAttempted && !persistenceFailed) {
-            saveSeasonData();
-            saveDailyMissions();
-        }
-        progressTracker.shutdown();
     }
 
     public String getTimeUntilReset() {
@@ -337,6 +375,6 @@ public class MissionManager {
     }
 
     public boolean isInitialized() {
-        return currentMissionDate != null && missionsLoadAttempted && !seasonResetInProgress && !shuttingDown && !persistenceFailed;
+        return currentMissionDate != null && missionsLoadAttempted && !isProgressPaused() && !persistenceFailed;
     }
 }

@@ -12,6 +12,8 @@ Editing a pool or using `/bp reload` does not replace the already active daily m
 
 Progress keys are `type + "_" + target + "_" + required + "_" + name.hashCode()`. Keep stored fields unchanged when improving comparison; normalizing stored fields can orphan existing progress. Primary target `ANY` or null is a wildcard; `additional-targets` are alternatives, and one action counts once even if multiple alternatives match.
 
+Daily reset uses `DatabaseManager.resetDailyMissions`: mission rows, calendar/date and deletion of all player mission progress commit together. It intentionally clears same-calendar-date progress too, since a forced reset or an interval shorter than 24 hours can start another cycle that day. Player XP/rewards/coins remain unchanged. Pending resets pause mission progress and publish the new list only after commit; failed player-cache flush postpones the reset. Do not restore the former independent save/save/date-cleanup sequence. An expired season takes precedence over the scheduled daily cycle.
+
 Mission range upper bounds and weight totals use long arithmetic even though configured/generated values are ints. Progress additions also widen before clamping to `required`; do not reintroduce int overflow by adding first and clamping afterwards.
 
 ## EAT_ITEM

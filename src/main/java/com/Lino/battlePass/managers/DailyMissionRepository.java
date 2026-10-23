@@ -21,33 +21,13 @@ final class DailyMissionRepository {
 
     public CompletableFuture<Void> saveDailyMissions(List<Mission> missions, String missionDate) {
         return CompletableFuture.runAsync(() -> {
-            String insertSql = connections.isMySQL()
-                    ? "INSERT INTO " + connections.getPrefix() + "daily_missions (name, type, target, additional_targets, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name), type=VALUES(type), target=VALUES(target), additional_targets=VALUES(additional_targets), required=VALUES(required), xp_reward=VALUES(xp_reward)"
-                    : "INSERT OR REPLACE INTO " + connections.getPrefix() + "daily_missions (name, type, target, additional_targets, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?, ?)";
-
             Connection conn = null;
             boolean shouldClose = connections.isMySQL();
 
             try {
                 conn = connections.getConnection();
                 try (DatabaseTransaction transaction = new DatabaseTransaction(conn)) {
-                    try (PreparedStatement ps = conn.prepareStatement("DELETE FROM " + connections.getPrefix() + "daily_missions")) {
-                        ps.executeUpdate();
-                    }
-
-                    try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
-                        for (Mission mission : missions) {
-                            ps.setString(1, mission.name);
-                            ps.setString(2, mission.type);
-                            ps.setString(3, mission.target);
-                            ps.setString(4, String.join(",", mission.additionalTargets));
-                            ps.setInt(5, mission.required);
-                            ps.setInt(6, mission.xpReward);
-                            ps.setString(7, missionDate);
-                            ps.addBatch();
-                        }
-                        ps.executeBatch();
-                    }
+                    replaceOnConnection(conn, missions, missionDate);
                     transaction.commit();
                 }
             } catch (SQLException e) {
@@ -58,6 +38,30 @@ final class DailyMissionRepository {
                 }
             }
         }, connections.getExecutor());
+    }
+
+    void replaceOnConnection(Connection conn, List<Mission> missions, String missionDate) throws SQLException {
+        String insertSql = connections.isMySQL()
+                ? "INSERT INTO " + connections.getPrefix() + "daily_missions (name, type, target, additional_targets, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name), type=VALUES(type), target=VALUES(target), additional_targets=VALUES(additional_targets), required=VALUES(required), xp_reward=VALUES(xp_reward)"
+                : "INSERT OR REPLACE INTO " + connections.getPrefix() + "daily_missions (name, type, target, additional_targets, required, xp_reward, date) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM " + connections.getPrefix() + "daily_missions")) {
+            ps.executeUpdate();
+        }
+
+        try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
+            for (Mission mission : missions) {
+                ps.setString(1, mission.name);
+                ps.setString(2, mission.type);
+                ps.setString(3, mission.target);
+                ps.setString(4, String.join(",", mission.additionalTargets));
+                ps.setInt(5, mission.required);
+                ps.setInt(6, mission.xpReward);
+                ps.setString(7, missionDate);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
     }
 
     public CompletableFuture<List<Mission>> loadDailyMissions() {

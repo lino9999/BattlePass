@@ -20,8 +20,8 @@ public class BattlePassTask extends BukkitRunnable {
     @Override
     public void run() {
         plugin.getPlayerDataManager().saveAllPlayers();
-        plugin.getMissionManager().checkMissionReset();
         plugin.getMissionManager().checkSeasonReset();
+        plugin.getMissionManager().checkMissionReset();
         checkRewardNotifications();
         updatePlayTime();
 
