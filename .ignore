@@ -10,6 +10,7 @@ build/
 logs/
 backups/
 dependency-reduced-pom.xml
+season_rotation.pending.yml
 *.iml
 *.class
 *.jar

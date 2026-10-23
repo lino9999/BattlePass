@@ -4,6 +4,7 @@
 /target/
 /.tools/
 /dependency-reduced-pom.xml
+season_rotation.pending.yml
 *.class
 *.jar
 

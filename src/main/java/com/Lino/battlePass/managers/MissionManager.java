@@ -154,10 +154,12 @@ public class MissionManager {
     private void resetSeason(boolean forced) {
         if (isProgressPaused() || persistenceFailed) return;
         try {
+            SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+            if (rotation != null && rotation.isRotationEnabled()) rotation.validateNextSeason();
             // Flush before rotating configuration or publishing a new season deadline.
             playerDataManager.clearCache(true);
         } catch (IllegalStateException failure) {
-            plugin.getLogger().severe("Season reset postponed to preserve unsaved player data: " + failure.getMessage());
+            plugin.getLogger().severe("Season reset postponed to preserve player data: " + failure.getMessage());
             return;
         }
         seasonResetInProgress = true;

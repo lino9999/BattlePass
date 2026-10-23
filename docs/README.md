@@ -6,6 +6,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | --- | --- | --- |
 | Mission not counting, food, target matching | [MISSIONS.md](MISSIONS.md) | `listeners/MissionProgressListener`, `models/Mission`, `managers/MissionProgressTracker` |
 | Daily missions, season dates, resets | [ARCHITECTURE.md](ARCHITECTURE.md) | `MissionManager`, `MissionResetHandler`, `SeasonRotationManager` |
+| Season reward rotation, archives and interrupted file updates | [SEASONS.md](SEASONS.md) | `SeasonRotationManager`, `SeasonFileTransaction`, `AtomicFile` |
 | Database, player cache, saving | [ARCHITECTURE.md](ARCHITECTURE.md) | `DatabaseManager` facade; `DatabaseConnections`, `PlayerDataRepository`, `SeasonDataRepository`, `DailyMissionRepository` |
 | Commands and permissions | [ARCHITECTURE.md](ARCHITECTURE.md) | `BattlePassCommand` router; `PlayerAdminCommands`, `RewardAdminCommands`, `SeasonAdminCommands`, `XPEventCommands` |
 | Menu input, titles, editors, pages, reload | [MENUS.md](MENUS.md) | `BaseHolder.MenuContext`; the three click listeners; `Pagination` |
