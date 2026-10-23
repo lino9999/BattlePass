@@ -6,7 +6,7 @@ All Java paths below are relative to `src/main/java/com/Lino/battlePass/`.
 
 `BattlePass.onEnable` creates managers, initializes the database asynchronously, then initializes missions on the Bukkit thread. Once missions are ready it loads online players, registers listeners/commands, starts scheduled work, and registers optional integrations. `listeners/EventManager` owns listener registration; MythicMobs is conditional.
 
-`models/PlayerData` is the cached mutable player state. `managers/PlayerDataManager` loads it, tracks dirty players via `markForSave(UUID)`, and saves snapshots. Changes to cached XP, coins, rewards or mission progress must be marked dirty. `managers/DatabaseManager` handles SQLite/MySQL and asynchronous persistence; `DatabaseSchema` handles additive migrations. Do not remove existing player data to fix a schema mismatch.
+`models/PlayerData` is the cached mutable player state. `managers/PlayerDataManager` loads it, tracks dirty players via `markForSave(UUID)`, and saves snapshots. Changes to cached XP, coins, rewards or mission progress must be marked dirty. `managers/DatabaseManager` is the public facade for SQLite/MySQL persistence, delegating to the components below; `DatabaseSchema` handles additive migrations. Do not remove existing player data to fix a schema mismatch.
 
 `BattlePass.onDisable` stops XP events/sounds/coin work, saves players synchronously, shuts down missions and closes the database. Bukkit world, player and inventory operations belong on the server thread; database callbacks often schedule work back onto it.
 
@@ -26,6 +26,27 @@ All Java paths below are relative to `src/main/java/com/Lino/battlePass/`.
 | Commands and completion | `commands/BattlePassCommand`, `BattlePassTabCompleter` | `plugin.yml` permissions/aliases |
 | Settings/messages/colors | `managers/ConfigManager`, `MessageManager`, `utils/GradientColorParser` | `config.yml`, `messages.yml` |
 | Integrations/API | `placeholders/BattlePassExpansion`, `listeners/MythicMobsListener`, `events/BattlePassXPGainEvent` | `Placeholders.md`; optional plugins |
+
+## Internal components: read the relevant file first
+
+The three public entry points keep their existing signatures. Their helpers are package-private, share the existing state/executor, and are not additional Bukkit listeners or command registrations.
+
+| Entry point | Internal component | Responsibility |
+| --- | --- | --- |
+| `managers/DatabaseManager` | `DatabaseConnections` | MySQL pool / SQLite connection, shared executor, table creation, connection shutdown |
+| | `PlayerDataRepository` | Player load/save, claims, coins, leaderboard, season player reset |
+| | `SeasonDataRepository` | Season dates, current mission date, coin deadline, ordered season save chain |
+| | `DailyMissionRepository` | Active mission load/save and expired progress cleanup |
+| `commands/BattlePassCommand` | `PlayerAdminCommands` | Player reset, premium, XP, coins, leaderboard inclusion |
+| | `RewardAdminCommands` | Reward editor and custom item delivery |
+| | `SeasonAdminCommands` | Reload and season/daily mission resets |
+| | `XPEventCommands` | XP event start/stop |
+| `listeners/MissionProgressListener` | `MovementMissionTracker` | Movement, teleports, world changes, distance buffers |
+| | `BlockMissionTracker` | Place/break/mine, ore types, recent placements |
+| | `CombatMissionTracker` | Damage, deaths, kills, projectile/entity targets |
+| | `InteractionMissionTracker` | Food, crafting, fishing, trades, enchanting, XP pickup, animals |
+
+Keep event annotations and registration on `MissionProgressListener` so priorities, cancellation handling and registration order stay unchanged. Join/quit initialization and cleanup delegate to both movement and block state. `DatabaseManager.shutdown` waits for ordered season writes before stopping the shared executor and closing connections. Mission-date and villager-profession callbacks preserve dispatch through the original public methods.
 
 ## Invariants worth preserving
 

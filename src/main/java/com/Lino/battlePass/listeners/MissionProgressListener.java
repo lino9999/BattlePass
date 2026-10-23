@@ -1,9 +1,7 @@
 package com.Lino.battlePass.listeners;
 
 import com.Lino.battlePass.BattlePass;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,491 +13,130 @@ import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.FurnaceExtractEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.projectiles.ProjectileSource;
 
-import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class MissionProgressListener implements Listener {
 
-    private final BattlePass plugin;
-    private final Map<UUID, Location> lastLocations = new ConcurrentHashMap<>();
-    private final Map<UUID, Double> distanceBuffer = new ConcurrentHashMap<>();
-    private final Set<Material> oreTypes = EnumSet.noneOf(Material.class);
-    private final Map<UUID, Map<Location, Long>> recentlyPlacedBlocks = new ConcurrentHashMap<>();
+    private final MovementMissionTracker movement;
+    private final BlockMissionTracker blocks;
+    private final CombatMissionTracker combat;
+    private final InteractionMissionTracker interactions;
 
     public MissionProgressListener(BattlePass plugin) {
-        this.plugin = plugin;
-        initializeOreTypes();
-    }
-
-    private void initializeOreTypes() {
-        for (Material mat : Material.values()) {
-            String name = mat.name();
-            if (name.endsWith("_ORE") || name.equals("ANCIENT_DEBRIS") || name.equals("GILDED_BLACKSTONE")) {
-                oreTypes.add(mat);
-            }
-        }
+        movement = new MovementMissionTracker(plugin);
+        blocks = new BlockMissionTracker(plugin);
+        combat = new CombatMissionTracker(plugin);
+        interactions = new InteractionMissionTracker(plugin, this::getProfessionName);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
-        Player player = event.getPlayer();
-        UUID uuid = player.getUniqueId();
-        lastLocations.put(uuid, player.getLocation());
+        movement.onPlayerChangedWorld(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerTeleport(PlayerTeleportEvent event) {
-        if (event.isCancelled()) return;
-
-        Player player = event.getPlayer();
-        UUID uuid = player.getUniqueId();
-        Location from = event.getFrom();
-        Location to = event.getTo();
-
-        if (to == null) return;
-
-        if (from.getWorld() == null || to.getWorld() == null ||
-                !from.getWorld().equals(to.getWorld()) ||
-                from.distance(to) > 100) {
-            lastLocations.put(uuid, to);
-        }
+        movement.onPlayerTeleport(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        Location from = event.getFrom();
-        Location to = event.getTo();
-
-        if (from.getBlockX() == to.getBlockX()
-                && from.getBlockY() == to.getBlockY()
-                && from.getBlockZ() == to.getBlockZ()) {
-            return;
-        }
-
-        Player player = event.getPlayer();
-        UUID uuid = player.getUniqueId();
-
-        Location last = lastLocations.get(uuid);
-        if (last == null) {
-            lastLocations.put(uuid, to);
-            return;
-        }
-
-        if (last.getWorld() == null || to.getWorld() == null
-                || !last.getWorld().getName().equals(to.getWorld().getName())) {
-            lastLocations.put(uuid, to);
-            distanceBuffer.remove(uuid);
-            return;
-        }
-
-        double distance;
-        try {
-            distance = last.distance(to);
-        } catch (IllegalArgumentException e) {
-            lastLocations.put(uuid, to);
-            distanceBuffer.remove(uuid);
-            return;
-        }
-
-        if (distance > 0 && distance < 100) {
-
-            String mode;
-            if (player.isFlying() || player.isGliding()) {
-                mode = "FLY";
-            } else if (player.isSwimming() || player.getLocation().getBlock().isLiquid()) {
-                mode = "SWIM";
-            } else if (player.isSneaking()) {
-                mode = "SNEAK";
-            } else {
-                mode = "WALK";
-            }
-
-            double buf = distanceBuffer.getOrDefault(uuid, 0.0);
-            buf += distance;
-            int whole = (int) buf;
-            if (whole > 0) {
-                plugin.getMissionManager().progressMission(player, "WALK_DISTANCE", mode, whole);
-                buf -= whole;
-            }
-            distanceBuffer.put(uuid, buf);
-        }
-
-        lastLocations.put(uuid, to);
+        movement.onPlayerMove(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        EntityDamageEvent last = player.getLastDamageCause();
-        if (last == null) {
-            plugin.getMissionManager().progressMission(player, "DEATH", "UNKNOWN", 1);
-            return;
-        }
-
-        plugin.getMissionManager().progressMission(player, "DEATH", enumerateDamageTypes(last), 1);
+        combat.onPlayerDeath(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof Player player)) return;
-        int amount = calculateDamageTakenAmount(player, event);
-        if (amount <= 0) return;
-
-        plugin.getMissionManager().progressMission(player, "DAMAGE_TAKEN", enumerateDamageTypes(event), amount);
+        combat.onEntityDamage(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        Entity trueDamager = getTrueDamager(event.getDamager());
-        if (trueDamager instanceof Player player) {
-            int amount = calculateDamageDealtAmount(event);
-            if (amount <= 0) return;
-            List<String> victimTypes = enumerateVictimTypes(event.getEntity());
-            plugin.getMissionManager().progressMission(player, "DAMAGE_DEALT", victimTypes, amount);
-        }
+        combat.onEntityDamageByEntity(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityBreed(EntityBreedEvent event) {
-        if (event.getBreeder() instanceof Player player) {
-            String entityType = event.getEntity().getType().name();
-            plugin.getMissionManager().progressMission(player, "BREED_ANIMAL", entityType, 1);
-        }
+        interactions.onEntityBreed(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityTame(EntityTameEvent event) {
-        if (event.getOwner() instanceof Player player) {
-            String entityType = event.getEntity().getType().name();
-            plugin.getMissionManager().progressMission(player, "TAME_ANIMAL", entityType, 1);
-        }
+        interactions.onEntityTame(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onVillagerTrade(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-        if (event.getSlotType() != InventoryType.SlotType.RESULT) return;
-        if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
-
-        if (event.getInventory().getHolder() instanceof Villager villager) {
-            String profession = getProfessionName(villager);
-            if (profession.equals("NONE")) profession = "VILLAGER";
-
-            plugin.getMissionManager().progressMission(player, "TRADE_VILLAGER", profession, 1);
-        }
+        interactions.onVillagerTrade(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEnchantItem(EnchantItemEvent event) {
-        Player player = event.getEnchanter();
-        ItemStack item = event.getItem();
-
-        if (item.getType() != Material.AIR) {
-            String itemType = item.getType().name();
-            plugin.getMissionManager().progressMission(player, "ENCHANT_ITEM", itemType, 1);
-        }
+        interactions.onEnchantItem(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerFish(PlayerFishEvent event) {
-        if (event.getState() == PlayerFishEvent.State.CAUGHT_FISH && event.getCaught() != null) {
-            Player player = event.getPlayer();
-            if (event.getCaught() instanceof org.bukkit.entity.Item item) {
-                String itemType = item.getItemStack().getType().name();
-                plugin.getMissionManager().progressMission(player, "FISH_ITEM", itemType, 1);
-            }
-        }
+        interactions.onPlayerFish(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCraftItem(CraftItemEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        ItemStack result = event.getRecipe().getResult();
-
-        if (result == null || result.getType() == Material.AIR) return;
-
-        String itemType = result.getType().name();
-        int crafted = result.getAmount();
-
-        if (event.isShiftClick()) {
-            ItemStack[] matrix = event.getInventory().getMatrix();
-            int minIngredientCount = Integer.MAX_VALUE;
-
-            for (ItemStack ingredient : matrix) {
-                if (ingredient != null && ingredient.getType() != Material.AIR) {
-                    int maxCraftable = ingredient.getAmount();
-                    minIngredientCount = Math.min(minIngredientCount, maxCraftable);
-                }
-            }
-
-            if (minIngredientCount != Integer.MAX_VALUE && minIngredientCount > 0) {
-                crafted = result.getAmount() * minIngredientCount;
-            }
-        }
-
-        plugin.getMissionManager().progressMission(player, "CRAFT_ITEM", itemType, crafted);
+        interactions.onCraftItem(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
-        Player player = event.getPlayer();
-        String blockType = event.getBlock().getType().name();
-        Location blockLoc = event.getBlock().getLocation();
-        UUID uuid = player.getUniqueId();
-
-        Map<Location, Long> playerPlacedBlocks = recentlyPlacedBlocks.computeIfAbsent(uuid, k -> new HashMap<>());
-
-        Long lastPlaced = playerPlacedBlocks.get(blockLoc);
-        long currentTime = System.currentTimeMillis();
-
-        if (lastPlaced == null || currentTime - lastPlaced > 100) {
-            plugin.getMissionManager().progressMission(player, "PLACE_BLOCK", blockType, 1);
-            playerPlacedBlocks.put(blockLoc, currentTime);
-
-            final Map<Location, Long> finalPlayerPlacedBlocks = playerPlacedBlocks;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                finalPlayerPlacedBlocks.remove(blockLoc);
-            }, 20L);
-        }
+        blocks.onBlockPlace(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
-        if (event.getEntity().getKiller() != null) {
-            Player killer = event.getEntity().getKiller();
-
-            if (event.getEntity() instanceof Player) {
-                plugin.getMissionManager().progressMission(killer, "KILL_PLAYER", "PLAYER", 1);
-            } else {
-                String entityType = event.getEntityType().name();
-                plugin.getMissionManager().progressMission(killer, "KILL_MOB", entityType, 1);
-            }
-        }
+        combat.onEntityDeath(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
-        Player player = event.getPlayer();
-        String blockType = event.getBlock().getType().name();
-        Material mat = event.getBlock().getType();
-
-        plugin.getMissionManager().progressMission(player, "BREAK_BLOCK", blockType, 1);
-
-        if (event.isDropItems() && oreTypes.contains(mat)) {
-            plugin.getMissionManager().progressMission(player, "MINE_BLOCK", blockType, 1);
-        }
+        blocks.onBlockBreak(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerConsume(PlayerItemConsumeEvent event) {
-        Player player = event.getPlayer();
-        String itemType = event.getItem().getType().name();
-        plugin.getMissionManager().progressMission(player, "EAT_ITEM", itemType, 1);
+        interactions.onPlayerConsume(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onFurnaceExtract(FurnaceExtractEvent event) {
-        Player player = event.getPlayer();
-        String itemType = event.getItemType().name();
-        int amount = event.getItemAmount();
-        plugin.getMissionManager().progressMission(player, "SMELT_ITEM", itemType, amount);
+        interactions.onFurnaceExtract(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerExpChange(PlayerExpChangeEvent event) {
-        if (event.getAmount() > 0) {
-            plugin.getMissionManager().progressMission(event.getPlayer(), "GAIN_XP", "ANY", event.getAmount());
-        }
+        interactions.onPlayerExpChange(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerShearEntity(PlayerShearEntityEvent event) {
-        Player player = event.getPlayer();
-        if (event.getEntity().getType() == EntityType.SHEEP) {
-            plugin.getMissionManager().progressMission(player, "SHEAR_SHEEP", "SHEEP", 1);
-        }
+        interactions.onPlayerShearEntity(event);
     }
 
     public String getProfessionName(Villager villager) {
-        Villager.Profession profession = villager.getProfession();
-
-        try {
-            // Old method
-            return profession.name();
-        } catch (Exception e) {
-            // New method ('name()' is deprecated since version 1.21 and marked for removal)
-            // profession.key().value().replace("minecraft:", "").toUpperCase();
-            try {
-                Method keyMethod = profession.getClass().getMethod("key");
-                Object namespacedKey = keyMethod.invoke(profession);
-                Method valueMethod = namespacedKey.getClass().getMethod("value");
-                String keyValue = (String) valueMethod.invoke(namespacedKey);
-                return keyValue.replace("minecraft:", "").toUpperCase();
-            } catch (Exception ex) {
-                return "UNKNOWN";
-            }
-        }
-    }
-
-    private int calculateDamageTakenAmount(Player player, EntityDamageEvent event) {
-        double finalDamage = event.getFinalDamage();
-        double rawDamage = event.getDamage();
-
-        // If player is blocking with a shield and took no final damage, the attack was blocked.
-        if (player.isBlocking() && finalDamage <= 0) {
-            return 0;
-        }
-
-        double effectiveDamage;
-        if (finalDamage > 0) {
-            effectiveDamage = finalDamage;
-        } else if (rawDamage > 0) {
-            effectiveDamage = rawDamage;
-        } else if (finalDamage < 0) {
-            effectiveDamage = Math.abs(finalDamage);
-        } else {
-            effectiveDamage = 0;
-        }
-
-        int amount = (int) Math.round(effectiveDamage);
-        if (effectiveDamage > 0 && amount == 0) {
-            amount = 1;
-        }
-        return Math.max(0, amount);
-    }
-
-    private int calculateDamageDealtAmount(EntityDamageByEntityEvent event) {
-        double finalDamage = event.getFinalDamage();
-        double rawDamage = event.getDamage();
-
-        double effectiveDamage;
-        if (finalDamage > 0) {
-            effectiveDamage = finalDamage;
-        } else if (rawDamage > 0) {
-            effectiveDamage = rawDamage;
-        } else if (finalDamage < 0) {
-            effectiveDamage = Math.abs(finalDamage);
-        } else {
-            effectiveDamage = 0;
-        }
-
-        int amount = (int) Math.round(effectiveDamage);
-        if (effectiveDamage > 0 && amount == 0) {
-            amount = 1;
-        }
-        return Math.max(0, amount);
-    }
-
-    private List<String> enumerateVictimTypes(Entity victim) {
-        List<String> targets = new ArrayList<>();
-        targets.add(safeName(victim.getType().name()));
-        if (victim instanceof Player) {
-            targets.add("PLAYER");
-        } else if (victim instanceof Monster) {
-            targets.add("MONSTER");
-            targets.add("MOB");
-            targets.add("MOBS");
-        } else if (victim instanceof Animals || victim instanceof WaterMob || victim instanceof Ambient) {
-            targets.add("ANIMAL");
-            targets.add("ANIMALS");
-            targets.add("MOB");
-            targets.add("MOBS");
-        } else if (victim instanceof LivingEntity) {
-            targets.add("MOB");
-            targets.add("MOBS");
-        }
-        targets.add("ANY");
-        return new ArrayList<>(new LinkedHashSet<>(targets));
-    }
-
-    private List<String> enumerateDamageTypes(EntityDamageEvent event) {
-        List<String> result = new ArrayList<>();
-
-        if (event instanceof EntityDamageByEntityEvent edbe) {
-            Entity rawDamager = edbe.getDamager();
-
-            if (rawDamager instanceof Projectile projectile) {
-                result.add(safeName(projectile.getType().name()));
-
-                ProjectileSource shooter = projectile.getShooter();
-                if (shooter instanceof Entity shooterEntity) {
-                    if (shooterEntity instanceof Player) {
-                        result.add("PLAYER");
-                    } else if (shooterEntity instanceof LivingEntity livingShooter) {
-                        String mobBase = safeName(livingShooter.getType().name());
-                        result.add(mobBase);
-                        if (livingShooter instanceof Monster) {
-                            result.add("MONSTER");
-                            result.add("MOB");
-                            result.add("MOBS");
-                        }
-                    } else {
-                        result.add(safeName(shooterEntity.getType().name()));
-                    }
-                }
-            } else {
-                if (rawDamager instanceof Player) {
-                    result.add("PLAYER");
-                } else if (rawDamager instanceof LivingEntity living) {
-                    result.add(safeName(living.getType().name()));
-                    if (living instanceof Monster) {
-                        result.add("MONSTER");
-                        result.add("MOB");
-                        result.add("MOBS");
-                    }
-                } else {
-                    result.add(safeName(rawDamager.getType().name()));
-                }
-            }
-        }
-
-        result.add(safeName(getCauseName(event.getCause())));
-        result.add("ANY");
-
-        return new ArrayList<>(new LinkedHashSet<>(result));
-    }
-
-    private Entity getTrueDamager(Entity damager) {
-        if (damager instanceof Projectile projectile) {
-            ProjectileSource ps = projectile.getShooter();
-            if (ps instanceof Entity shooterEntity) return shooterEntity;
-        }
-        return damager;
-    }
-
-    private String getCauseName(EntityDamageEvent.DamageCause cause) {
-        switch (cause) {
-            case FIRE, FIRE_TICK -> {
-                return "FIRE";
-            }
-            case BLOCK_EXPLOSION, ENTITY_EXPLOSION -> {
-                return "EXPLOSION";
-            }
-            default -> {
-                return cause.name();
-            }
-        }
-    }
-
-    private String safeName(String s) {
-        return s == null ? "UNKNOWN" : s.replaceAll("[^A-Z0-9_]", "_").toUpperCase();
+        return interactions.getProfessionName(villager);
     }
 
     public void initializePlayerLocation(UUID uuid, Location location) {
-        lastLocations.put(uuid, location);
-        recentlyPlacedBlocks.put(uuid, new HashMap<>());
+        movement.initializePlayerLocation(uuid, location);
+        blocks.initializePlayer(uuid);
     }
 
     public void cleanupPlayer(UUID uuid) {
-        lastLocations.remove(uuid);
-        distanceBuffer.remove(uuid);
-        recentlyPlacedBlocks.remove(uuid);
+        movement.cleanupPlayer(uuid);
+        blocks.cleanupPlayer(uuid);
     }
 }

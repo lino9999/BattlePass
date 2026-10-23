@@ -4,7 +4,7 @@
 
 1. `src/main/resources/missions.yml` supplies `mission-pools`. `MissionEditorManager` writes the server's pool file; `ConfigManager` loads it.
 2. `MissionGenerator` picks weighted templates, expands `<amount>`/`<target>`, and creates `Mission` objects. `MissionManager` restores active daily missions from the database or generates a new set at reset.
-3. `listeners/MissionProgressListener` translates Bukkit events into `MissionManager.progressMission(player, type, target, amount)`. Mythic mob kills have a separate listener; timed play progress comes from `tasks/BattlePassTask`.
+3. `listeners/MissionProgressListener` retains Bukkit event registration/annotations and delegates to `MovementMissionTracker`, `BlockMissionTracker`, `CombatMissionTracker` or `InteractionMissionTracker`. These translate events into `MissionManager.progressMission(player, type, target, amount)`. Mythic mob kills have a separate listener; timed play progress comes from `tasks/BattlePassTask`.
 4. `MissionManager` rejects nonpositive amounts and disabled worlds. `MissionProgressTracker` matches type/targets, clamps progress, prevents repeated completion, grants XP, shows actionbars and marks player data dirty.
 5. `DatabaseManager` persists active missions and player progress; the GUI reads active missions/progress, not templates directly.
 
@@ -14,7 +14,7 @@ Progress keys are `type + "_" + target + "_" + required + "_" + name.hashCode()`
 
 ## EAT_ITEM
 
-`MissionProgressListener.onPlayerConsume` listens at `MONITOR`, with `ignoreCancelled=true`, and reads `event.getItem().getType()`. A successful `PlayerItemConsumeEvent` contributes **one** item, regardless of stack size or hand. Do not count right-clicks, inspect only the main hand, or require the food level to increase: golden apples are usable at full hunger. Cancelled consumption must not grant progress.
+`MissionProgressListener.onPlayerConsume` listens at `MONITOR`, with `ignoreCancelled=true`, and delegates to `InteractionMissionTracker.onPlayerConsume`, which reads `event.getItem().getType()`. A successful `PlayerItemConsumeEvent` contributes **one** item, regardless of stack size or hand. Do not count right-clicks, inspect only the main hand, or require the food level to increase: golden apples are usable at full hunger. Cancelled consumption must not grant progress.
 
 Canonical pool example:
 

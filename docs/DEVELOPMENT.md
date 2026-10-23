@@ -31,6 +31,12 @@ Owner policy: never commit or push test files. Create any new regression tests t
 
 Automated tests do not replace a live Minecraft smoke test. Report exactly what was run and distinguish a reproduced failure from a suspected customer environment issue.
 
+## Structural refactor verification (2026-10-23)
+
+The database facade, command router and mission listener were split into internal components without changing SQL, configuration, public method signatures, permissions, messages or Bukkit event annotations. A source comparison checked 60 moved method bodies against the originals, allowing only dependency qualifiers.
+
+The 41 pre-existing tests passed before and after extraction. Temporary tests compared original and refactored implementations across 184 command scenarios (console/player, admin permissions, valid/invalid inputs), SQLite persistence/reset/restart behavior with both coin reset settings, and mission events/state cleanup/API annotations. All 237 tests passed together. Temporary sources, legacy comparison copies and their generated files are removed after validation; only the existing suite remains in the repository. A live Minecraft server and a live MySQL instance were not used.
+
 ## Commit and push
 
 The owner requires source changes to be pushed to `https://github.com/lino9999/BattlePass` after each completed task. Inspect `git status -sb`, the current branch and remote before editing. Run the relevant checks, review `git diff --check` and the diff, stage only task files, commit, and push. Verify the remote head matches the delivered commit. Existing checkout branch is normally `master`; newly needed branches use `codex/`.

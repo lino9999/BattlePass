@@ -1,26 +1,25 @@
 package com.Lino.battlePass.commands;
 
 import com.Lino.battlePass.BattlePass;
-import com.Lino.battlePass.gui.RewardsEditorGui;
-import com.Lino.battlePass.managers.SeasonRotationManager;
-import com.Lino.battlePass.managers.XPEventManager;
-import com.Lino.battlePass.models.PlayerData;
-import com.Lino.battlePass.utils.GradientColorParser;
-import org.bukkit.Bukkit;
-import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import java.util.HashMap;
 
 public class BattlePassCommand implements CommandExecutor {
 
     private final BattlePass plugin;
+    private final PlayerAdminCommands players;
+    private final RewardAdminCommands rewards;
+    private final SeasonAdminCommands seasons;
+    private final XPEventCommands events;
 
     public BattlePassCommand(BattlePass plugin) {
         this.plugin = plugin;
+        players = new PlayerAdminCommands(plugin);
+        rewards = new RewardAdminCommands(plugin);
+        seasons = new SeasonAdminCommands(plugin);
+        events = new XPEventCommands(plugin);
     }
 
     @Override
@@ -45,15 +44,15 @@ public class BattlePassCommand implements CommandExecutor {
                             plugin.getMessageManager().getMessage("messages.no-permission"));
                     return true;
                 }
-                reloadPlugin(sender);
+                seasons.reloadPlugin(sender);
                 return true;
 
             case "reset":
                 if (args.length > 1) {
                     if (args[1].equalsIgnoreCase("season")) {
-                        return handleResetSeason(sender);
+                        return seasons.handleResetSeason(sender);
                     } else if (args[1].equalsIgnoreCase("mission") || args[1].equalsIgnoreCase("missions")) {
-                        return handleResetMissions(sender);
+                        return seasons.handleResetMissions(sender);
                     }
                 }
                 if (sender instanceof Player) {
@@ -62,81 +61,43 @@ public class BattlePassCommand implements CommandExecutor {
                 return true;
 
             case "event":
-                return handleEventCommand(sender, args);
+                return events.handleEventCommand(sender, args);
 
             case "stopevent":
-                return handleStopEventCommand(sender);
+                return events.handleStopEventCommand(sender);
 
             case "edit":
-                return handleEditCommand(sender, args);
+                return rewards.handleEditCommand(sender, args);
 
             case "resetplayer":
-                if (!sender.hasPermission("battlepass.admin")) {
-                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                            plugin.getMessageManager().getMessage("messages.no-permission"));
-                    return true;
-                }
-
-                if (args.length < 2) {
-                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                            plugin.getMessageManager().getMessage("messages.usage.reset-player"));
-                    return true;
-                }
-
-                Player targetReset = Bukkit.getPlayer(args[1]);
-                if (targetReset == null) {
-                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                            plugin.getMessageManager().getMessage("messages.player-not-found"));
-                    return true;
-                }
-
-                PlayerData dataReset = plugin.getPlayerDataManager().getPlayerData(targetReset.getUniqueId());
-                if (dataReset == null) {
-                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                            plugin.getMessageManager().getMessage("messages.data-loading"));
-                    return true;
-                }
-                dataReset.level = 1;
-                dataReset.xp = 0;
-                dataReset.claimedFreeRewards.clear();
-                dataReset.claimedPremiumRewards.clear();
-                dataReset.missionProgress.clear();
-
-                plugin.getPlayerDataManager().markForSave(targetReset.getUniqueId());
-
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.reset-player.sender",
-                                "%player%", targetReset.getName()));
-                targetReset.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.reset-player.target"));
-                return true;
+                return players.handleResetPlayer(sender, args);
 
             case "addpremium":
-                return handlePremiumCommand(sender, args, true);
+                return players.handlePremiumCommand(sender, args, true);
 
             case "removepremium":
-                return handlePremiumCommand(sender, args, false);
+                return players.handlePremiumCommand(sender, args, false);
 
             case "addxp":
-                return handleXPCommand(sender, args, true);
+                return players.handleXPCommand(sender, args, true);
 
             case "removexp":
-                return handleXPCommand(sender, args, false);
+                return players.handleXPCommand(sender, args, false);
 
             case "addcoins":
-                return handleCoinsCommand(sender, args, true);
+                return players.handleCoinsCommand(sender, args, true);
 
             case "removecoins":
-                return handleCoinsCommand(sender, args, false);
+                return players.handleCoinsCommand(sender, args, false);
 
             case "giveitem":
-                return handleGiveItemCommand(sender, args);
+                return rewards.handleGiveItemCommand(sender, args);
 
             case "excludefromtop":
-                return handleExcludeTopCommand(sender, args, true);
+                return players.handleExcludeTopCommand(sender, args, true);
 
             case "includetop":
-                return handleExcludeTopCommand(sender, args, false);
+                return players.handleExcludeTopCommand(sender, args, false);
 
             default:
                 if (sender instanceof Player) {
@@ -144,64 +105,6 @@ public class BattlePassCommand implements CommandExecutor {
                 }
                 return true;
         }
-    }
-
-    private boolean handleEditCommand(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("battlepass.admin")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.no-permission"));
-            return true;
-        }
-
-        if (!(sender instanceof Player)) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.player-only"));
-            return true;
-        }
-
-        Player player = (Player) sender;
-
-        if (args.length < 2 || !args[1].equalsIgnoreCase("rewards")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.usage.edit-rewards-season"));
-            return true;
-        }
-
-        if (args.length >= 4 && args[2].equalsIgnoreCase("season")) {
-            SeasonRotationManager rotation = plugin.getSeasonRotationManager();
-            if (!rotation.isRotationEnabled()) {
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.season.rotation-disabled"));
-                return true;
-            }
-
-            try {
-                int seasonNum = Integer.parseInt(args[3]);
-                if (!rotation.isValidSeason(seasonNum)) {
-                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                            plugin.getMessageManager().getMessage("messages.season.invalid-season",
-                                    "%max%", String.valueOf(rotation.getTotalSeasons())));
-                    return true;
-                }
-
-                plugin.getRewardEditorManager().setSeasonEditingContext(player.getUniqueId(), seasonNum);
-
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.season.editing-season",
-                                "%season%", String.valueOf(seasonNum)));
-
-                new RewardsEditorGui(plugin, player).open();
-
-            } catch (NumberFormatException e) {
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.invalid-amount"));
-            }
-        } else {
-            plugin.getRewardEditorManager().clearSeasonEditingContext(player.getUniqueId());
-            new RewardsEditorGui(plugin, player).open();
-        }
-
-        return true;
     }
 
     private void sendHelpMessage(CommandSender sender) {
@@ -226,486 +129,6 @@ public class BattlePassCommand implements CommandExecutor {
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.edit-rewards-season"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.event"));
             sender.sendMessage(plugin.getMessageManager().getMessage("messages.help.stopevent"));
-        }
-    }
-
-    private void reloadPlugin(CommandSender sender) {
-        plugin.reload();
-
-        plugin.getDatabaseManager().loadCoinsDistributionTime()
-                .exceptionally(ex -> null)
-                .thenAccept(plugin::startCoinsDistributionTask);
-
-        sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                plugin.getMessageManager().getMessage("messages.config-reloaded"));
-    }
-
-    private boolean handleResetSeason(CommandSender sender) {
-        if (!sender.hasPermission("battlepass.admin")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.no-permission"));
-            return true;
-        }
-
-        sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                plugin.getMessageManager().getMessage("messages.season.reset-warning"));
-
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            plugin.getMissionManager().forceResetSeason();
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.season.reset-complete"));
-
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (!player.equals(sender)) {
-                    player.sendMessage(plugin.getMessageManager().getPrefix() +
-                            plugin.getMessageManager().getMessage("messages.season.reset-admin",
-                                    "%admin%", sender.getName()));
-                }
-            }
-        }, 40L);
-
-        return true;
-    }
-
-    private boolean handleResetMissions(CommandSender sender) {
-        if (!sender.hasPermission("battlepass.admin")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.no-permission"));
-            return true;
-        }
-
-        plugin.getMissionManager().forceResetMissions();
-        sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                plugin.getMessageManager().getMessage("messages.mission.reset-complete"));
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!player.equals(sender)) {
-                player.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.mission.reset-admin",
-                                "%admin%", sender.getName()));
-            }
-        }
-
-        return true;
-    }
-
-    private boolean handlePremiumCommand(CommandSender sender, String[] args, boolean add) {
-        if (!sender.hasPermission("battlepass.admin")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.no-permission"));
-            return true;
-        }
-
-        if (args.length < 2) {
-            String usage = add ? "messages.usage.add-premium" : "messages.usage.remove-premium";
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage(usage));
-            return true;
-        }
-
-        Player target = Bukkit.getPlayer(args[1]);
-        if (target == null) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.player-not-found"));
-            return true;
-        }
-
-        PlayerData data = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
-        if (data == null) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.data-loading"));
-            return true;
-        }
-        data.hasPremium = add;
-        plugin.getPlayerDataManager().markForSave(target.getUniqueId());
-
-        if (add) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.premium.given-sender",
-                            "%target%", target.getName()));
-            target.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.premium.given-target"));
-            target.playSound(target.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-        } else {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.premium.removed-sender",
-                            "%target%", target.getName()));
-            target.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.premium.removed-target"));
-        }
-
-        return true;
-    }
-
-    private boolean handleXPCommand(CommandSender sender, String[] args, boolean add) {
-        if (!sender.hasPermission("battlepass.admin")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.no-permission"));
-            return true;
-        }
-
-        if (args.length < 3) {
-            String usage = add ? "messages.usage.add-xp" : "messages.usage.remove-xp";
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage(usage));
-            return true;
-        }
-
-        Player target = Bukkit.getPlayer(args[1]);
-        if (target == null) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.player-not-found"));
-            return true;
-        }
-
-        try {
-            int amount = Integer.parseInt(args[2]);
-            if (amount <= 0) {
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.amount-must-be-positive"));
-                return true;
-            }
-
-            PlayerData data = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
-            if (data == null) {
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.data-loading"));
-                return true;
-            }
-            int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
-
-            if (add) {
-                data.xp += amount;
-                checkLevelUp(target, data, xpPerLevel);
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.xp.added-sender",
-                                "%amount%", String.valueOf(amount), "%target%", target.getName()));
-                target.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.xp.added-target",
-                                "%amount%", String.valueOf(amount)));
-            } else {
-                int totalXP = (data.level - 1) * xpPerLevel + data.xp;
-                totalXP = Math.max(0, totalXP - amount);
-
-                int newLevel = 1;
-                while (totalXP >= xpPerLevel && newLevel < plugin.getRewardManager().getMaxLevel()) {
-                    totalXP -= xpPerLevel;
-                    newLevel++;
-                }
-                data.level = newLevel;
-                data.xp = totalXP;
-
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.xp.removed-sender",
-                                "%amount%", String.valueOf(amount), "%target%", target.getName()));
-                target.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.xp.removed-target",
-                                "%amount%", String.valueOf(amount)));
-            }
-
-            plugin.getPlayerDataManager().markForSave(target.getUniqueId());
-            return true;
-
-        } catch (NumberFormatException e) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.invalid-amount"));
-            return true;
-        }
-    }
-
-    private boolean handleCoinsCommand(CommandSender sender, String[] args, boolean add) {
-        if (!sender.hasPermission("battlepass.admin")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.no-permission"));
-            return true;
-        }
-
-        if (args.length < 3) {
-            String usage = add ? "messages.usage.add-coins" : "messages.usage.remove-coins";
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage(usage));
-            return true;
-        }
-
-        Player target = Bukkit.getPlayer(args[1]);
-        if (target == null) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.player-not-found"));
-            return true;
-        }
-
-        try {
-            int amount = Integer.parseInt(args[2]);
-            if (amount <= 0) {
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.amount-must-be-positive"));
-                return true;
-            }
-
-            PlayerData data = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
-            if (data == null) {
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.data-loading"));
-                return true;
-            }
-
-            if (add) {
-                data.battleCoins += amount;
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.coins.added-sender",
-                                "%amount%", String.valueOf(amount), "%target%", target.getName()));
-                target.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.coins.added-target",
-                                "%amount%", String.valueOf(amount)));
-                target.playSound(target.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-            } else {
-                if (data.battleCoins < amount) {
-                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                            plugin.getMessageManager().getMessage("messages.coins.insufficient-remove",
-                                    "%target%", target.getName(),
-                                    "%current%", String.valueOf(data.battleCoins)));
-                    return true;
-                }
-
-                data.battleCoins -= amount;
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.coins.removed-sender",
-                                "%amount%", String.valueOf(amount), "%target%", target.getName()));
-                target.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.coins.removed-target",
-                                "%amount%", String.valueOf(amount)));
-            }
-
-            plugin.getPlayerDataManager().markForSave(target.getUniqueId());
-            return true;
-
-        } catch (NumberFormatException e) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.invalid-amount"));
-            return true;
-        }
-    }
-
-    private boolean handleExcludeTopCommand(CommandSender sender, String[] args, boolean exclude) {
-        if (!sender.hasPermission("battlepass.admin")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.no-permission"));
-            return true;
-        }
-
-        if (args.length < 2) {
-            String usageMessage = plugin.getMessageManager().getMessagesConfig().getString(
-                    exclude ? "messages.usage.exclude-top" : "messages.usage.include-top",
-                    "&eUsage: /battlepass " + (exclude ? "excludefromtop" : "includetop") + " <player>");
-            sender.sendMessage(plugin.getMessageManager().getPrefix() + GradientColorParser.parse(usageMessage));
-            return true;
-        }
-
-        Player target = Bukkit.getPlayer(args[1]);
-        if (target == null) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.player-not-found"));
-            return true;
-        }
-
-        PlayerData data = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
-        if (data == null) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.data-loading"));
-            return true;
-        }
-        data.excludeFromTop = exclude;
-
-        plugin.getPlayerDataManager().markForSave(target.getUniqueId());
-        plugin.getPlayerDataManager().savePlayer(target.getUniqueId());
-
-        String statusMessage = plugin.getMessageManager().getMessagesConfig().getString(
-                exclude ? "messages.exclude-top.excluded" : "messages.exclude-top.included",
-                exclude ? "&a%player% is now excluded from the top leaderboard." : "&a%player% is now included in the top leaderboard.");
-        sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                GradientColorParser.parse(statusMessage.replace("%player%", target.getName())));
-
-        return true;
-    }
-
-    private boolean handleGiveItemCommand(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("battlepass.admin")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.no-permission"));
-            return true;
-        }
-
-        if (args.length < 4) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.usage.giveitem"));
-            return true;
-        }
-
-        String itemType = args[1].toLowerCase();
-        Player target = Bukkit.getPlayer(args[2]);
-
-        if (target == null) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.player-not-found"));
-            return true;
-        }
-
-        try {
-            int amount = Integer.parseInt(args[3]);
-            if (amount <= 0) {
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.amount-must-be-positive"));
-                return true;
-            }
-
-            ItemStack item;
-            String itemName;
-
-            switch (itemType) {
-                case "premium":
-                    item = plugin.getCustomItemManager().createPremiumPassItem(amount);
-                    itemName = "Premium Pass Voucher";
-                    break;
-                case "coins":
-                    item = plugin.getCustomItemManager().createBattleCoinsItem(amount);
-                    itemName = "Battle Coin Token";
-                    break;
-                case "levelboost":
-                    item = plugin.getCustomItemManager().createLevelBoostItem(amount);
-                    itemName = "Experience Boost Elixir";
-                    break;
-                case "xpevent":
-                    item = plugin.getCustomItemManager().createXPEventItem(amount);
-                    itemName = "XP Event Beacon";
-                    break;
-                default:
-                    sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                            plugin.getMessageManager().getMessage("messages.invalid-item-type"));
-                    return true;
-            }
-
-            HashMap<Integer, ItemStack> leftover = target.getInventory().addItem(item);
-
-            if (!leftover.isEmpty()) {
-                for (ItemStack drop : leftover.values()) {
-                    target.getWorld().dropItemNaturally(target.getLocation(), drop);
-                }
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.items.given-dropped",
-                                "%amount%", String.valueOf(amount),
-                                "%item%", itemName,
-                                "%target%", target.getName()));
-            } else {
-                sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.items.given",
-                                "%amount%", String.valueOf(amount),
-                                "%item%", itemName,
-                                "%target%", target.getName()));
-            }
-
-            target.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.items.received",
-                            "%amount%", String.valueOf(amount),
-                            "%item%", itemName));
-            target.playSound(target.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.0f);
-
-            return true;
-
-        } catch (NumberFormatException e) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.invalid-amount"));
-            return true;
-        }
-    }
-
-    private boolean handleEventCommand(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("battlepass.admin")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.no-permission"));
-            return true;
-        }
-
-        if (args.length < 3) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.usage.event"));
-            return true;
-        }
-
-        int multiplier = XPEventManager.parseMultiplier(args[1]);
-        if (multiplier < 0) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.event.invalid-multiplier"));
-            return true;
-        }
-
-        long duration = XPEventManager.parseDuration(args[2]);
-        if (duration <= 0) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.event.invalid-duration"));
-            return true;
-        }
-
-        plugin.getXpEventManager().startEvent(multiplier, duration);
-
-        String durationFormatted = plugin.getXpEventManager().getTimeRemaining();
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.event.started",
-                            "%multiplier%", String.valueOf(multiplier),
-                            "%duration%", durationFormatted));
-            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.2f);
-        }
-
-        return true;
-    }
-
-    private boolean handleStopEventCommand(CommandSender sender) {
-        if (!sender.hasPermission("battlepass.admin")) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.no-permission"));
-            return true;
-        }
-
-        if (!plugin.getXpEventManager().isEventActive()) {
-            sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.event.not-active"));
-            return true;
-        }
-
-        plugin.getXpEventManager().stopEvent();
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.event.stopped"));
-        }
-
-        return true;
-    }
-
-    private void checkLevelUp(Player player, PlayerData data, int xpPerLevel) {
-        boolean leveled = false;
-
-        while (data.xp >= xpPerLevel && data.level < plugin.getRewardManager().getMaxLevel()) {
-            data.xp -= xpPerLevel;
-            data.level++;
-            data.totalLevels++;
-            leveled = true;
-
-            player.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.level-up",
-                            "%level%", String.valueOf(data.level)));
-            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-
-            int available = plugin.getRewardManager().countAvailableRewards(data);
-            if (available > 0) {
-                player.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.new-rewards"));
-            }
-        }
-
-        if (leveled) {
-            plugin.getPlayerDataManager().markForSave(player.getUniqueId());
         }
     }
 }
