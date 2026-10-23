@@ -3,7 +3,6 @@ package com.Lino.battlePass.listeners;
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.gui.BaseHolder;
 import com.Lino.battlePass.managers.MissionEditorManager;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -27,13 +26,16 @@ public class MissionEditorListener implements Listener {
 
     @EventHandler
     public void onChat(AsyncPlayerChatEvent event) {
-        if (plugin.getMissionEditorManager().isEditing(event.getPlayer().getUniqueId())) {
-            MissionEditorManager.EditorState state = plugin.getMissionEditorManager().getEditingState(event.getPlayer().getUniqueId());
-            if (state != null && state.type != MissionEditorManager.EditType.TYPE) {
-                event.setCancelled(true);
-                plugin.getServer().getScheduler().runTask(plugin, () ->
-                        plugin.getMissionEditorManager().handleChatInput(event.getPlayer(), event.getMessage()));
-            }
+        Player player = event.getPlayer();
+        MissionEditorManager.EditorState state = plugin.getMissionEditorManager().getEditingState(player.getUniqueId());
+        if (state != null && state.type != MissionEditorManager.EditType.TYPE) {
+            event.setCancelled(true);
+            String message = event.getMessage();
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (player.isOnline() && (player.hasPermission("battlepass.admin") || "cancel".equalsIgnoreCase(message))) {
+                    plugin.getMissionEditorManager().handleChatInput(player, message);
+                }
+            });
         }
     }
 
@@ -43,28 +45,28 @@ public class MissionEditorListener implements Listener {
 
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
-        String title = ChatColor.stripColor(event.getView().getTitle());
-
-        if (title == null) return;
-
-        if (title.startsWith("Mission Editor")) {
-            if (!title.contains("Page ")) return;
-            event.setCancelled(true);
-            if (isTopSlot(event)) handleEditorClick(player, event, title);
-        } else if (title.startsWith("Select Mission Type")) {
-            if (event.getView().getTopInventory().getSize() != 54) return;
-            ItemStack back = event.getView().getTopInventory().getItem(53);
-            if (back == null || back.getType() != Material.BARRIER) return;
-
-            event.setCancelled(true);
-            if (isTopSlot(event)) handleTypeSelectionClick(player, event);
-        } else if (title.startsWith("Editing: ")) {
-            String missionKey = title.replace("Editing: ", "").trim();
-            if (!plugin.getConfigManager().getMissionsConfig().contains("mission-pools." + missionKey)) return;
-
-            event.setCancelled(true);
-            if (isTopSlot(event)) handleDetailsClick(player, event, missionKey);
+        BaseHolder.MenuContext context = BaseHolder.contextOf(event.getView().getTopInventory());
+        if (!isMissionEditor(context)) return;
+        event.setCancelled(true);
+        if (!player.hasPermission("battlepass.admin") || !isTopSlot(event)) return;
+        switch (context.type()) {
+            case MISSION_EDITOR -> handleEditorClick(player, event, context);
+            case MISSION_TYPE -> handleTypeSelectionClick(player, event);
+            case MISSION_DETAILS -> {
+                String key = context.missionKey();
+                if (key != null && plugin.getConfigManager().getMissionsConfig().isConfigurationSection("mission-pools." + key)) {
+                    handleDetailsClick(player, event, key);
+                }
+            }
+            default -> { }
         }
+    }
+
+    private boolean isMissionEditor(BaseHolder.MenuContext context) {
+        return context != null && switch (context.type()) {
+            case MISSION_EDITOR, MISSION_TYPE, MISSION_DETAILS -> true;
+            default -> false;
+        };
     }
 
     private boolean isTopSlot(InventoryClickEvent event) {
@@ -75,18 +77,16 @@ public class MissionEditorListener implements Listener {
     public void onInventoryDrag(InventoryDragEvent event) {
         if (!BaseHolder.isBattlePassInventory(event.getView().getTopInventory())) return;
         if (!(event.getWhoClicked() instanceof Player)) return;
-        String title = ChatColor.stripColor(event.getView().getTitle());
-        if (title == null || !(title.startsWith("Mission Editor") || title.startsWith("Select Mission Type")
-                || title.startsWith("Editing: "))) return;
+        if (!isMissionEditor(BaseHolder.contextOf(event.getView().getTopInventory()))) return;
         int size = event.getView().getTopInventory().getSize();
         if (event.getRawSlots().stream().anyMatch(slot -> slot >= 0 && slot < size)) {
             event.setCancelled(true);
         }
     }
 
-    private void handleEditorClick(Player player, InventoryClickEvent event, String title) {
+    private void handleEditorClick(Player player, InventoryClickEvent event, BaseHolder.MenuContext context) {
         try {
-            int page = Integer.parseInt(title.split("Page ")[1]);
+            int page = context.page();
             ItemStack clicked = event.getCurrentItem();
             if (clicked == null || clicked.getType() == Material.AIR) return;
 
@@ -98,8 +98,8 @@ public class MissionEditorListener implements Listener {
             } else if (clicked.getType() == Material.BARRIER) {
                 plugin.getGuiManager().openMissionsGUI(player);
             } else if (clicked.getType() == Material.PAPER) {
-                ItemMeta meta = clicked.getItemMeta();
-                String key = ChatColor.stripColor(meta.getDisplayName());
+                String key = context.entries().get(event.getSlot());
+                if (key == null) return;
 
                 if (event.getClick() == ClickType.RIGHT) {
                     plugin.getMissionEditorManager().deleteMission(player, key);

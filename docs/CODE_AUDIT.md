@@ -93,12 +93,22 @@ Validation: six of seven initial temporary tests reproduced early publication, f
 
 Validation: all three initial temporary task checks failed before correction (failed/pending read deadline loss and cancelled late delivery). All 71 tests now pass (41 existing plus 30 temporary). They cover SQLite rollback on wallet/deadline errors, competing connections for one deadline, current balances, caps/missing players/empty deliveries, retry/conflicts, MySQL row-lock SQL/single lease, cache load/save races and monitor ordering, stop/start callbacks, and integrated task/cache/database success/failure with a deposit made while ranking is pending. Temporary sources and generated artifacts are removed before delivery. MySQL was tested via JDBC mocks, not a live instance. The ranking read is asynchronous; player flushes and the wallet commit (at most ten recipients) wait on the main thread for consistency. This does not establish multi-server cache coherence for all player-state writes.
 
+## Verified fixes: menu identity and sparse reward configuration (2026-10-24)
+
+- All ten built-in menu builders attach typed `BaseHolder.MenuContext` metadata. Main/reward-editor/mission-editor listeners route by that context, including page, premium choice, raw mission keys and active editor object. Identical/translated/placeholder-leading titles cannot trigger another menu's controls. Editor actions recheck permission; pending chat input is still cancelled before validation on the main thread, and `cancel` remains usable after permission revocation.
+- Top drag isolation applies to the owning listener. Level-editor bottom copying remains available without clearing another handler's cancellation. Delayed close checks do not remove a newer editing session, and foreign editor-like titles cannot retain the old one.
+- Reload preserves navigation history and rebuilds only owned main inventories from metadata, without a loop through all reward pages. A newer inventory opened before the delayed refresh is left alone. Leaderboard refresh checks exact inventory identity.
+- Reward loading now scales with configured keys/items, including sparse `Integer.MAX_VALUE` definitions. Malformed `items` sections no longer abort valid later levels. Locale-independent material/enchantment parsing also covers item metadata deserialization. Pagination uses wide arithmetic; final-page cells cannot wrap negative, the extra reward-editor page remains available, and archived seasons use their own level range. Non-section mission pools are omitted from the mission editor.
+- Shop entries in reserved balance/back slots are warned/skipped instead of being displayed as unpurchasable or overwritten controls.
+
+Validation: all 11 initial temporary regression cases failed before correction (title collisions, permission revocation, sparse scans, malformed sections, locale and reserved slots). All 98 tests pass together (41 existing plus 57 temporary), including actual creation of all ten menus, 22 drag combinations, free/premium page claims, level item copying, raw mission keys, editor-session close races, private/cancellable input, archived/maximum pages, reload ownership/new-window guards and locale-preserved metadata. A BigInteger oracle checks page/cell math across 512 deterministic cases. Temporary sources and generated artifacts are removed before delivery. No live Minecraft server was used. Per-level XP callbacks are unchanged and remain a separate scalability investigation.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
-- Extreme reward configuration and progression scalability (very sparse/high levels); verify no loops scale with untrusted numeric ranges unnecessarily.
-- GUI title collisions (including titles starting with a placeholder), reserved shop slots, item preview paths, pagination and malformed reward configuration.
+- Extreme XP progression still performs feedback once per gained level; investigate large grant/high maximum behavior without losing normal feedback semantics.
+- Level-editor item pagination beyond the visible item rows, archived-season load/save context, previews/serialization and malformed configuration outside the verified reward loader; check purchasing from an already open shop after disabling it.
 - Full season transition atomicity across player reset, calendar, missions and filesystem reward rotation; daily/season time-accounting boundaries and reset-interval changes on reload/restart.
 - Season reset/save ordering and time-accounting boundaries across daily/season resets; other startup/shutdown/reload paths, shared-database cache assumptions, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 

@@ -26,7 +26,7 @@ public class MissionDetailsGui {
     }
 
     public void open() {
-        Inventory gui = BaseGui.createInventory(36, GradientColorParser.parse("<gradient:#4ECDC4:#45B7D1>Editing: " + missionKey + "</gradient>"));
+        Inventory gui = BaseGui.createInventory(36, GradientColorParser.parse("<gradient:#4ECDC4:#45B7D1>Editing: " + missionKey + "</gradient>"), BaseHolder.MenuContext.mission(missionKey));
         ConfigurationSection section = plugin.getConfigManager().getMissionsConfig().getConfigurationSection("mission-pools." + missionKey);
 
         if (section == null) {

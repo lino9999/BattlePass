@@ -47,6 +47,10 @@ public class ShopManager {
                     plugin.getLogger().warning("Shop item '" + key + "' has invalid slot " + slot + " (must be 0-53). Skipping.");
                     continue;
                 }
+                if (slot == 4 || slot == 49) {
+                    plugin.getLogger().warning("Shop item '" + key + "' uses reserved control slot " + slot + ". Skipping.");
+                    continue;
+                }
                 Material material;
                 try {
                     material = Material.valueOf(item.getString("material", "STONE"));

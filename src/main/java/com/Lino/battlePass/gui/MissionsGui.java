@@ -24,6 +24,11 @@ public class MissionsGui extends BaseGui {
         this.playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
     }
 
+    @Override
+    protected BaseHolder.MenuContext getMenuContext() {
+        return BaseHolder.MenuContext.menu(BaseHolder.MenuType.MISSIONS);
+    }
+
     public void open() {
         Inventory gui = createInventory();
 

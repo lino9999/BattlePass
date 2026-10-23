@@ -6,7 +6,7 @@ import com.Lino.battlePass.gui.LevelRewardEditGui;
 import com.Lino.battlePass.gui.RewardsCategoryGui;
 import com.Lino.battlePass.gui.RewardsEditorGui;
 import com.Lino.battlePass.models.EditableReward;
-import org.bukkit.ChatColor;
+import com.Lino.battlePass.utils.Pagination;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,12 +17,11 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.InventoryView;
 
 public class RewardsEditorListener implements Listener {
 
     private final BattlePass plugin;
-    private static final String EDIT_LEVEL_START = "Edit Level";
-    private static final String EDIT_LEVEL_END = "Rewards";
 
     public RewardsEditorListener(BattlePass plugin) {
         this.plugin = plugin;
@@ -35,35 +34,23 @@ public class RewardsEditorListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
 
-        String title = ChatColor.stripColor(event.getView().getTitle());
-        if (title == null) return;
-
-        if (title.contains("Rewards Editor")) {
+        BaseHolder.MenuContext context = BaseHolder.contextOf(event.getView().getTopInventory());
+        if (!isRewardEditor(context)) return;
+        if (!player.hasPermission("battlepass.admin")) {
             event.setCancelled(true);
-            int slot = event.getRawSlot();
-            if (slot >= 0 && slot < event.getInventory().getSize()) {
-                handleRewardsEditorClick(player, slot);
-            }
             return;
         }
-
-        if (title.contains("Free Rewards") || title.contains("Premium Rewards")) {
-            boolean isPremium = title.contains("Premium Rewards");
-            String cleanTitle = title;
-            if (cleanTitle.contains("Page")) {
-                event.setCancelled(true);
-                int slot = event.getRawSlot();
-                if (slot >= 0 && slot < event.getInventory().getSize()) {
-                    handleRewardsCategoryClick(player, slot, isPremium);
-                }
-                return;
-            }
-        }
-
-        if (title.startsWith(EDIT_LEVEL_START) && title.endsWith(EDIT_LEVEL_END)) {
-            handleLevelEditClick(player, event);
+        if (context.type() == BaseHolder.MenuType.REWARD_LEVEL_EDITOR) {
+            if (context.editor() != null && context.editor() == plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId())) {
+                handleLevelEditClick(player, event);
+            } else event.setCancelled(true);
             return;
         }
+        event.setCancelled(true);
+        int slot = event.getRawSlot();
+        if (slot < 0 || slot >= event.getView().getTopInventory().getSize()) return;
+        if (context.type() == BaseHolder.MenuType.REWARDS_EDITOR) handleRewardsEditorClick(player, slot);
+        else handleRewardsCategoryClick(player, slot, context.premium(), context.page(), event.getCurrentItem());
     }
 
     @EventHandler
@@ -72,9 +59,7 @@ public class RewardsEditorListener implements Listener {
 
         if (!(event.getWhoClicked() instanceof Player)) return;
 
-        String title = ChatColor.stripColor(event.getView().getTitle());
-        if (title != null && ((title.startsWith(EDIT_LEVEL_START) && title.endsWith(EDIT_LEVEL_END))
-                || title.contains("Rewards Editor") || title.contains("Free Rewards") || title.contains("Premium Rewards"))) {
+        if (isRewardEditor(BaseHolder.contextOf(event.getView().getTopInventory()))) {
             boolean topInventory = false;
             for (int slot : event.getRawSlots()) {
                 if (slot >= 0 && slot < event.getView().getTopInventory().getSize()) {
@@ -94,19 +79,26 @@ public class RewardsEditorListener implements Listener {
         if (!(event.getPlayer() instanceof Player)) return;
 
         Player player = (Player) event.getPlayer();
-        String title = ChatColor.stripColor(event.getView().getTitle());
-
-        if (title != null && title.startsWith(EDIT_LEVEL_START) && title.endsWith(EDIT_LEVEL_END)) {
-            if (!plugin.getRewardEditorManager().hasCommandInput(player.getUniqueId())) {
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    if (player.getOpenInventory() == null ||
-                            player.getOpenInventory().getTitle() == null ||
-                            !ChatColor.stripColor(player.getOpenInventory().getTitle()).contains(EDIT_LEVEL_START)) {
-                        plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
-                    }
-                }, 5L);
-            }
+        BaseHolder.MenuContext context = BaseHolder.contextOf(event.getView().getTopInventory());
+        if (context == null || context.type() != BaseHolder.MenuType.REWARD_LEVEL_EDITOR) return;
+        if (context.editor() != plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId())) return;
+        if (!plugin.getRewardEditorManager().hasCommandInput(player.getUniqueId())) {
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                InventoryView view = player.getOpenInventory();
+                BaseHolder.MenuContext current = BaseHolder.contextOf(view == null ? null : view.getTopInventory());
+                if ((current == null || current.editor() != context.editor())
+                        && plugin.getRewardEditorManager().getActiveEditor(player.getUniqueId()) == context.editor()) {
+                    plugin.getRewardEditorManager().removeActiveEditor(player.getUniqueId());
+                }
+            }, 5L);
         }
+    }
+
+    private boolean isRewardEditor(BaseHolder.MenuContext context) {
+        return context != null && switch (context.type()) {
+            case REWARDS_EDITOR, REWARDS_CATEGORY, REWARD_LEVEL_EDITOR -> true;
+            default -> false;
+        };
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -117,7 +109,9 @@ public class RewardsEditorListener implements Listener {
             event.setCancelled(true);
             String message = event.getMessage();
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                plugin.getRewardEditorManager().handleCommandInput(player, message);
+                if (player.isOnline() && (player.hasPermission("battlepass.admin") || "cancel".equalsIgnoreCase(message))) {
+                    plugin.getRewardEditorManager().handleCommandInput(player, message);
+                }
             });
         }
     }
@@ -147,20 +141,11 @@ public class RewardsEditorListener implements Listener {
         }
     }
 
-    private void handleRewardsCategoryClick(Player player, int slot, boolean isPremium) {
-        String title = ChatColor.stripColor(player.getOpenInventory().getTitle());
-        int currentPage = 1;
-
-        if (title != null && title.contains("Page")) {
-            String pageStr = title.substring(title.lastIndexOf("Page") + 5).trim();
-            try {
-                currentPage = Integer.parseInt(pageStr);
-            } catch (NumberFormatException ignored) {}
-        }
-
+    private void handleRewardsCategoryClick(Player player, int slot, boolean isPremium, int currentPage, ItemStack clicked) {
+        if (clicked == null) return;
         if (slot < 45) {
-            int startLevel = (currentPage - 1) * 45 + 1;
-            int level = startLevel + slot;
+            int level = Pagination.levelAt(currentPage, 45, slot);
+            if (level == 0) return;
 
             player.closeInventory();
             final int finalLevel = level;
@@ -169,24 +154,20 @@ public class RewardsEditorListener implements Listener {
                 plugin.getRewardEditorManager().openLevelEditor(player, finalLevel, finalIsPremium);
             }, 1L);
 
-        } else if (slot == 45 && currentPage > 1) {
+        } else if (slot == 45 && clicked.getType() == org.bukkit.Material.ARROW && currentPage > 1) {
             player.closeInventory();
             final int prevPage = currentPage - 1;
             final boolean finalIsPremium = isPremium;
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 new RewardsCategoryGui(plugin, player, finalIsPremium, prevPage).open();
             }, 1L);
-        } else if (slot == 53) {
-            int maxLevel = plugin.getRewardManager().getMaxLevel();
-            int endLevel = (currentPage - 1) * 45 + 45;
-            if (endLevel < maxLevel + 45) {
-                player.closeInventory();
-                final int nextPage = currentPage + 1;
-                final boolean finalIsPremium = isPremium;
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    new RewardsCategoryGui(plugin, player, finalIsPremium, nextPage).open();
-                }, 1L);
-            }
+        } else if (slot == 53 && clicked.getType() == org.bukkit.Material.ARROW) {
+            player.closeInventory();
+            final int nextPage = currentPage + 1;
+            final boolean finalIsPremium = isPremium;
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                new RewardsCategoryGui(plugin, player, finalIsPremium, nextPage).open();
+            }, 1L);
         } else if (slot == 48) {
             player.closeInventory();
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -213,8 +194,6 @@ public class RewardsEditorListener implements Listener {
         int inventorySize = event.getInventory().getSize();
 
         if (rawSlot >= inventorySize) {
-            event.setCancelled(false);
-
             if (event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT) {
                 event.setCancelled(true);
                 ItemStack item = event.getCurrentItem();

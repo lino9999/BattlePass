@@ -51,7 +51,7 @@ public class MissionTypeSelectionGui {
     }
 
     public void open() {
-        Inventory gui = BaseGui.createInventory(54, GradientColorParser.parse("<gradient:#FFD700:#FFA500>Select Mission Type</gradient>"));
+        Inventory gui = BaseGui.createInventory(54, GradientColorParser.parse("<gradient:#FFD700:#FFA500>Select Mission Type</gradient>"), BaseHolder.MenuContext.menu(BaseHolder.MenuType.MISSION_TYPE));
 
         int slot = 0;
         for (Map.Entry<String, Material> entry : MISSION_TYPES.entrySet()) {

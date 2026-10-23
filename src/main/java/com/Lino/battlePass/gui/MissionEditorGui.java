@@ -2,6 +2,7 @@ package com.Lino.battlePass.gui;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.utils.GradientColorParser;
+import com.Lino.battlePass.utils.Pagination;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -27,14 +28,17 @@ public class MissionEditorGui {
     }
 
     public void open() {
-        Inventory gui = BaseGui.createInventory(54, GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Mission Editor - Page " + page + "</gradient>"));
-
         ConfigurationSection pools = plugin.getConfigManager().getMissionsConfig().getConfigurationSection("mission-pools");
-        List<String> keys = pools != null ? new ArrayList<>(pools.getKeys(false)) : new ArrayList<>();
+        List<String> keys = pools != null ? pools.getKeys(false).stream().filter(pools::isConfigurationSection).toList() : new ArrayList<>();
 
         int slotsPerPage = 45;
+        int page = Pagination.clampPage(this.page, keys.size(), slotsPerPage);
         int start = (page - 1) * slotsPerPage;
-        int end = Math.min(start + slotsPerPage, keys.size());
+        int end = (int) Math.min((long) start + slotsPerPage, keys.size());
+
+        java.util.Map<Integer, String> entries = new java.util.HashMap<>();
+        for (int i = start; i < end; i++) entries.put(i - start, keys.get(i));
+        Inventory gui = BaseGui.createInventory(54, GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>Mission Editor - Page " + page + "</gradient>"), BaseHolder.MenuContext.missions(page, entries));
 
         for (int i = start; i < end; i++) {
             String key = keys.get(i);

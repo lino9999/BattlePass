@@ -20,6 +20,11 @@ public class RewardsEditorGui extends BaseGui {
         this.player = player;
     }
 
+    @Override
+    protected BaseHolder.MenuContext getMenuContext() {
+        return BaseHolder.MenuContext.menu(BaseHolder.MenuType.REWARDS_EDITOR);
+    }
+
     public void open() {
         if (!player.hasPermission("battlepass.admin")) {
             player.sendMessage(plugin.getMessageManager().getPrefix() +

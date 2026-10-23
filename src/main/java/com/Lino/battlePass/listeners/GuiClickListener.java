@@ -5,6 +5,7 @@ import com.Lino.battlePass.events.BattlePassXPGainEvent;
 import com.Lino.battlePass.gui.BaseHolder;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.utils.ExperienceProgression;
+import com.Lino.battlePass.utils.Pagination;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -33,16 +34,9 @@ public class GuiClickListener implements Listener {
 
         if (!(event.getWhoClicked() instanceof Player)) return;
 
-        String title = event.getView().getTitle();
+        BaseHolder.MenuContext context = BaseHolder.contextOf(event.getView().getTopInventory());
+        if (!isMainMenu(context)) return;
         Player player = (Player) event.getWhoClicked();
-
-        boolean isBattlePassGUI = title.startsWith(plugin.getMessageManager().getMessage("gui.battlepass").split("%")[0]);
-
-        if (!isBattlePassGUI && !title.equals(plugin.getMessageManager().getMessage("gui.leaderboard")) &&
-                !title.equals(plugin.getMessageManager().getMessage("gui.missions")) &&
-                !title.equals(plugin.getMessageManager().getMessage("gui.shop"))) {
-            return;
-        }
 
         event.setCancelled(true);
 
@@ -51,17 +45,17 @@ public class GuiClickListener implements Listener {
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || !clicked.hasItemMeta()) return;
 
-        if (isBattlePassGUI) {
-            handleBattlePassClick(player, clicked, event.getSlot());
-        } else if (title.equals(plugin.getMessageManager().getMessage("gui.leaderboard"))) {
-            if (clicked.getType() == Material.BARRIER && event.getSlot() == 49) {
-                int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
-                plugin.getGuiManager().openBattlePassGUI(player, page);
+        switch (context.type()) {
+            case BATTLE_PASS -> handleBattlePassClick(player, clicked, event.getSlot(), context.page());
+            case LEADERBOARD -> {
+                if (clicked.getType() == Material.BARRIER && event.getSlot() == 49) {
+                    int page = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
+                    plugin.getGuiManager().openBattlePassGUI(player, page);
+                }
             }
-        } else if (title.equals(plugin.getMessageManager().getMessage("gui.missions"))) {
-            handleMissionsClick(player, clicked, event.getSlot());
-        } else if (title.equals(plugin.getMessageManager().getMessage("gui.shop"))) {
-            handleShopClick(player, clicked, event.getSlot());
+            case MISSIONS -> handleMissionsClick(player, clicked, event.getSlot());
+            case SHOP -> handleShopClick(player, clicked, event.getSlot());
+            default -> { }
         }
     }
 
@@ -70,15 +64,18 @@ public class GuiClickListener implements Listener {
         if (!BaseHolder.isBattlePassInventory(event.getView().getTopInventory())) return;
         if (!(event.getWhoClicked() instanceof Player)) return;
 
-        String title = event.getView().getTitle();
-        boolean mainMenu = title.startsWith(plugin.getMessageManager().getMessage("gui.battlepass").split("%")[0])
-                || title.equals(plugin.getMessageManager().getMessage("gui.leaderboard"))
-                || title.equals(plugin.getMessageManager().getMessage("gui.missions"))
-                || title.equals(plugin.getMessageManager().getMessage("gui.shop"));
+        boolean mainMenu = isMainMenu(BaseHolder.contextOf(event.getView().getTopInventory()));
         int size = event.getView().getTopInventory().getSize();
         if (mainMenu && event.getRawSlots().stream().anyMatch(slot -> slot >= 0 && slot < size)) {
             event.setCancelled(true);
         }
+    }
+
+    private boolean isMainMenu(BaseHolder.MenuContext context) {
+        return context != null && switch (context.type()) {
+            case BATTLE_PASS, LEADERBOARD, MISSIONS, SHOP -> true;
+            default -> false;
+        };
     }
 
     private void handleMissionsClick(Player player, ItemStack clicked, int slot) {
@@ -103,8 +100,7 @@ public class GuiClickListener implements Listener {
         }
     }
 
-    private void handleBattlePassClick(Player player, ItemStack clicked, int slot) {
-        int currentPage = plugin.getGuiManager().getCurrentPages().getOrDefault(player.getEntityId(), 1);
+    private void handleBattlePassClick(Player player, ItemStack clicked, int slot, int currentPage) {
 
         // Reward materials are configurable and may also be used by action buttons.
         if ((slot >= 9 && slot <= 17) || (slot >= 27 && slot <= 35)) {
@@ -179,11 +175,11 @@ public class GuiClickListener implements Listener {
                     plugin.getMessageManager().getMessage("messages.data-loading"));
             return;
         }
-        int startLevel = (currentPage - 1) * 9 + 1;
 
         if (slot >= 9 && slot <= 17) {
             int index = slot - 9;
-            int level = startLevel + index;
+            int level = Pagination.levelAt(currentPage, 9, index);
+            if (level == 0) return;
 
             if (!data.hasPremium) {
                 player.sendMessage(plugin.getMessageManager().getPrefix() +
@@ -206,7 +202,8 @@ public class GuiClickListener implements Listener {
 
         } else if (slot >= 27 && slot <= 35) {
             int index = slot - 27;
-            int level = startLevel + index;
+            int level = Pagination.levelAt(currentPage, 9, index);
+            if (level == 0) return;
 
             List<com.Lino.battlePass.models.Reward> levelRewards =
                     plugin.getRewardManager().getFreeRewardsByLevel().get(level);

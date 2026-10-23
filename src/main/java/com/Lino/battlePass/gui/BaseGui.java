@@ -24,11 +24,19 @@ public abstract class BaseGui {
     }
 
     public Inventory createInventory() {
-        return BaseGui.createInventory(size, title);
+        return BaseGui.createInventory(size, title, getMenuContext());
+    }
+
+    protected BaseHolder.MenuContext getMenuContext() {
+        return BaseHolder.MenuContext.menu(BaseHolder.MenuType.UNKNOWN);
     }
 
     public static Inventory createInventory(int size, String title) {
-        BaseHolder holder = new BaseHolder();
+        return createInventory(size, title, BaseHolder.MenuContext.menu(BaseHolder.MenuType.UNKNOWN));
+    }
+
+    public static Inventory createInventory(int size, String title, BaseHolder.MenuContext context) {
+        BaseHolder holder = new BaseHolder(context);
         Inventory inv = Bukkit.createInventory(holder, size, title);
         holder.setInventory(inv);
         return inv;

@@ -3,6 +3,7 @@ package com.Lino.battlePass.gui;
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.Reward;
 import com.Lino.battlePass.utils.GradientColorParser;
+import com.Lino.battlePass.utils.Pagination;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -44,15 +45,6 @@ public class RewardsCategoryGui {
         int editingSeason = plugin.getRewardEditorManager().getSeasonEditingContext(player.getUniqueId());
         String seasonLabel = editingSeason > 0 ? " &8[&eSeason " + editingSeason + "&8]" : "";
 
-        String title = isPremium ?
-                GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>★ Premium Rewards</gradient>" + seasonLabel + " &8- &7Page " + page) :
-                GradientColorParser.parse("<gradient:#4ECDC4:#45B7D1>⚡ Free Rewards</gradient>" + seasonLabel + " &8- &7Page " + page);
-
-        Inventory gui = BaseGui.createInventory(54, title);
-
-        int startLevel = (page - 1) * LEVELS_PER_PAGE + 1;
-        int endLevel = startLevel + LEVELS_PER_PAGE - 1;
-
         Map<Integer, List<Reward>> rewardsByLevel;
 
         if (editingSeason > 0) {
@@ -63,11 +55,20 @@ public class RewardsCategoryGui {
                     plugin.getRewardManager().getFreeRewardsByLevel();
         }
 
-        int slot = 0;
-        for (int level = startLevel; level <= endLevel && slot < 45; level++) {
-            ItemStack chest = createLevelChest(level, rewardsByLevel.get(level));
-            gui.setItem(slot, chest);
-            slot++;
+        int maxLevel = editingSeason > 0 ? rewardsByLevel.keySet().stream().mapToInt(Integer::intValue).max().orElse(54)
+                : plugin.getRewardManager().getMaxLevel();
+        int maxPages = Pagination.rewardEditorPages(maxLevel);
+        int page = Math.max(1, Math.min(this.page, maxPages));
+        String title = isPremium ?
+                GradientColorParser.parse("<gradient:#FFD700:#FF6B6B>★ Premium Rewards</gradient>" + seasonLabel + " &8- &7Page " + page) :
+                GradientColorParser.parse("<gradient:#4ECDC4:#45B7D1>⚡ Free Rewards</gradient>" + seasonLabel + " &8- &7Page " + page);
+
+        Inventory gui = BaseGui.createInventory(54, title, BaseHolder.MenuContext.rewards(page, isPremium));
+
+        for (int slot = 0; slot < LEVELS_PER_PAGE; slot++) {
+            int level = Pagination.levelAt(page, LEVELS_PER_PAGE, slot);
+            if (level == 0) break;
+            gui.setItem(slot, createLevelChest(level, rewardsByLevel.get(level)));
         }
 
         if (page > 1) {
@@ -81,8 +82,7 @@ public class RewardsCategoryGui {
             gui.setItem(45, prevPage);
         }
 
-        int maxLevel = plugin.getRewardManager().getMaxLevel();
-        if (endLevel < maxLevel + LEVELS_PER_PAGE) {
+        if (page < maxPages) {
             ItemStack nextPage = new ItemStack(Material.ARROW);
             ItemMeta nextMeta = nextPage.getItemMeta();
             nextMeta.setDisplayName(GradientColorParser.parse("<gradient:#4ECDC4:#45B7D1>Next Page →</gradient>"));
@@ -131,6 +131,7 @@ public class RewardsCategoryGui {
             } catch (NumberFormatException e) {
                 continue;
             }
+            if (level < 1 || !key.equals("level-" + level)) continue;
 
             List<Reward> rewards = new ArrayList<>();
             ConfigurationSection section = config.getConfigurationSection(key);
@@ -162,9 +163,7 @@ public class RewardsCategoryGui {
                 rewards.add(new Reward(level, "", displayName, premium));
             }
 
-            if (!rewards.isEmpty()) {
-                rewardsByLevel.put(level, rewards);
-            }
+            rewardsByLevel.put(level, rewards);
         }
 
         return rewardsByLevel;

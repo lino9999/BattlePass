@@ -24,6 +24,11 @@ public class LeaderboardGui extends BaseGui {
         this.player = player;
     }
 
+    @Override
+    protected BaseHolder.MenuContext getMenuContext() {
+        return BaseHolder.MenuContext.menu(BaseHolder.MenuType.LEADERBOARD);
+    }
+
     public void open() {
         Inventory gui = createInventory();
 
@@ -110,7 +115,7 @@ public class LeaderboardGui extends BaseGui {
                     gui.setItem(slots[i], skull);
                 }
 
-                if (player.getOpenInventory().getTitle().equals(title)) {
+                if (player.getOpenInventory().getTopInventory() == gui) {
                     player.updateInventory();
                 }
             });

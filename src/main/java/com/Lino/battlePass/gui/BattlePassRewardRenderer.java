@@ -4,6 +4,7 @@ import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.models.Reward;
 import com.Lino.battlePass.utils.GradientColorParser;
+import com.Lino.battlePass.utils.Pagination;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -28,13 +29,12 @@ final class BattlePassRewardRenderer {
     }
 
     void setupRewards(Inventory gui) {
-        int startLevel = (page - 1) * 9 + 1;
         Map<Integer, List<Reward>> premiumRewards = plugin.getRewardManager().getPremiumRewardsByLevel();
         Map<Integer, List<Reward>> freeRewards = plugin.getRewardManager().getFreeRewardsByLevel();
 
         for (int i = 0; i <= 8; i++) {
-            int level = startLevel + i;
-            if (level > maxLevel) break;
+            int level = Pagination.levelAt(page, 9, i);
+            if (level == 0 || level > maxLevel) break;
 
             List<Reward> premiumLevel = premiumRewards.get(level);
             if (premiumLevel != null && !premiumLevel.isEmpty()) {

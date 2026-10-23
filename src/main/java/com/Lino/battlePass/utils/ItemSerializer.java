@@ -15,6 +15,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 
 public class ItemSerializer {
 
@@ -75,7 +76,7 @@ public class ItemSerializer {
 
         Material material;
         try {
-            material = Material.valueOf(materialName.toUpperCase());
+            material = Material.valueOf(materialName.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return null;
         }
@@ -97,7 +98,7 @@ public class ItemSerializer {
                 ConfigurationSection enchantSection = section.getConfigurationSection("enchantments");
                 if (enchantSection != null) {
                     for (String key : enchantSection.getKeys(false)) {
-                        Enchantment enchant = Enchantment.getByName(key.toUpperCase());
+                        Enchantment enchant = Enchantment.getByName(key.toUpperCase(Locale.ROOT));
                         if (enchant != null) {
                             meta.addEnchant(enchant, enchantSection.getInt(key), true);
                         }

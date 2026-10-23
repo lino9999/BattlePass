@@ -41,64 +41,49 @@ public class RewardManager {
         FileConfiguration premiumConfig = configManager.getBattlePassPremiumConfig();
 
         maxLevel = 54;
-        updateMaxLevel(freeConfig);
-        updateMaxLevel(premiumConfig);
-
-        for (int i = 1; i <= maxLevel; i++) {
-            String levelPath = "level-" + i;
-            List<Reward> freeLevel = new ArrayList<>();
-            List<Reward> premiumLevel = new ArrayList<>();
-
-            if (freeConfig.contains(levelPath)) {
-                if (freeConfig.contains(levelPath + ".material") || freeConfig.contains(levelPath + ".command")) {
-                    Reward reward = loadSingleReward(freeConfig, levelPath, i, true);
-                    if (reward != null) {
-                        freeLevel.add(reward);
-                    }
-                } else if (freeConfig.contains(levelPath + ".items")) {
-                    for (String key : freeConfig.getConfigurationSection(levelPath + ".items").getKeys(false)) {
-                        Reward reward = loadSingleReward(freeConfig, levelPath + ".items." + key, i, true);
-                        if (reward != null) {
-                            freeLevel.add(reward);
-                        }
-                    }
-                }
-            }
-
-            if (premiumConfig.contains(levelPath)) {
-                if (premiumConfig.contains(levelPath + ".material") || premiumConfig.contains(levelPath + ".command")) {
-                    Reward reward = loadSingleReward(premiumConfig, levelPath, i, false);
-                    if (reward != null) {
-                        premiumLevel.add(reward);
-                    }
-                } else if (premiumConfig.contains(levelPath + ".items")) {
-                    for (String key : premiumConfig.getConfigurationSection(levelPath + ".items").getKeys(false)) {
-                        Reward reward = loadSingleReward(premiumConfig, levelPath + ".items." + key, i, false);
-                        if (reward != null) {
-                            premiumLevel.add(reward);
-                        }
-                    }
-                }
-            }
-
-            if (!freeLevel.isEmpty()) freeRewardsByLevel.put(i, freeLevel);
-            if (!premiumLevel.isEmpty()) premiumRewardsByLevel.put(i, premiumLevel);
+        Set<Integer> levels = new TreeSet<>();
+        collectLevels(freeConfig, levels);
+        collectLevels(premiumConfig, levels);
+        for (int level : levels) {
+            List<Reward> free = loadLevel(freeConfig, level, true);
+            List<Reward> premium = loadLevel(premiumConfig, level, false);
+            if (!free.isEmpty()) freeRewardsByLevel.put(level, free);
+            if (!premium.isEmpty()) premiumRewardsByLevel.put(level, premium);
         }
     }
 
-    private void updateMaxLevel(FileConfiguration config) {
+    private void collectLevels(FileConfiguration config, Set<Integer> levels) {
         for (String key : config.getKeys(false)) {
             Matcher matcher = LEVEL_PATTERN.matcher(key);
-            if (matcher.matches()) {
-                try {
-                    int level = Integer.parseInt(matcher.group(1));
-                    if (level > maxLevel) {
-                        maxLevel = level;
-                    }
-                } catch (NumberFormatException ignored) {
+            if (!matcher.matches()) continue;
+            try {
+                int level = Integer.parseInt(matcher.group(1));
+                if (level > 0 && key.equals("level-" + level)) {
+                    levels.add(level);
+                    maxLevel = Math.max(maxLevel, level);
                 }
+            } catch (NumberFormatException ignored) { }
+        }
+    }
+
+    private List<Reward> loadLevel(FileConfiguration config, int level, boolean free) {
+        List<Reward> rewards = new ArrayList<>();
+        String path = "level-" + level;
+        if (config.contains(path + ".material") || config.contains(path + ".command")) {
+            Reward reward = loadSingleReward(config, path, level, free);
+            if (reward != null) rewards.add(reward);
+        } else if (config.contains(path + ".items")) {
+            ConfigurationSection items = config.getConfigurationSection(path + ".items");
+            if (items == null) {
+                plugin.getLogger().warning("Invalid reward items section at " + path + " (" + (free ? "free" : "premium") + "). Skipping.");
+                return rewards;
+            }
+            for (String key : items.getKeys(false)) {
+                Reward reward = loadSingleReward(config, path + ".items." + key, level, free);
+                if (reward != null) rewards.add(reward);
             }
         }
+        return rewards;
     }
 
     private Reward loadSingleReward(FileConfiguration config, String path, int level, boolean isFree) {
@@ -111,7 +96,7 @@ public class RewardManager {
             int amount = Math.max(1, config.getInt(path + ".amount", 1));
 
             try {
-                Material mat = Material.valueOf(material.toUpperCase());
+                Material mat = Material.valueOf(material.toUpperCase(Locale.ROOT));
                 String displayName = config.getString(path + ".display", amount + "x " + formatMaterial(mat));
                 return new Reward(level, mat, displayName, amount, isFree, path);
             } catch (IllegalArgumentException e) {
@@ -148,7 +133,7 @@ public class RewardManager {
     }
 
     private String formatMaterial(Material material) {
-        return material.name().toLowerCase().replace("_", " ");
+        return material.name().toLowerCase(Locale.ROOT).replace("_", " ");
     }
 
     public Map<Integer, List<Reward>> getFreeRewardsByLevel() {

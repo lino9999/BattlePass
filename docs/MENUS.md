@@ -1,0 +1,27 @@
+# Menu identity, routing and pagination
+
+Use this guide for clicks, drags, navigation, menu reloads or editable reward previews. Java paths are relative to `src/main/java/com/Lino/battlePass/`.
+
+| Change | Read first |
+| --- | --- |
+| Inventory identity/context | `gui/BaseHolder`, `BaseGui` |
+| Main menu actions and reward claims | `listeners/GuiClickListener` |
+| Reward category/level editing and closing sessions | `listeners/RewardsEditorListener`, `gui/RewardsCategoryGui`, `LevelRewardEditGui` |
+| Mission list/type/details editing | `listeners/MissionEditorListener`, `gui/MissionEditorGui`, `MissionTypeSelectionGui`, `MissionDetailsGui` |
+| Main menu rebuilding on reload | `BattlePass.reload`; `GuiManager` keeps navigation history |
+| Sparse reward definitions | `managers/RewardManager.collectLevels` / `loadLevel` |
+| Page bounds and final integer level | `utils/Pagination` |
+
+Every built-in menu has an immutable `BaseHolder.MenuContext`. Its `MenuType`, displayed page, premium flag, mission key/slot entries and active level-editor object determine actions. Titles, item labels and translation prefixes are presentation only. Do not restore `startsWith`/title substring routing or parse page numbers from titles. All ten GUI builders attach their context; inherited builders override `BaseGui.getMenuContext`, static builders pass context to the three-argument `BaseGui.createInventory` overload.
+
+Existing generic constructors/factories remain available and create UNKNOWN context. UNKNOWN and foreign holders do not activate built-in actions. Integrations that intentionally create a BattlePass action menu must supply its context. Inventory-holder ownership is still checked before altering input.
+
+Main menu handlers act only on top raw slots. Each listener cancels top drags only for its own menu types; bottom-only/foreign drags remain independent. Reward rows are checked before material-based buttons. The level editor preserves bottom-inventory item copying, checks that the displayed editor object is still active and does not clear cancellations from other handlers. Delayed close cleanup also compares the editor object, so an old close cannot remove a newer session. Editor actions recheck admin permission; pending chat input stays private and cancellation remains possible after permission loss.
+
+Reload rebuilds only owned main menus using their context, preserves navigation history, and avoids scanning every possible reward page. The delayed reopen checks that the player is online and has not opened another inventory in the meantime. Leaderboard callbacks refresh only the exact inventory they populated, irrespective of its title.
+
+Reward loading visits configured canonical positive `level-N` keys rather than every number through the maximum. Item order, command precedence, stored configuration paths and the minimum maximum-level value of 54 stay intact. Malformed `items` sections are skipped with a warning. Material/enchantment identifiers use `Locale.ROOT`, including item deserialization; custom display text remains unchanged.
+
+Use `Pagination` for page counts, clamping and cell-to-level conversion. `levelAt` returns zero for a nonrepresentable cell; do not render or activate it. Reward category editors retain their extra page for adding levels, cap at `Integer.MAX_VALUE`, and use the selected archived season's own levels. Mission-list context records raw configured keys so colored labels cannot change the selected pool. Non-section mission pools are omitted from the editor.
+
+Shop slots 4 (balance) and 49 (back) are reserved. The loader warns and skips entries configured there; other slots/materials retain their normal purchasing behavior. See CODE_AUDIT for test evidence and remaining editor/configuration investigations.

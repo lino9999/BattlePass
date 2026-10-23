@@ -31,7 +31,7 @@ Do not hold the player-cache monitor while waiting for database futures. A load 
 | Shop | `managers/ShopManager`, `gui/ShopGui`, `models/ShopItem` | `shop.yml` |
 | Mission editing | `managers/MissionEditorManager`, `listeners/MissionEditorListener`, `gui/Mission*Gui` | Edits `missions.yml` pools |
 | Reward editing | `managers/RewardEditorManager`, `listeners/RewardsEditorListener`, editor GUIs | Reward configuration |
-| Menu input isolation | `gui/BaseHolder`, `listeners/GuiClickListener`, editor listeners | Inventory ownership, not title alone |
+| Menu input isolation | `gui/BaseHolder.MenuContext`, `listeners/GuiClickListener`, editor listeners | Typed inventory ownership; [MENUS.md](MENUS.md) |
 | Commands and completion | `commands/BattlePassCommand`, `BattlePassTabCompleter` | `plugin.yml` permissions/aliases |
 | Settings/messages/colors | `managers/ConfigManager`, `MessageManager`, `utils/GradientColorParser` | `config.yml`, `messages.yml` |
 | Integrations/API | `placeholders/BattlePassExpansion`, `listeners/MythicMobsListener`, `events/BattlePassXPGainEvent` | `Placeholders.md`; optional plugins |
@@ -85,6 +85,7 @@ Crafting and villager trading use the facade's MONITOR/ignoreCancelled statistic
 - Loaded item rewards use `Reward.configurationPath` for exact item/metadata selection. Do not rediscover an entry by material: multiple rewards may share a material. Claims enforce cached claim/level/premium eligibility in `RewardManager`; shop delivery must clone configured item stacks.
 - XP event duration input must be fully consumed and checked for overflow. Invalid API starts preserve the current event; replacing an expired event still releases its pending task and bossbar.
 - GUI handlers check `BaseHolder.isBattlePassInventory` before cancelling or altering another inventory.
+- `BaseHolder.MenuContext` determines menu kind, page and editing session; titles/labels never dispatch actions. Main reload rebuilds only owned inventories and does not scan numeric reward ranges. See MENUS.md for factory compatibility and pagination rules.
 - Read-only menu actions use top-inventory raw slots; bottom inventory clicks must never trigger a button. Top-inventory drags are blocked while bottom-only and foreign drags remain independent.
 - Reward rows take precedence over material-based buttons; configurable reward icons may use action-button materials. Controls/back buttons require their fixed slots.
 - Version comes from `pom.xml` and is filtered into `plugin.yml`. Do not hardcode a second descriptor version.

@@ -237,45 +237,29 @@ public class BattlePass extends JavaPlugin {
         messageManager.reload();
         rewardManager.loadRewards();
         shopManager.reload();
-        guiManager.clearCache();
+        // Page history is navigation state; the owned menus below are rebuilt from fresh configuration.
         missionManager.recalculateResetTimeOnReload();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getOpenInventory() != null && player.getOpenInventory().getTitle() != null) {
-                String title = player.getOpenInventory().getTitle();
-                boolean isBattlePassGUI = false;
-                int currentPage = 1;
-
-                for (int i = 1; i <= rewardManager.getMaxPage(); i++) {
-                    if (title.equals(messageManager.getMessage("gui.battlepass", "%page%", String.valueOf(i)))) {
-                        isBattlePassGUI = true;
-                        currentPage = i;
-                        break;
-                    }
-                }
-
-                if (isBattlePassGUI) {
+            var view = player.getOpenInventory();
+            var context = com.Lino.battlePass.gui.BaseHolder.contextOf(view.getTopInventory());
+            if (context == null) continue;
+            switch (context.type()) {
+                case BATTLE_PASS, LEADERBOARD, MISSIONS, SHOP -> {
                     player.closeInventory();
-                    final int page = currentPage;
+                    var closedTo = player.getOpenInventory().getTopInventory();
                     Bukkit.getScheduler().runTaskLater(this, () -> {
-                        guiManager.openBattlePassGUI(player, page);
-                    }, 1L);
-                } else if (title.equals(messageManager.getMessage("gui.leaderboard"))) {
-                    player.closeInventory();
-                    Bukkit.getScheduler().runTaskLater(this, () -> {
-                        guiManager.openLeaderboardGUI(player);
-                    }, 1L);
-                } else if (title.equals(messageManager.getMessage("gui.missions"))) {
-                    player.closeInventory();
-                    Bukkit.getScheduler().runTaskLater(this, () -> {
-                        guiManager.openMissionsGUI(player);
-                    }, 1L);
-                } else if (title.equals(messageManager.getMessage("gui.shop"))) {
-                    player.closeInventory();
-                    Bukkit.getScheduler().runTaskLater(this, () -> {
-                        guiManager.openShopGUI(player);
+                        if (stopping || !player.isOnline() || player.getOpenInventory().getTopInventory() != closedTo) return;
+                        switch (context.type()) {
+                            case BATTLE_PASS -> guiManager.openBattlePassGUI(player, context.page());
+                            case LEADERBOARD -> guiManager.openLeaderboardGUI(player);
+                            case MISSIONS -> guiManager.openMissionsGUI(player);
+                            case SHOP -> guiManager.openShopGUI(player);
+                            default -> { }
+                        }
                     }, 1L);
                 }
+                default -> { }
             }
         }
     }
