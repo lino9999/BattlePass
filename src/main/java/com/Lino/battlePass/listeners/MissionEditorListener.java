@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -49,20 +50,37 @@ public class MissionEditorListener implements Listener {
         if (title.startsWith("Mission Editor")) {
             if (!title.contains("Page ")) return;
             event.setCancelled(true);
-            handleEditorClick(player, event, title);
+            if (isTopSlot(event)) handleEditorClick(player, event, title);
         } else if (title.startsWith("Select Mission Type")) {
             if (event.getView().getTopInventory().getSize() != 54) return;
             ItemStack back = event.getView().getTopInventory().getItem(53);
             if (back == null || back.getType() != Material.BARRIER) return;
 
             event.setCancelled(true);
-            handleTypeSelectionClick(player, event);
+            if (isTopSlot(event)) handleTypeSelectionClick(player, event);
         } else if (title.startsWith("Editing: ")) {
             String missionKey = title.replace("Editing: ", "").trim();
             if (!plugin.getConfigManager().getMissionsConfig().contains("mission-pools." + missionKey)) return;
 
             event.setCancelled(true);
-            handleDetailsClick(player, event, missionKey);
+            if (isTopSlot(event)) handleDetailsClick(player, event, missionKey);
+        }
+    }
+
+    private boolean isTopSlot(InventoryClickEvent event) {
+        return event.getRawSlot() >= 0 && event.getRawSlot() < event.getView().getTopInventory().getSize();
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!BaseHolder.isBattlePassInventory(event.getView().getTopInventory())) return;
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        String title = ChatColor.stripColor(event.getView().getTitle());
+        if (title == null || !(title.startsWith("Mission Editor") || title.startsWith("Select Mission Type")
+                || title.startsWith("Editing: "))) return;
+        int size = event.getView().getTopInventory().getSize();
+        if (event.getRawSlots().stream().anyMatch(slot -> slot >= 0 && slot < size)) {
+            event.setCancelled(true);
         }
     }
 

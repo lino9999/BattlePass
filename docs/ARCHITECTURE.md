@@ -8,6 +8,8 @@ All Java paths below are relative to `src/main/java/com/Lino/battlePass/`.
 
 `models/PlayerData` is the cached mutable player state. `managers/PlayerDataManager` loads it, tracks dirty players via `markForSave(UUID)`, and saves snapshots. Changes to cached XP, coins, rewards or mission progress must be marked dirty. `managers/DatabaseManager` is the public facade for SQLite/MySQL persistence, delegating to the components below; `DatabaseSchema` handles additive migrations. Do not remove existing player data to fix a schema mismatch.
 
+Dirty revisions are acknowledged individually: a completed write cannot clear a newer revision. Only one player write may be in flight per UUID; synchronous flush waits for it and writes any newer state. Player loads are coalesced, and a cache generation prevents loads started before a cache clear from repopulating it afterwards.
+
 `BattlePass.onDisable` stops XP events/sounds/coin work, saves players synchronously, shuts down missions and closes the database. Bukkit world, player and inventory operations belong on the server thread; database callbacks often schedule work back onto it.
 
 ## Feature map
@@ -56,4 +58,5 @@ Keep event annotations and registration on `MissionProgressListener` so prioriti
 - XP grants fire `BattlePassXPGainEvent`; cancellation and modified nonnegative amounts are respected.
 - Custom item identity comes from persistent tags, not material/name alone. Redeeming a stack must consume the same quantity used for the reward and the correct hand.
 - GUI handlers check `BaseHolder.isBattlePassInventory` before cancelling or altering another inventory.
+- Read-only menu actions use top-inventory raw slots; bottom inventory clicks must never trigger a button. Top-inventory drags are blocked while bottom-only and foreign drags remain independent.
 - Version comes from `pom.xml` and is filtered into `plugin.yml`. Do not hardcode a second descriptor version.

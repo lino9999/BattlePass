@@ -10,6 +10,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | Commands and permissions | [ARCHITECTURE.md](ARCHITECTURE.md) | `BattlePassCommand` router; `PlayerAdminCommands`, `RewardAdminCommands`, `SeasonAdminCommands`, `XPEventCommands` |
 | Menus, rewards, custom items, coins | [ARCHITECTURE.md](ARCHITECTURE.md) | Use the feature table |
 | Build, regression tests, push | [DEVELOPMENT.md](DEVELOPMENT.md) | `pom.xml`, `AGENTS.md` |
+| Active bug/optimization audit | [CODE_AUDIT.md](CODE_AUDIT.md) | Verified fixes, pending investigations and test evidence |
 | Previously investigated reports | [ISSUE_REVIEW.md](ISSUE_REVIEW.md) | Historical findings dated 2026-09-29; not live issue status |
 
 Useful focused searches:

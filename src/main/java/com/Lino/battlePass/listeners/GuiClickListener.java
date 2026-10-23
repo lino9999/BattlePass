@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -44,6 +45,8 @@ public class GuiClickListener implements Listener {
 
         event.setCancelled(true);
 
+        if (event.getRawSlot() < 0 || event.getRawSlot() >= event.getView().getTopInventory().getSize()) return;
+
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || !clicked.hasItemMeta()) return;
 
@@ -58,6 +61,22 @@ public class GuiClickListener implements Listener {
             handleMissionsClick(player, clicked, event.getSlot());
         } else if (title.equals(plugin.getMessageManager().getMessage("gui.shop"))) {
             handleShopClick(player, clicked, event.getSlot());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!BaseHolder.isBattlePassInventory(event.getView().getTopInventory())) return;
+        if (!(event.getWhoClicked() instanceof Player)) return;
+
+        String title = event.getView().getTitle();
+        boolean mainMenu = title.startsWith(plugin.getMessageManager().getMessage("gui.battlepass").split("%")[0])
+                || title.equals(plugin.getMessageManager().getMessage("gui.leaderboard"))
+                || title.equals(plugin.getMessageManager().getMessage("gui.missions"))
+                || title.equals(plugin.getMessageManager().getMessage("gui.shop"));
+        int size = event.getView().getTopInventory().getSize();
+        if (mainMenu && event.getRawSlots().stream().anyMatch(slot -> slot >= 0 && slot < size)) {
+            event.setCancelled(true);
         }
     }
 

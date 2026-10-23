@@ -73,10 +73,11 @@ public class RewardsEditorListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player)) return;
 
         String title = ChatColor.stripColor(event.getView().getTitle());
-        if (title != null && title.startsWith(EDIT_LEVEL_START) && title.endsWith(EDIT_LEVEL_END)) {
+        if (title != null && ((title.startsWith(EDIT_LEVEL_START) && title.endsWith(EDIT_LEVEL_END))
+                || title.contains("Rewards Editor") || title.contains("Free Rewards") || title.contains("Premium Rewards"))) {
             boolean topInventory = false;
             for (int slot : event.getRawSlots()) {
-                if (slot < event.getInventory().getSize()) {
+                if (slot >= 0 && slot < event.getView().getTopInventory().getSize()) {
                     topInventory = true;
                     break;
                 }
