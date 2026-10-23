@@ -71,9 +71,9 @@ public class MissionProgressListener implements Listener {
         interactions.onEntityTame(event);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    /** Compatibility entry point; completed trades are counted by statistic increments. */
+    @Deprecated
     public void onVillagerTrade(InventoryClickEvent event) {
-        interactions.onVillagerTrade(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -86,9 +86,14 @@ public class MissionProgressListener implements Listener {
         interactions.onPlayerFish(event);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    /** Compatibility entry point; completed crafts are counted by statistic increments. */
+    @Deprecated
     public void onCraftItem(CraftItemEvent event) {
-        interactions.onCraftItem(event);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onStatisticIncrement(PlayerStatisticIncrementEvent event) {
+        interactions.onStatisticIncrement(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

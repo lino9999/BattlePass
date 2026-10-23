@@ -2,15 +2,15 @@ package com.Lino.battlePass.listeners;
 
 import com.Lino.battlePass.BattlePass;
 import org.bukkit.Material;
+import org.bukkit.Statistic;
 import org.bukkit.entity.*;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.entity.*;
-import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.FurnaceExtractEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.CraftingInventory;
+import org.bukkit.inventory.MerchantInventory;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Function;
@@ -40,16 +40,26 @@ final class InteractionMissionTracker {
         }
     }
 
-    void onVillagerTrade(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-        if (event.getSlotType() != InventoryType.SlotType.RESULT) return;
-        if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
+    void onStatisticIncrement(PlayerStatisticIncrementEvent event) {
+        Statistic statistic = event.getStatistic();
+        if (statistic != Statistic.CRAFT_ITEM && statistic != Statistic.TRADED_WITH_VILLAGER) return;
+        long increase = (long) event.getNewValue() - event.getPreviousValue();
+        if (increase <= 0) return;
+        int amount = (int) Math.min(Integer.MAX_VALUE, increase);
+        Player player = event.getPlayer();
 
-        if (event.getInventory().getHolder() instanceof Villager villager) {
+        if (statistic == Statistic.CRAFT_ITEM) {
+            // Other result inventories may also update item statistics; require a crafting grid.
+            if (!(player.getOpenInventory().getTopInventory() instanceof CraftingInventory)) return;
+            Material material = event.getMaterial();
+            if (material != null && material != Material.AIR) {
+                plugin.getMissionManager().progressMission(player, "CRAFT_ITEM", material.name(), amount);
+            }
+        } else if (player.getOpenInventory().getTopInventory() instanceof MerchantInventory inventory
+                && inventory.getMerchant() instanceof Villager villager) {
             String profession = professionName.apply(villager);
-            if (profession.equals("NONE")) profession = "VILLAGER";
-
-            plugin.getMissionManager().progressMission(player, "TRADE_VILLAGER", profession, 1);
+            if ("NONE".equals(profession)) profession = "VILLAGER";
+            plugin.getMissionManager().progressMission(player, "TRADE_VILLAGER", profession, amount);
         }
     }
 
@@ -71,35 +81,6 @@ final class InteractionMissionTracker {
                 plugin.getMissionManager().progressMission(player, "FISH_ITEM", itemType, 1);
             }
         }
-    }
-
-    void onCraftItem(CraftItemEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        ItemStack result = event.getRecipe().getResult();
-
-        if (result == null || result.getType() == Material.AIR) return;
-
-        String itemType = result.getType().name();
-        int crafted = result.getAmount();
-
-        if (event.isShiftClick()) {
-            ItemStack[] matrix = event.getInventory().getMatrix();
-            int minIngredientCount = Integer.MAX_VALUE;
-
-            for (ItemStack ingredient : matrix) {
-                if (ingredient != null && ingredient.getType() != Material.AIR) {
-                    int maxCraftable = ingredient.getAmount();
-                    minIngredientCount = Math.min(minIngredientCount, maxCraftable);
-                }
-            }
-
-            if (minIngredientCount != Integer.MAX_VALUE && minIngredientCount > 0) {
-                crafted = result.getAmount() * minIngredientCount;
-            }
-        }
-
-        plugin.getMissionManager().progressMission(player, "CRAFT_ITEM", itemType, crafted);
     }
 
     void onPlayerConsume(PlayerItemConsumeEvent event) {

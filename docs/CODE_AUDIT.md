@@ -47,6 +47,14 @@ Validation: 12 temporary tests cover six reward-icon material collisions, a purc
 
 Validation: nine boundary acceptance tests failed before correction. Fourteen temporary tests now cover the command/mission/daily/elixir XP paths, lifetime levels, normal gains, XP cancellation, full/partial token redemption, negative distribution configuration and translation fallback. One test compares 512 deterministic XP cases to an independent long-arithmetic oracle, including callback order. All 55 tests passed together. Temporary tests are removed before delivery. The database/API storage types remain int; amounts beyond representable stored capacity are capped instead of wrapping.
 
+## Verified fixes: completed crafting and villager trades
+
+- Crafting/trade clicks no longer award potential output before a transaction. `PlayerStatisticIncrementEvent` supplies the confirmed positive delta: crafted item count or completed trade count. This avoids full-inventory/no-op click credit and shift-click over/undercounting.
+- Crafting requires an open CraftingInventory, excluding item-statistic updates from other result inventories. Trades read MerchantInventory.getMerchant rather than assuming the inventory holder is the villager, and preserve profession targets / the NONE-to-VILLAGER fallback. Custom merchants are excluded.
+- One MONITOR/ignoreCancelled statistic handler is registered. The old public click entry points remain deprecated compatibility methods without event registration or counting, preventing duplicate awards.
+
+Evidence: [Bukkit statistic event API](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/event/player/PlayerStatisticIncrementEvent.html), [Paper/CraftBukkit 1.21.4 statistic dispatch](https://raw.githubusercontent.com/PaperMC/Paper/ver/1.21.4/paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java) and [completed trade statistic placement](https://raw.githubusercontent.com/PaperMC/Paper/ver/1.21.4/paper-server/patches/sources/net/minecraft/world/inventory/MerchantResultSlot.java.patch). Eight temporary tests cover no-op clicks, actual shift output, cancellation/zero/unrelated statistics, profession targets, multiple trades and other inventory/merchant contexts. All 49 tests passed together. No live Minecraft server was used; a server/plugin that suppresses these statistics can also suppress this progress path.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
@@ -54,7 +62,6 @@ The audit is still active. Inspect and reproduce these candidates before changin
 - Extreme reward configuration and progression scalability (very sparse/high levels); verify no loops scale with untrusted numeric ranges unnecessarily.
 - GUI title collisions (including titles starting with a placeholder), reserved shop slots, item preview paths, pagination and malformed reward configuration.
 - Repository exception propagation and reset/save barriers: avoid reporting failed writes/resets as successful, including MySQL concurrency and daily resets on the same calendar date.
-- Crafting/trading progress: actual items taken versus potential output, shift clicks and full inventories.
 - Playtime/world/teleport state, season reset/save ordering, async coin distribution, startup/shutdown/reload, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 
 Review every production source file and relevant resource; track further findings and verification here. A live Minecraft or MySQL server has not been exercised so far.
