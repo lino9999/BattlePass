@@ -105,7 +105,16 @@ public class SeasonRotationManager {
 
     public synchronized void rotateToNextSeason() {
         if (!rotationEnabled) return;
-        int next = nextSeason();
+        selectSeason(nextSeason());
+    }
+
+    /** Idempotent recovery of a committed SQL transition, including after rotation was disabled. */
+    synchronized void completeSeasonTransition(int season) {
+        selectSeason(season);
+    }
+
+    private void selectSeason(int next) {
+        if (!isValidSeason(next)) throw new IllegalStateException("Pending season " + next + " is outside the configured range; restore its configuration before recovery");
         try {
             files.recover();
             Map<String, byte[]> replacements = rewardFiles(next);
@@ -123,6 +132,8 @@ public class SeasonRotationManager {
     }
 
     private int nextSeason() { return currentSeason >= totalSeasons ? 1 : currentSeason + 1; }
+
+    int getNextSeason() { return nextSeason(); }
 
     private Map<String, byte[]> rewardFiles(int season) throws IOException, InvalidConfigurationException {
         Map<String, byte[]> rewards = new LinkedHashMap<>();

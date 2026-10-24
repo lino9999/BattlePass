@@ -131,6 +131,15 @@ final class SeasonDataRepository {
                 try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + connections.getPrefix() + "season_data WHERE id = 1")) {
                     try (ResultSet rs = ps.executeQuery()) {
                         if (rs.next()) {
+                            String transitionId = rs.getString("season_transition_id");
+                            if (transitionId != null) {
+                                int target;
+                                try { target = Integer.parseInt(rs.getString("pending_rotation_season")); }
+                                catch (NumberFormatException invalid) { throw new SQLException("Invalid pending season rotation target", invalid); }
+                                if (transitionId.isBlank() || target < 0) throw new SQLException("Invalid pending season transition");
+                                data.put("seasonTransitionId", transitionId);
+                                data.put("pendingRotationSeason", target);
+                            }
                             String startDateStr = rs.getString("start_date");
                             if (startDateStr != null && !startDateStr.isEmpty()) {
                                 try {

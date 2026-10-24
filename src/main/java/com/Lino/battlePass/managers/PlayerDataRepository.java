@@ -243,6 +243,7 @@ final class PlayerDataRepository {
     }
 
     public CompletableFuture<Void> resetSeason() {
+        boolean resetCoins = plugin.getConfigManager().isResetCoinsOnSeasonEnd();
         return CompletableFuture.runAsync(() -> {
             Connection conn = null;
             boolean shouldClose = connections.isMySQL();
@@ -250,17 +251,8 @@ final class PlayerDataRepository {
             try {
                 conn = connections.getConnection();
                 try (DatabaseTransaction transaction = new DatabaseTransaction(conn)) {
-                    try (Statement stmt = conn.createStatement()) {
-                        boolean resetCoins = plugin.getConfigManager().isResetCoinsOnSeasonEnd();
-
-                        if (resetCoins) {
-                            stmt.executeUpdate("UPDATE " + connections.getPrefix() + "players SET xp = 0, level = 1, claimed_free = '', claimed_premium = '', has_premium = 0, last_daily_reward = 0, battle_coins = 0");
-                        } else {
-                            stmt.executeUpdate("UPDATE " + connections.getPrefix() + "players SET xp = 0, level = 1, claimed_free = '', claimed_premium = '', has_premium = 0, last_daily_reward = 0");
-                        }
-                        stmt.executeUpdate("DELETE FROM " + connections.getPrefix() + "missions");
-                        stmt.executeUpdate("DELETE FROM " + connections.getPrefix() + "daily_missions");
-                    }
+                    SeasonTransitionRepository.requireNoPendingTransition(conn, connections);
+                    resetOnConnection(conn, resetCoins);
                     transaction.commit();
                 }
             } catch (SQLException e) {
@@ -271,5 +263,14 @@ final class PlayerDataRepository {
                 }
             }
         }, connections.getExecutor());
+    }
+
+    void resetOnConnection(Connection connection, boolean resetCoins) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("UPDATE " + connections.getPrefix() + "players SET xp = 0, level = 1, claimed_free = '', claimed_premium = '', has_premium = 0, last_daily_reward = 0"
+                    + (resetCoins ? ", battle_coins = 0" : ""));
+            statement.executeUpdate("DELETE FROM " + connections.getPrefix() + "missions");
+            statement.executeUpdate("DELETE FROM " + connections.getPrefix() + "daily_missions");
+        }
     }
 }

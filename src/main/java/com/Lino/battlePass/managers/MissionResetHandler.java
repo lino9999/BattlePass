@@ -2,6 +2,8 @@ package com.Lino.battlePass.managers;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.PlayerData;
+import com.Lino.battlePass.models.Mission;
+import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -58,6 +60,19 @@ public class MissionResetHandler {
         // Prepare the schedule before MissionManager queues its save behind the reset transaction.
         calculateSeasonEndDate();
         calculateNextReset();
+        return plugin.getDatabaseManager().resetSeason();
+    }
+
+    SeasonResetPlan prepareSeasonReset(String id, int rotationTarget, List<Mission> missions) {
+        calculateSeasonEndDate();
+        calculateNextReset();
+        return new SeasonResetPlan(id, rotationTarget, plugin.getConfigManager().isResetCoinsOnSeasonEnd(),
+                seasonStartDate, seasonEndDate, missionCycleStart, nextMissionReset,
+                missionCycleStart.toLocalDate().toString(), missions);
+    }
+
+    CompletableFuture<Void> beginSeasonReset(SeasonResetPlan plan) {
+        plugin.getDatabaseManager().prepareSeasonReset(plan);
         return plugin.getDatabaseManager().resetSeason();
     }
 

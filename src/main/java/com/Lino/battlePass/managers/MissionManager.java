@@ -51,6 +51,10 @@ public class MissionManager {
     public void initialize() {
         if (shuttingDown || plugin.isStopping()) return;
         databaseManager.loadSeasonData().thenAccept(data -> runInitializationStep(() -> {
+            if (data.containsKey("seasonTransitionId") && (!data.containsKey("startDate") || !data.containsKey("endDate")
+                    || !data.containsKey("missionResetTime") || !data.containsKey("currentMissionDate"))) {
+                throw new IllegalStateException("The pending season transition has an incomplete calendar; restore it before recovery");
+            }
             if (data.containsKey("endDate")) {
                 resetHandler.restoreSeasonDates((LocalDateTime) data.get("startDate"), (LocalDateTime) data.get("endDate"));
                 if (data.containsKey("missionResetTime")) {
@@ -60,6 +64,12 @@ public class MissionManager {
                 }
                 if (data.containsKey("currentMissionDate")) {
                     currentMissionDate = (String) data.get("currentMissionDate");
+                }
+
+                if (data.containsKey("seasonTransitionId")) {
+                    seasonResetInProgress = true;
+                    finishSeasonTransition((String) data.get("seasonTransitionId"), (Integer) data.get("pendingRotationSeason"));
+                    seasonResetInProgress = false;
                 }
 
                 if (resetHandler.shouldResetSeason()) {
@@ -127,15 +137,6 @@ public class MissionManager {
         saveSeasonData();
     }
 
-    private void generateDailyMissions() {
-        if (currentMissionDate == null) {
-            currentMissionDate = LocalDateTime.now().toLocalDate().toString();
-        }
-
-        dailyMissions = new ArrayList<>(missionGenerator.generateDailyMissions());
-        missionsLoadAttempted = true;
-    }
-
     public void checkMissionReset() {
         if (isProgressPaused() || resetHandler.shouldResetSeason()) return;
         if (resetHandler.shouldResetMissions()) resetDailyMissions(false, true);
@@ -153,11 +154,14 @@ public class MissionManager {
 
     private void resetSeason(boolean forced) {
         if (isProgressPaused() || persistenceFailed) return;
+        SeasonResetPlan plan;
         try {
             SeasonRotationManager rotation = plugin.getSeasonRotationManager();
             if (rotation != null && rotation.isRotationEnabled()) rotation.validateNextSeason();
             // Flush before rotating configuration or publishing a new season deadline.
             playerDataManager.clearCache(true);
+            int target = rotation != null && rotation.isRotationEnabled() ? rotation.getNextSeason() : 0;
+            plan = resetHandler.prepareSeasonReset(UUID.randomUUID().toString(), target, missionGenerator.generateDailyMissions());
         } catch (IllegalStateException failure) {
             plugin.getLogger().severe("Season reset postponed to preserve player data: " + failure.getMessage());
             return;
@@ -167,12 +171,12 @@ public class MissionManager {
         pendingSeasonCommit = () -> {
             if (!committed.compareAndSet(false, true)) return;
             try {
-                SeasonRotationManager rotation = plugin.getSeasonRotationManager();
-                if (rotation != null && rotation.isRotationEnabled()) {
-                    rotation.rotateToNextSeason();
-                    plugin.getConfigManager().reload();
-                    plugin.getRewardManager().loadRewards();
-                }
+                finishSeasonTransition(plan.id(), plan.rotationTarget());
+                dailyMissions = new ArrayList<>(plan.missions());
+                currentMissionDate = plan.missionDate();
+                resetHandler.restoreMissionSchedule(plan.cycleStart(), plan.nextReset());
+                missionsLoadAttempted = true;
+                progressTracker.resetProgress();
                 seasonResetInProgress = false;
                 applyPendingCalendarReload();
                 saveDailyMissions();
@@ -188,12 +192,10 @@ public class MissionManager {
         };
         Runnable commit = pendingSeasonCommit;
         try {
-            CompletableFuture<Void> reset = resetHandler.beginSeasonReset();
+            CompletableFuture<Void> reset = resetHandler.beginSeasonReset(plan);
             pendingSeasonReset = reset;
-            currentMissionDate = LocalDateTime.now().toLocalDate().toString();
-            generateDailyMissions();
-            saveSeasonData();
-            progressTracker.resetProgress();
+            // Retain the ordered calendar-save entry point; the initial calendar is already in the reset transaction.
+            observeWrite(databaseManager.saveSeasonData(plan.start(), plan.end(), plan.nextReset(), plan.missionDate()), "save season dates");
             reset.thenRun(() -> {
                 if (!shuttingDown) Bukkit.getScheduler().runTask(plugin, commit);
             }).exceptionally(ex -> {
@@ -203,6 +205,18 @@ public class MissionManager {
         } catch (Exception failure) {
             persistenceFailure("start the season reset", failure);
         }
+    }
+
+    private void finishSeasonTransition(String id, int target) {
+        if (target < 0) throw new IllegalStateException("Invalid pending rotation target");
+        if (target > 0) {
+            SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+            if (rotation == null) throw new IllegalStateException("Season rotation is unavailable during recovery");
+            rotation.completeSeasonTransition(target);
+            configManager.reload();
+            plugin.getRewardManager().loadRewards();
+        }
+        databaseManager.acknowledgeSeasonTransition(id);
     }
 
     private volatile long lastForceSeasonReset = 0;

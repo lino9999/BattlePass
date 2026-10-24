@@ -22,6 +22,8 @@ public class DatabaseManager {
     private final DailyMissionRepository missions;
     private final MissionCycleRepository missionCycles;
     private final CoinDistributionRepository coinDistributions;
+    private final SeasonTransitionRepository seasonTransitions;
+    private final ThreadLocal<SeasonResetPlan> preparedSeasonReset = new ThreadLocal<>();
 
     public DatabaseManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -32,6 +34,7 @@ public class DatabaseManager {
         missions = new DailyMissionRepository(connections, this::getCurrentMissionDate);
         missionCycles = new MissionCycleRepository(connections, missions, seasonData);
         coinDistributions = new CoinDistributionRepository(connections, seasonData);
+        seasonTransitions = new SeasonTransitionRepository(connections, players, missions, seasonData);
     }
 
     public CompletableFuture<Void> initialize() {
@@ -106,8 +109,24 @@ public class DatabaseManager {
         return operations.read(players::getTop10Players);
     }
 
-    public CompletableFuture<Void> resetSeason() {
-        return operations.write(players::resetSeason);
+    /** Internal coordinator stages a snapshot immediately before consuming it through the stable reset entry point. */
+    synchronized void prepareSeasonReset(SeasonResetPlan plan) {
+        if (preparedSeasonReset.get() != null) throw new IllegalStateException("A season reset is already prepared");
+        preparedSeasonReset.set(Objects.requireNonNull(plan));
+    }
+
+    public synchronized CompletableFuture<Void> resetSeason() {
+        SeasonResetPlan plan = preparedSeasonReset.get();
+        preparedSeasonReset.remove();
+        return plan == null ? operations.write(players::resetSeason) : operations.write(() -> seasonTransitions.reset(plan));
+    }
+
+    /** Short final commit after files apply; never wait here while holding the player-cache monitor. */
+    void acknowledgeSeasonTransition(String id) {
+        if (id == null || id.isBlank()) throw new IllegalArgumentException("A season transition ID is required");
+        if (!operations.write(() -> seasonTransitions.acknowledge(id)).join()) {
+            throw new IllegalStateException("The season transition changed before acknowledgement");
+        }
     }
 
     public CompletableFuture<Void> saveDailyMissions(List<Mission> missions, String missionDate) {
