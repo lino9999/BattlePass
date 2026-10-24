@@ -6,6 +6,11 @@ public final class VersionUtils {
     private VersionUtils() {
     }
 
+    /** Whether this version can be compared using the dotted numeric release format. */
+    public static boolean isValidVersion(String version) {
+        return parse(version) != null;
+    }
+
     /** Compare the dotted numeric release versions used by BattlePass and Spigot. */
     public static boolean isNewer(String candidate, String installed) {
         String[] candidateParts = parse(candidate);

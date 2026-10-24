@@ -3,7 +3,6 @@ package com.Lino.battlePass;
 import com.Lino.battlePass.commands.BattlePassTabCompleter;
 import com.Lino.battlePass.listeners.MissionProgressListener;
 import com.Lino.battlePass.placeholders.BattlePassExpansion;
-import com.Lino.battlePass.utils.VersionUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -14,12 +13,7 @@ import com.Lino.battlePass.tasks.BattlePassTask;
 import com.Lino.battlePass.tasks.CoinsDistributionTask;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
 import java.time.LocalDateTime;
 
 public class BattlePass extends JavaPlugin {
@@ -44,14 +38,15 @@ public class BattlePass extends JavaPlugin {
 
     private volatile boolean stopping;
     private volatile long lifecycleGeneration;
-    private boolean updateAvailable = false;
-    private String latestVersion = "";
-    private static final String SPIGOT_RESOURCE_ID = "125992";
+    private volatile boolean updateAvailable = false;
+    private volatile String latestVersion = "";
 
     @Override
     public void onEnable() {
         stopping = false;
         long generation = ++lifecycleGeneration;
+        updateAvailable = false;
+        latestVersion = "";
         saveDefaultConfig();
         saveResourceIfNotExists("missions.yml");
         saveResourceIfNotExists("messages.yml");
@@ -211,56 +206,49 @@ public class BattlePass extends JavaPlugin {
     }
 
     private void checkForUpdates() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                try {
-                    URI uri = new URI("https://api.spigotmc.org/legacy/update.php?resource=125992");
-                    URL url = uri.toURL();
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("GET");
-                    connection.setConnectTimeout(5000);
-                    connection.setReadTimeout(5000);
-                    connection.setRequestProperty("User-Agent", "BattlePass-UpdateChecker");
-
-                    if (connection.getResponseCode() == 200) {
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                        String version = reader.readLine();
-                        reader.close();
-
-                        if (version != null && !version.trim().isEmpty()) {
-                            String currentVersion = getDescription().getVersion();
-
-                            if (VersionUtils.isNewer(version, currentVersion)) {
-                                updateAvailable = true;
-                                latestVersion = version;
-
-                                Bukkit.getScheduler().runTask(BattlePass.this, () -> {
-                                    getLogger().warning("=====================================");
-                                    getLogger().warning("  A new version is available!");
-                                    getLogger().warning("  Current version: " + currentVersion);
-                                    getLogger().warning("  Latest version: " + version);
-                                    getLogger().warning("  Download at: https://www.spigotmc.org/resources/" + SPIGOT_RESOURCE_ID);
-                                    getLogger().warning("=====================================");
-                                });
+        long generation = lifecycleGeneration;
+        if (!isLifecycleActive(generation)) return;
+        String installed = getDescription().getVersion();
+        try {
+            new BukkitRunnable() {
+                @Override public void run() {
+                    if (!isLifecycleActive(generation)) return;
+                    try {
+                        UpdateChecker.Result result = UpdateChecker.check(installed);
+                        if (result == null) return;
+                        publishUpdateResult(generation, () -> {
+                            latestVersion = result.newer() ? result.version() : "";
+                            updateAvailable = result.newer();
+                            if (result.newer()) {
+                                getLogger().warning("=====================================");
+                                getLogger().warning("  A new version is available!");
+                                getLogger().warning("  Current version: " + installed);
+                                getLogger().warning("  Latest version: " + result.version());
+                                getLogger().warning("  Download at: https://www.spigotmc.org/resources/" + UpdateChecker.RESOURCE_ID);
+                                getLogger().warning("=====================================");
                             } else {
-                                Bukkit.getScheduler().runTask(BattlePass.this, () -> {
-                                    getLogger().info("You are running the latest version!");
-                                });
+                                getLogger().info("You are running the latest version!");
                             }
-                        }
-                    } else {
-                        getLogger().info("Could not check for updates: Response code " + connection.getResponseCode());
+                        });
+                    } catch (Exception failure) {
+                        publishUpdateResult(generation, () -> getLogger().info("Could not check for updates: " + failure.getMessage()));
                     }
-
-                    connection.disconnect();
-                } catch (Exception e) {
-                    Bukkit.getScheduler().runTask(BattlePass.this, () -> {
-                        getLogger().info("Could not check for updates: " + e.getMessage());
-                    });
                 }
-            }
-        }.runTaskAsynchronously(this);
+            }.runTaskAsynchronously(this);
+        } catch (RuntimeException rejected) {
+            if (isLifecycleActive(generation)) getLogger().info("Could not start update check: " + rejected.getMessage());
+        }
+    }
+
+    private void publishUpdateResult(long generation, Runnable publication) {
+        if (!isLifecycleActive(generation)) return;
+        try {
+            getServer().getScheduler().runTask(this, () -> {
+                if (isLifecycleActive(generation)) publication.run();
+            });
+        } catch (RuntimeException rejected) {
+            if (isLifecycleActive(generation)) getLogger().info("Could not report update check: " + rejected.getMessage());
+        }
     }
 
     public void reload() {
