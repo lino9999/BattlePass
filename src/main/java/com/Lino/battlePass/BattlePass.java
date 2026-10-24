@@ -156,6 +156,7 @@ public class BattlePass extends JavaPlugin {
         if (seasonRotationManager != null) seasonRotationManager.shutdown();
         if (eventManager != null) {
             eventManager.stopCustomItemEffects();
+            eventManager.stopJoinFeedback();
             eventManager.flushPlayTime();
         }
         if (xpEventManager != null) {
@@ -165,7 +166,7 @@ public class BattlePass extends JavaPlugin {
             placeholderExpansion.unregister();
         }
         if (soundManager != null) {
-            soundManager.stopAllSounds();
+            soundManager.shutdown();
         }
         if (coinsDistributionTask != null) {
             coinsDistributionTask.cancel();

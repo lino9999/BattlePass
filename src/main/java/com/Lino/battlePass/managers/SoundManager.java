@@ -17,6 +17,7 @@ public class SoundManager {
     private final BattlePass plugin;
     private final CustomItemManager customItemManager;
     private final Map<UUID, ItemSound> activeSoundTasks = new ConcurrentHashMap<>();
+    private volatile boolean shuttingDown;
 
     public SoundManager(BattlePass plugin, CustomItemManager customItemManager) {
         this.plugin = plugin;
@@ -42,7 +43,7 @@ public class SoundManager {
     }
 
     private boolean canPlay(Player player) {
-        return !plugin.isStopping() && plugin.isEnabled() && player.isOnline()
+        return !shuttingDown && !plugin.isStopping() && plugin.isEnabled() && player.isOnline()
                 && plugin.getConfigManager().isCustomItemSoundsEnabled();
     }
 
@@ -82,6 +83,8 @@ public class SoundManager {
         activeSoundTasks.clear();
         previous.forEach(ItemSound::stop);
     }
+
+    public void shutdown() { shuttingDown = true; stopAllSounds(); }
 
     private final class ItemSound implements Runnable {
         private final Player player;

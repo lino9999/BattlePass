@@ -61,6 +61,7 @@ public class EventManager {
     }
 
     public void stopCustomItemEffects() { customItemsListener.shutdown(); }
+    public void stopJoinFeedback() { playerConnectionListener.stopJoinFeedback(); }
 
     public Object beginPlayTimeCycle() {
         flushPlayTime();

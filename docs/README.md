@@ -19,6 +19,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | Periodic coin deliveries / saved deadline | [COINS.md](COINS.md) | `CoinsDistributionTask`, `CoinDistributionRepository`, `PlayerDataManager` preflight and `BattlePass` timer lifecycle |
 | Custom item feedback, held-item sounds and quit cleanup | [ITEM_SOUNDS.md](ITEM_SOUNDS.md) | `CustomItemsListener`, `CustomItemEffects`, `SoundManager` |
 | Update checks, HTTP cleanup and stale startup callbacks | [ARCHITECTURE.md](ARCHITECTURE.md) | `BattlePass.checkForUpdates`, `UpdateChecker`, `VersionUtils` |
+| Login notifications, disconnect and final play-time flush | [ARCHITECTURE.md](ARCHITECTURE.md) | `PlayerConnectionListener.JoinNotification`, `EventManager.stopJoinFeedback`, `PlayTimeTracker` |
 | Other menus, custom items, coins | [ARCHITECTURE.md](ARCHITECTURE.md) | Use the feature table |
 | Build, regression tests, push | [DEVELOPMENT.md](DEVELOPMENT.md) | `pom.xml`, `AGENTS.md` |
 | Active bug/optimization audit | [CODE_AUDIT.md](CODE_AUDIT.md) | Verified fixes, pending investigations and test evidence |
