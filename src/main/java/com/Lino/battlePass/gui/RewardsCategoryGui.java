@@ -48,7 +48,12 @@ public class RewardsCategoryGui {
         Map<Integer, List<Reward>> rewardsByLevel;
 
         if (editingSeason > 0) {
-            rewardsByLevel = loadSeasonRewards(editingSeason, isPremium);
+            try { rewardsByLevel = loadSeasonRewards(editingSeason, isPremium); }
+            catch (RuntimeException failure) {
+                plugin.getLogger().warning("Could not open season reward category: " + failure.getMessage());
+                player.sendMessage(plugin.getMessageManager().getPrefix() + plugin.getMessageManager().getMessage("messages.season.archive-unavailable"));
+                return;
+            }
         } else {
             rewardsByLevel = isPremium ?
                     plugin.getRewardManager().getPremiumRewardsByLevel() :
@@ -117,6 +122,7 @@ public class RewardsCategoryGui {
     private Map<Integer, List<Reward>> loadSeasonRewards(int seasonNumber, boolean premium) {
         Map<Integer, List<Reward>> rewardsByLevel = new HashMap<>();
 
+        plugin.getSeasonRotationManager().prepareSeasonArchive(seasonNumber);
         File file = plugin.getSeasonRotationManager().getSeasonRewardFile(seasonNumber, premium);
         if (!file.exists()) return rewardsByLevel;
 

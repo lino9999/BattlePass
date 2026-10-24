@@ -150,13 +150,20 @@ Validation: all six initial command regressions and both initial timing regressi
 
 Validation: two workload checks reproduced excessive callback counts in the previously used XP path; four initial actionbar checks reproduced stale-timer interference, overflow and offline retention. The expanded suite passes 67 tests (41 existing plus 26 temporary). A BigInteger oracle checks 1,024 deterministic arithmetic cases, alongside ordinary intermediate-state comparisons, threshold/maximum/lifetime saturation, unrelated state preservation and original API compatibility. Intercepted-call tests verify all four XP entry points use bounded feedback and retain preceding boost/daily event handling. Timer tests exercise normal/expired/replaced bars, reentrant replacement during clear, offline/stop/reset/quit cleanup and extreme duration. Bukkit/scheduling/delivery are mocked; temporary tests/artifacts are removed before delivery. No live server or real sound/packet delivery was tested.
 
+## Verified fixes: bounded default archives and startup recovery ordering (2026-10-24)
+
+- Extracted filesystem generation into `SeasonArchiveInitializer`. Normal collections of at most 16 remain synchronous; larger ranges prepare the current/next pair and continue in batches of at most 16 indices with one queued successor. Frozen templates, staged directory publication, wide cursor arithmetic and preservation of existing custom/partial archives avoid repeated parsing, half-written pairs and integer wrap. Total filesystem work/storage still grows with the configured count.
+- Matching requests share their completion future. Cancellation, shutdown and changed/disabled configuration stop publication and release scheduled work. Shutdown cannot resurrect a replacement job; callback reentrancy does not orphan the currently owned job. Workers access captured templates/files, not configuration or player state. Background failures are logged and complete exceptionally; explicit retry preserves existing folders.
+- General defaults start after committed SQL season recovery, and early reloads wait for mission readiness. Missing recovery targets remain errors. Rotation, editor snapshots and archive category previews prepare pending requested defaults before reading them, preventing an empty draft from replacing not-yet-generated rewards.
+
+Validation: both initial regressions failed before correction (unbounded caller-thread generation and defaults starting before database recovery). Two additional editor/preview regressions reproduced empty reads of pending defaults and pass after demand preparation. All 68 tests pass (41 existing plus 27 temporary), covering finite/maximum ranges, batch bounds, frozen bytes, custom/partial preservation, targeted preparation, deletion/failure/retry, cancellation while staging, range/disable/shutdown/reentrant callbacks, startup SQL recovery ordering, early reload and editor/preview reads. One worker runs on an actual executor; Bukkit lifecycle/scheduling are mocked and filesystem checks use real temporary folders. Maximum-range completion is checked with a cursor positioned at its final batch, without creating billions of directories. Temporary tests/artifacts are removed before delivery. No live Minecraft server or power-loss test was used.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
 - Reward previews, unusual serialized item metadata and malformed configuration outside the verified editor/reward paths; check optional integration behavior on a live server.
 - Distributed player-cache coherence and session-local elapsed-time durability remain unproven/limited; normal reset APIs, feedback and cycle time accounting now use the verified coordinator path.
-- Automatic default archive creation for enormous total-season counts still performs proportional filesystem work; investigate bounded/lazy creation while preserving configured season selection and normal defaults.
 - Other startup/shutdown/reload callbacks, shared-database cache assumptions, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 
 Review every production source file and relevant resource; track further findings and verification here. A live Minecraft or MySQL server has not been exercised so far.

@@ -90,6 +90,7 @@ messages:
     not-found: "<gradient:#FF6B6B:#FF0000>✗ Mission not found!</gradient>"
 
   season:
+    archive-unavailable: "&cCould not load this season's rewards. Check the server log."
     reset: "<gradient:#FF0000:#FFD93D>SEASON RESET</gradient>\n<gradient:#4ECDC4:#45B7D1>The Battle Pass season has ended! A new season begins now!</gradient>"
     forced-reset: "<gradient:#FF0000:#FFD93D>FORCED SEASON RESET</gradient>\n<gradient:#4ECDC4:#45B7D1>An administrator has reset the Battle Pass season!</gradient>"
     reset-warning: "<gradient:#FFD93D:#FF6B6B>⚠ WARNING:</gradient> &fThe season will be reset in 2 seconds. All player progress will be lost!"

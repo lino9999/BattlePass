@@ -77,16 +77,14 @@ public class MissionManager {
                     seasonResetInProgress = false;
                 }
 
-                if (resetHandler.shouldResetSeason()) {
-                    resetSeason();
-                    return;
-                }
             } else {
                 resetHandler.calculateSeasonEndDate();
                 currentMissionDate = LocalDateTime.now().toLocalDate().toString();
                 resetHandler.calculateNextReset();
             }
 
+            initializeSeasonArchives();
+            if (resetHandler.shouldResetSeason()) { resetSeason(); return; }
             saveSeasonData();
             loadMissionsAfterSeasonData();
         })).exceptionally(ex -> {
@@ -360,7 +358,13 @@ public class MissionManager {
         if (calendarReloadPending) {
             calendarReloadPending = false;
             recalculateResetTimeOnReload();
+            initializeSeasonArchives();
         }
+    }
+
+    private void initializeSeasonArchives() {
+        SeasonRotationManager rotation = plugin.getSeasonRotationManager();
+        if (!shuttingDown && !plugin.isStopping() && rotation != null) rotation.createDefaultSeasonFolders();
     }
 
     private ResetTiming beginResetTiming() {

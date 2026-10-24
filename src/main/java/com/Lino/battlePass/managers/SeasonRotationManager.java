@@ -12,12 +12,15 @@ import java.nio.file.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /** Publishes a season only after both reward files and its rotation index have been saved. */
 public class SeasonRotationManager {
     private final BattlePass plugin;
     private final File rotationFile;
     private final SeasonFileTransaction files;
+    private final SeasonArchiveInitializer archives;
     private int currentSeason;
     private int totalSeasons;
     private boolean rotationEnabled;
@@ -26,6 +29,7 @@ public class SeasonRotationManager {
         this.plugin = plugin;
         this.rotationFile = new File(plugin.getDataFolder(), "season_rotation.yml");
         this.files = new SeasonFileTransaction(plugin.getDataFolder().toPath(), plugin.getLogger());
+        this.archives = new SeasonArchiveInitializer(plugin);
         reload();
     }
 
@@ -43,6 +47,7 @@ public class SeasonRotationManager {
                 season = 1;
             }
             if (enabled && (firstRun || !new File(plugin.getDataFolder(), "seasons").exists())) createSeasonFolder(season);
+            if (enabled) archives.ensure(season);
             if (enabled) {
                 Map<String, byte[]> replacements = rewardFiles(season);
                 replacements.put("season_rotation.yml", rotationBytes(state, season));
@@ -54,6 +59,7 @@ public class SeasonRotationManager {
             rotationEnabled = enabled;
             totalSeasons = total;
             currentSeason = season;
+            archives.configurationChanged(enabled, total);
         } catch (IOException | InvalidConfigurationException failure) { throw failure("reload season rotation", failure); }
     }
 
@@ -61,35 +67,36 @@ public class SeasonRotationManager {
         if (rotationEnabled) applySeasonRewards(currentSeason);
     }
 
+    /** Small collections complete inline; large ones continue in bounded background batches. */
     public synchronized void createDefaultSeasonFolders() {
-        if (!rotationEnabled) return;
-        try {
-            // Wide iteration cannot wrap at Integer.MAX_VALUE. Existing folders are preserved.
-            for (long season = 1; season <= totalSeasons; season++) createSeasonFolder((int) season);
-        } catch (IOException | InvalidConfigurationException failure) { throw failure("create default season folders", failure); }
+        CompletableFuture<Void> result = createDefaultSeasonFoldersAsync();
+        if (result.isCompletedExceptionally() && !result.isCancelled()) {
+            try { result.join(); }
+            catch (CompletionException failure) { throw failure("create default season folders", failure); }
+        }
+    }
+
+    /** Completion of the entire collection. Do not block the server thread waiting for a background job. */
+    public synchronized CompletableFuture<Void> createDefaultSeasonFoldersAsync() {
+        if (!rotationEnabled) return CompletableFuture.completedFuture(null);
+        try { return archives.start(totalSeasons, currentSeason, nextSeason()); }
+        catch (IOException | InvalidConfigurationException failure) { return CompletableFuture.failedFuture(failure); }
+    }
+
+    public synchronized void shutdown() { archives.shutdown(); }
+
+    /** Prepare a requested default archive while background initialization is still covering its range. */
+    public synchronized void prepareSeasonArchive(int season) {
+        if (!isValidSeason(season)) throw new IllegalArgumentException("Invalid season: " + season);
+        try { archives.ensure(season); }
+        catch (IOException failure) { throw failure("prepare season " + season, failure); }
     }
 
     private void createSeasonFolder(int season) throws IOException, InvalidConfigurationException {
         Path target = getSeasonRewardFile(season, false).toPath().getParent();
-        if (Files.exists(target)) {
-            if (!Files.isDirectory(target)) throw new IOException("Season path is not a directory: " + target);
-            return;
-        }
-        byte[] free = readRewards(new File(plugin.getDataFolder(), "BattlePassFREE.yml"));
-        byte[] premium = readRewards(new File(plugin.getDataFolder(), "BattlePassPREMIUM.yml"));
-        Files.createDirectories(target.getParent());
-        Path temporary = Files.createTempDirectory(target.getParent(), ".season-" + season + "-pending-");
-        try {
-            Files.write(temporary.resolve("BattlePassFREE.yml"), free);
-            Files.write(temporary.resolve("BattlePassPREMIUM.yml"), premium);
-            try { Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE); }
-            catch (AtomicMoveNotSupportedException unavailable) { Files.move(temporary, target); }
-            plugin.getLogger().info("Created default season folder: season-" + season);
-        } finally {
-            Files.deleteIfExists(temporary.resolve("BattlePassFREE.yml"));
-            Files.deleteIfExists(temporary.resolve("BattlePassPREMIUM.yml"));
-            Files.deleteIfExists(temporary);
-        }
+        if (Files.isDirectory(target)) return;
+        if (Files.exists(target)) throw new IOException("Season path is not a directory: " + target);
+        SeasonArchiveInitializer.create(plugin.getDataFolder().toPath(), season, SeasonArchiveInitializer.snapshot(plugin.getDataFolder().toPath()));
     }
 
     /** Preflight before resetting player data; the actual apply validates the files again. */
@@ -97,6 +104,7 @@ public class SeasonRotationManager {
         if (!rotationEnabled) return;
         try {
             files.recover();
+            archives.ensure(nextSeason());
             rewardFiles(nextSeason());
             currentRotationState();
             files.validateDestinations(Set.of("BattlePassFREE.yml", "BattlePassPREMIUM.yml", "season_rotation.yml"));
@@ -105,6 +113,8 @@ public class SeasonRotationManager {
 
     public synchronized void rotateToNextSeason() {
         if (!rotationEnabled) return;
+        try { archives.ensure(nextSeason()); }
+        catch (IOException failure) { throw failure("prepare the next season", failure); }
         selectSeason(nextSeason());
     }
 
@@ -127,7 +137,7 @@ public class SeasonRotationManager {
 
     public synchronized void applySeasonRewards(int seasonNumber) {
         if (!isValidSeason(seasonNumber)) throw new IllegalArgumentException("Invalid season: " + seasonNumber);
-        try { files.commit(rewardFiles(seasonNumber)); }
+        try { archives.ensure(seasonNumber); files.commit(rewardFiles(seasonNumber)); }
         catch (IOException | InvalidConfigurationException failure) { throw failure("apply season " + seasonNumber + " rewards", failure); }
     }
 
@@ -143,10 +153,7 @@ public class SeasonRotationManager {
     }
 
     private byte[] readRewards(File file) throws IOException, InvalidConfigurationException {
-        if (!Files.isRegularFile(file.toPath())) throw new IOException("Missing reward file: " + file);
-        byte[] bytes = Files.readAllBytes(file.toPath());
-        new YamlConfiguration().loadFromString(new String(bytes, StandardCharsets.UTF_8));
-        return bytes;
+        return SeasonArchiveInitializer.readRewards(file.toPath());
     }
 
     private byte[] rotationBytes(YamlConfiguration state, int season) {

@@ -63,7 +63,6 @@ public class BattlePass extends JavaPlugin {
         messageManager = new MessageManager(this);
 
         seasonRotationManager = new SeasonRotationManager(this);
-        seasonRotationManager.createDefaultSeasonFolders();
 
         configManager.reload();
 
@@ -159,6 +158,7 @@ public class BattlePass extends JavaPlugin {
     public void onDisable() {
         stopping = true;
         lifecycleGeneration++;
+        if (seasonRotationManager != null) seasonRotationManager.shutdown();
         if (eventManager != null) {
             eventManager.flushPlayTime();
         }
@@ -271,6 +271,7 @@ public class BattlePass extends JavaPlugin {
         shopManager.reload();
         // Page history is navigation state; the owned menus below are rebuilt from fresh configuration.
         missionManager.recalculateResetTimeOnReload();
+        if (!stopping && missionManager.isInitialized()) seasonRotationManager.createDefaultSeasonFolders();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             var view = player.getOpenInventory();

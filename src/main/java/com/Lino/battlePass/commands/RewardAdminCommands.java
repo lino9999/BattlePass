@@ -57,6 +57,7 @@ final class RewardAdminCommands {
                     return true;
                 }
 
+                rotation.prepareSeasonArchive(seasonNum);
                 plugin.getRewardEditorManager().setSeasonEditingContext(player.getUniqueId(), seasonNum);
 
                 sender.sendMessage(plugin.getMessageManager().getPrefix() +
@@ -68,6 +69,9 @@ final class RewardAdminCommands {
             } catch (NumberFormatException e) {
                 sender.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.invalid-amount"));
+            } catch (IllegalStateException failure) {
+                plugin.getLogger().warning("Could not prepare season reward editor: " + failure.getMessage());
+                sender.sendMessage(plugin.getMessageManager().getPrefix() + plugin.getMessageManager().getMessage("messages.season.archive-unavailable"));
             }
         } else {
             plugin.getRewardEditorManager().clearSeasonEditingContext(player.getUniqueId());

@@ -29,6 +29,7 @@ public class RewardEditorManager {
         int season = getSeasonEditingContext(player.getUniqueId());
         SeasonRotationManager rotation = plugin.getSeasonRotationManager();
         if (season < 1 && rotation != null && rotation.isRotationEnabled()) season = rotation.getCurrentSeason();
+        if (season > 0) rotation.prepareSeasonArchive(season);
         File file = season > 0 ? rotation.getSeasonRewardFile(season, premium)
                 : new File(plugin.getDataFolder(), premium ? "BattlePassPREMIUM.yml" : "BattlePassFREE.yml");
         try { return storage.load(file, Math.max(0, season), level); }

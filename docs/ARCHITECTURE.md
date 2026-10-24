@@ -18,7 +18,7 @@ Dirty revisions are acknowledged individually: a completed write cannot clear a 
 
 Do not hold the player-cache monitor while waiting for database futures. A load completion running on the shared SQLite executor also needs that monitor; blocking it can prevent queued writes from ever completing. Only the generation check/cache mutation uses the monitor during clear.
 
-`BattlePass.onDisable` flushes online play time, stops XP events/sounds/coin work, saves players synchronously, shuts down missions and closes the database. Final time progress happens before the XP multiplier is stopped; actionbar creation skips disabled plugins to avoid scheduling work during disable. Bukkit world, player and inventory operations belong on the server thread; database callbacks often schedule work back onto it.
+`BattlePass.onDisable` invalidates startup work and cancels default archive generation before flushing online play time, stopping XP events/sounds/coin work, saving players synchronously, shutting down missions and closing the database. Final time progress happens before the XP multiplier is stopped; actionbar creation skips disabled plugins to avoid scheduling work during disable. Bukkit world, player and inventory operations belong on the server thread; database callbacks often schedule work back onto it.
 
 ## Feature map
 
@@ -63,6 +63,7 @@ Public entry points keep their existing signatures. Their helpers are package-pr
 | | `BattlePassMenuControls` | Progress summary, navigation tags and action buttons |
 | `managers/RewardManager` | `RewardClaimHandler` | Claim eligibility, persisted claim checks, command/item delivery, feedback and dirty marking |
 | `managers/MissionProgressTracker` | `MissionActionbars` | Per-task bar ownership, message timing, replacement/offline/quit/reset/shutdown cleanup |
+| `managers/SeasonRotationManager` | `SeasonArchiveInitializer` | Frozen default templates, bounded filesystem batches, demand preparation and job cancellation |
 
 `BattlePassGui` owns the existing player-data/page/max-level snapshot and inventory creation/opening. It passes that same snapshot to its renderers and preserves rendering order: progress, rewards, separator, navigation, actions. Renderers only populate the inventory; click handling stays in the existing listeners. `RewardManager` retains reward loading, reward maps, level/page limits and editable reward conversion; its public claim method delegates to `RewardClaimHandler` with unchanged arguments. Neither extraction changes configuration paths, slot numbers, persistent tags or claim/save ordering.
 
@@ -74,7 +75,7 @@ Reset preparation flushes whole old-cycle play-time minutes before clearing/savi
 
 Season plans capture calendar, copied missions, coin-reset choice and explicit rotation target before submission. `SeasonTransitionRepository` commits player reset, replacement missions, calendar/anchor and a unique durable rotation intent in one transaction. File application/reward reload and token-matched SQL acknowledgement precede mission publication, announcements and player reload. Startup resumes an intent without resetting players or incrementing the target again. Mission progress is paused while resetting. The idempotent finalizer can run directly during main-thread shutdown after awaiting the raw database reset. Failure disables the plugin while preserving recovery information; critical SQL failures also fence later database writes.
 
-Rotation preflights the next reward pair/index/destinations before clearing player data. `SeasonFileTransaction` journals old live-file/index bytes, restores failed/interrupted replacements, and publishes the new selection after its committed marker. Filesystem errors propagate. Its recovery and the SQL intent coordinate a recoverable transition; they are not one cross-system transaction. See [SEASONS.md](SEASONS.md) before changing either protocol.
+Rotation preflights the next reward pair/index/destinations before clearing player data. `SeasonFileTransaction` journals old live-file/index bytes, restores failed/interrupted replacements, and publishes the new selection after its committed marker. Filesystem errors propagate. Its recovery and the SQL intent coordinate a recoverable transition; they are not one cross-system transaction. General default generation starts only after SQL intent recovery, uses bounded background batches for large ranges and prepares requested editor/rotation archives on demand. See [SEASONS.md](SEASONS.md) before changing either protocol.
 
 Daily resets (automatic, forced and startup recovery) flush/invalidate player snapshots before one queued `resetDailyMissions` transaction. `MissionCycleRepository` uses the existing connection-level daily/season writers and clears all progress, including same-date rows. `MissionManager` publishes the replacement and next deadline only after commit; its pending daily finalizer also runs directly during shutdown. Calendar reloads defer while a daily or season reset is pending. Do not replace this with separate saves/deletes or clear progress by date alone. Season expiry takes precedence over a scheduled daily reset.
 
