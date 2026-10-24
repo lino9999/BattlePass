@@ -49,6 +49,8 @@ The 41 existing tests pass before and after extraction. Temporary comparisons ru
 
 ## Commit and push
 
+Public binaries belong in GitHub Releases as assets, not in the Git tree. Version 8.6.1 uses tag v8.6.1 and asset BattlePass-8.6.1.jar; preserve the historical Release-tagged 8.6 download. Keep the Maven/packaged descriptor version, README download name and plain-English docs/RELEASE_NOTES.md consistent. Build from the intended delivery tree when the workspace contains unrelated source edits, verify the asset checksum after uploading, and publish the release after its JAR is attached. Preserve existing repository topics when adding relevant ones.
+
 The owner requires source changes to be pushed to `https://github.com/lino9999/BattlePass` after each completed task. Inspect `git status -sb`, the current branch and remote before editing. Run the relevant checks, review `git diff --check` and the diff, stage only task files, commit, and push. Verify the remote head matches the delivered commit. Existing checkout branch is normally `master`; newly needed branches use `codex/`.
 
 Do not force-push, include unrelated edits, or commit generated JARs/credentials/server data. If authentication or branch protection blocks the push, keep the commit and explain the blocker. `.gitignore` controls Git; `.ignore` is for ripgrep-compatible search tools and does not promise exclusion by every AI client.

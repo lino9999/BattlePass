@@ -1,8 +1,8 @@
-# ⚔️ BattlePass - Ultimate Progression Plugin for Minecraft (1.21.11–26.3)
+# ⚔️ BattlePass - Minecraft Battle Pass Plugin for Paper & Spigot (1.21.11–26.3)
 
-> **The most advanced, feature-rich Battle Pass system for Spigot & Paper servers.**
-> Engage your players with Daily Missions, Tiered Rewards, and a custom Currency Shop.
-> **No config editing required** — manage everything via In-Game GUI!
+BattlePass adds daily quests, seasonal progression, Free and Premium reward tracks, and Battle Coins to your Minecraft Java server. Create missions and rewards through in-game editors, with optional PlaceholderAPI and MythicMobs support.
+
+**[Download the latest JAR](https://github.com/lino9999/BattlePass/releases/latest)** · [What's new](docs/RELEASE_NOTES.md) · [Report a bug](https://github.com/lino9999/BattlePass/issues)
 
 ![Java](https://img.shields.io/badge/Java-21%20%2F%2025-orange) ![Spigot](https://img.shields.io/badge/Minecraft-1.21.11%E2%80%9326.3-yellow) ![License](https://img.shields.io/badge/License-MIT-blue)
 
@@ -23,7 +23,7 @@ Every donation keeps the updates coming and helps me invest even more time into 
 ---
 
 ## 🌟 Why Choose BattlePass?
-Unlike other plugins, **BattlePass** focuses on ease of use for admins and engagement for players. It includes a powerful **In-Game Editor**, robust **MySQL Database** support for networks, and deep integrations with popular plugins like **MythicMobs**.
+**BattlePass** gives server admins in-game editors for missions and rewards, SQLite or MySQL storage, and optional integrations with plugins such as **MythicMobs**.
 
 ### 🔥 Key Features
 
@@ -38,9 +38,9 @@ Unlike other plugins, **BattlePass** focuses on ease of use for admins and engag
     * **Rewards Editor**: Drag-and-drop items from your inventory to set rewards for any level.
     * **Season Editing**: Edit the rewards of any season in the rotation, even while another season is active.
 
-* **💾 Database & Sync Support**
+* **💾 Database Storage**
     * **SQLite** (Default): Plug and play for single servers.
-    * **MySQL**: Full support for syncing player progress, XP, and rewards across a BungeeCord/Velocity network.
+    * **MySQL**: Store player progress, XP, coins and reward claims in a MySQL database. Live synchronization between servers is not provided.
 
 * **📜 Dynamic Missions**
     * **7 Daily Missions** generated randomly every day (count configurable).
@@ -80,17 +80,25 @@ Unlike other plugins, **BattlePass** focuses on ease of use for admins and engag
 
 Supports Spigot and available Paper releases from Minecraft Java 1.21.11 through 26.3. Use Java 21 on 1.21.11 and Java 25 on 26.x. See the [compatibility matrix](docs/COMPATIBILITY.md) for exact builds and verification limits. Paper has no published 26.1 build; its 26.1.1 build is alpha.
 
-1.  Download `BattlePass.jar`.
+1.  Download `BattlePass-8.6.1.jar` from the latest [GitHub release](https://github.com/lino9999/BattlePass/releases/latest). Choose the JAR under **Assets**, rather than the source-code ZIP.
 2.  Drop it into your server's `/plugins/` folder.
 3.  (Optional) Install **PlaceholderAPI** for placeholders.
 4.  Restart your server.
 5.  Enjoy! Config files (`config.yml`, `missions.yml`, `shop.yml`) will generate automatically.
 
+### Updating an existing server
+
+1. Stop the server and back up `plugins/BattlePass/` and its database (including the MySQL database if used).
+2. Replace the old BattlePass JAR in `plugins/` with the new one, keeping only one BattlePass JAR installed.
+3. Keep your existing configuration and data files, then start the server and check the startup log.
+
+This release includes the [latest and previous fixes](docs/RELEASE_NOTES.md). Golden apple and block missions accept names entered through the editor more reliably. Use `BREAK_BLOCK` for breaking blocks and `PLACE_BLOCK` for placement; `MINE_BLOCK` remains limited to ores. New blocks are available only on server versions that include them. Mission troubleshooting is in [the mission guide](docs/MISSIONS.md).
+
+When reporting a problem, include the Minecraft version, Paper/Spigot build, BattlePass version, relevant mission settings and any error log. Remove passwords and other private information before sharing configuration.
+
 ### Build from source
 
-Use Java 21 and Maven, then run `mvn clean package`. The build runs the regression tests and produces `target/BattlePass-8.6.jar`. The release version is defined in `pom.xml`; Maven also writes it into the packaged `plugin.yml`.
-
-Material missions resolve the running server's material catalog, including blocks introduced within the supported range. Use `BREAK_BLOCK` to count breaking any configured block and `PLACE_BLOCK` for placement; `MINE_BLOCK` retains its ore-only behavior. Newer blocks must exist in the server version where the mission runs. Configuration examples and progress troubleshooting are in [the mission guide](docs/MISSIONS.md).
+Use Java 21 and Maven, then run `mvn clean package`. The build runs the regression tests and produces `target/BattlePass-8.6.1.jar`. The release version is defined in `pom.xml`; Maven also writes it into the packaged `plugin.yml`.
 
 See [the issue review](docs/ISSUE_REVIEW.md) for the fixes, configuration examples and validation details. Existing databases are migrated automatically at startup. If MySQL reports an `ALTER` permission error, grant the plugin's database account permission to update its tables before restarting.
 
@@ -136,7 +144,7 @@ Add these to your scoreboard or tablist!
 * `%battlepass_current_season%` - Current season number (season rotation).
 * `%battlepass_xp_event_multiplier%` - Active XP event multiplier (e.g., "2x").
 
-*(See `Placeholders.md` for the full list)*
+See [Placeholders.md](Placeholders.md) for the full list.
 
 ---
 

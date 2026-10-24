@@ -6,7 +6,7 @@
 
     <groupId>com.Lino</groupId>
     <artifactId>BattlePass</artifactId>
-    <version>8.6</version>
+    <version>8.6.1</version>
     <packaging>jar</packaging>
 
     <name>BattlePass</name>

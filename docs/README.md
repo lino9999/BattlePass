@@ -31,6 +31,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | YAML read/reload failures, GUI materials and startup validation | [CONFIGURATION.md](CONFIGURATION.md) | `ConfigurationFiles`, `ConfigManager`, `GuiConfiguration`, `MessageManager`, `ShopManager`, startup/reload recovery ordering |
 | Other menus, custom items, coins | [ARCHITECTURE.md](ARCHITECTURE.md) | Use the feature table |
 | Build, regression tests, push | [DEVELOPMENT.md](DEVELOPMENT.md) | `pom.xml`, `AGENTS.md` |
+| Public download, release summary and updating | [RELEASE_NOTES.md](RELEASE_NOTES.md), [DEVELOPMENT.md](DEVELOPMENT.md) | Version in `pom.xml`; GitHub release assets, not tracked JARs |
 | Active bug/optimization audit | [CODE_AUDIT.md](CODE_AUDIT.md) | Verified fixes, pending investigations and test evidence |
 | Previously investigated reports | [ISSUE_REVIEW.md](ISSUE_REVIEW.md) | Historical findings dated 2026-09-29; not live issue status |
 
