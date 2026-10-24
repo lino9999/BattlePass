@@ -100,6 +100,10 @@ public class PlayerConnectionListener implements Listener {
         playTime.update(player);
     }
 
+    Object beginPlayTimeCycle() { return playTime.beginCycle(); }
+    void commitPlayTimeCycle(Object token) { playTime.commitCycle(token); }
+    void abortPlayTimeCycle(Object token) { playTime.abortCycle(token); }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
         updatePlayTime(event.getPlayer());

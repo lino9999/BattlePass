@@ -3,6 +3,12 @@ prefix: "<gradient:#FF6B6B:#4ECDC4>BATTLE PASS</gradient> &8» "
 messages:
   plugin-enabled: "<gradient:#00FF88:#00D4FF>✓ Battle Pass enabled successfully!</gradient>"
   config-reloaded: "<gradient:#00FF88:#00D4FF>✓ Configuration reloaded!</gradient>"
+  reload-failed: "&cConfiguration reload failed. Check the server log."
+  reload-coins-failed: "&cCould not restore the coin delivery schedule after reload. The existing schedule was kept; check the server log."
+  reload-coins-apply-failed: "&cConfiguration reloaded, but the coin delivery timer could not be started. Check the server log."
+  reset-busy: "&cA reset is already in progress. Please wait."
+  reset-cooldown: "&cPlease wait a few seconds before resetting the season again."
+  reset-failed: "&cThe reset could not be completed. Check the server log."
 
   player-only: "<gradient:#FF0000:#FF6B6B>✗ Only players can use this command!</gradient>"
   no-permission: "<gradient:#FF0000:#FF6B6B>✗ You don't have permission to use this command!</gradient>"

@@ -4,6 +4,7 @@ import com.Lino.battlePass.BattlePass;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
@@ -17,6 +18,8 @@ final class PlayTimeTracker {
     private final Map<UUID, Long> startTimes = new ConcurrentHashMap<>();
     private final Map<UUID, Long> pendingMillis = new ConcurrentHashMap<>();
     private final Map<UUID, String> worlds = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> previousCyclePending = new HashMap<>();
+    private Object cycleTransition;
 
     PlayTimeTracker(BattlePass plugin, LongSupplier clock) {
         this.plugin = plugin;
@@ -27,6 +30,7 @@ final class PlayTimeTracker {
         UUID uuid = player.getUniqueId();
         startTimes.put(uuid, clock.getAsLong());
         pendingMillis.remove(uuid);
+        previousCyclePending.remove(uuid);
         worlds.put(uuid, player.getWorld().getName());
     }
 
@@ -55,6 +59,7 @@ final class PlayTimeTracker {
 
         int minutes = 0;
         if (pending >= MINUTE_MILLIS
+                && cycleTransition == null
                 && !plugin.getConfigManager().isMissionWorldDisabled(currentWorld)
                 && !plugin.getMissionManager().isProgressPaused()
                 && plugin.getPlayerDataManager().getPlayerData(uuid) != null) {
@@ -71,6 +76,31 @@ final class PlayTimeTracker {
         startTimes.remove(uuid);
         pendingMillis.remove(uuid);
         worlds.remove(uuid);
+        previousCyclePending.remove(uuid);
+    }
+
+    Object beginCycle() {
+        if (cycleTransition != null) throw new IllegalStateException("A play-time cycle transition is already pending");
+        previousCyclePending.clear();
+        previousCyclePending.putAll(pendingMillis);
+        pendingMillis.clear();
+        cycleTransition = new Object();
+        return cycleTransition;
+    }
+
+    void commitCycle(Object token) {
+        if (cycleTransition != token || token == null) return;
+        previousCyclePending.clear();
+        cycleTransition = null;
+    }
+
+    void abortCycle(Object token) {
+        if (cycleTransition != token || token == null) return;
+        previousCyclePending.forEach((uuid, previous) -> {
+            if (startTimes.containsKey(uuid)) pendingMillis.merge(uuid, previous, (current, old) -> Math.min(MAX_PENDING_MILLIS, current + old));
+        });
+        previousCyclePending.clear();
+        cycleTransition = null;
     }
 
     Map<UUID, Long> getStartTimes() {

@@ -60,6 +60,18 @@ public class EventManager {
         }
     }
 
+    public Object beginPlayTimeCycle() {
+        flushPlayTime();
+        return playerConnectionListener.beginPlayTimeCycle();
+    }
+
+    public void commitPlayTimeCycle(Object token) {
+        flushPlayTime();
+        playerConnectionListener.commitPlayTimeCycle(token);
+    }
+
+    public void abortPlayTimeCycle(Object token) { playerConnectionListener.abortPlayTimeCycle(token); }
+
     public MissionProgressListener getMissionProgressListener() {
         return missionProgressListener;
     }

@@ -1,8 +1,8 @@
 package com.Lino.battlePass.managers;
 
 import com.Lino.battlePass.BattlePass;
-import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.models.Mission;
+import com.Lino.battlePass.models.ResetResult;
 import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -52,20 +52,18 @@ public class MissionResetHandler {
     }
 
     private CompletableFuture<Void> resetSeason(boolean forced) {
-        return beginSeasonReset().thenRun(() -> Bukkit.getScheduler().runTask(plugin, () -> completeSeasonReset(forced)));
+        MissionManager manager = plugin.getMissionManager();
+        if (manager == null) return CompletableFuture.failedFuture(new IllegalStateException("MissionManager is not ready"));
+        return (forced ? manager.forceResetSeasonAsync() : manager.resetSeasonAsync()).thenCompose(result ->
+                result == ResetResult.COMPLETED ? CompletableFuture.completedFuture(null)
+                        : CompletableFuture.failedFuture(new IllegalStateException("Season reset rejected: " + result)));
     }
 
-    CompletableFuture<Void> beginSeasonReset() {
-        plugin.getPlayerDataManager().clearCache(true);
-        // Prepare the schedule before MissionManager queues its save behind the reset transaction.
-        calculateSeasonEndDate();
-        calculateNextReset();
-        return plugin.getDatabaseManager().resetSeason();
-    }
-
-    SeasonResetPlan prepareSeasonReset(String id, int rotationTarget, List<Mission> missions) {
-        calculateSeasonEndDate();
-        calculateNextReset();
+    SeasonResetPlan prepareSeasonReset(String id, int rotationTarget, List<Mission> missions, LocalDateTime startedAt) {
+        seasonStartDate = startedAt;
+        recalculateSeasonEndDate();
+        missionCycleStart = startedAt;
+        nextMissionReset = startedAt.plusHours(missionIntervalHours());
         return new SeasonResetPlan(id, rotationTarget, plugin.getConfigManager().isResetCoinsOnSeasonEnd(),
                 seasonStartDate, seasonEndDate, missionCycleStart, nextMissionReset,
                 missionCycleStart.toLocalDate().toString(), missions);
@@ -105,20 +103,9 @@ public class MissionResetHandler {
     }
 
     public void forceResetMissions() {
-        MessageManager messageManager = plugin.getMessageManager();
-
-        calculateNextReset();
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.admin-reset"));
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-
-            PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-            if (data != null) {
-                data.missionProgress.clear();
-                plugin.getPlayerDataManager().markForSave(player.getUniqueId());
-            }
-        }
+        MissionManager manager = plugin.getMissionManager();
+        if (manager == null) throw new IllegalStateException("MissionManager is not ready");
+        manager.forceResetMissions();
     }
 
     public void calculateSeasonEndDate() {
