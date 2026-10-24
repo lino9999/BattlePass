@@ -4,6 +4,7 @@ import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.managers.SeasonRotationManager;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.utils.GradientColorParser;
+import com.Lino.battlePass.utils.DailyRewardCooldown;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -172,7 +173,7 @@ final class BattlePassMenuControls {
         dailyMeta.setDisplayName(plugin.getMessageManager().getMessage("items.daily-reward.name"));
 
         List<String> dailyLore = new ArrayList<>();
-        boolean canClaim = System.currentTimeMillis() - playerData.lastDailyReward >= 24 * 60 * 60 * 1000;
+        boolean canClaim = DailyRewardCooldown.isAvailable(playerData.lastDailyReward, System.currentTimeMillis());
         String timeUntil = plugin.getMissionManager().getTimeUntilDailyReward(playerData.lastDailyReward);
 
         for (String line : plugin.getMessageManager().getMessagesConfig().getStringList(

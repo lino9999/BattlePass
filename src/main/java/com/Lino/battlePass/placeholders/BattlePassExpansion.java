@@ -3,6 +3,7 @@ package com.Lino.battlePass.placeholders;
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.PlayerData;
+import com.Lino.battlePass.utils.DailyRewardCooldown;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 
@@ -102,7 +103,7 @@ public class BattlePassExpansion extends PlaceholderExpansion {
             case "coins", "battlecoins" -> String.valueOf(data.battleCoins);
             case "available_rewards" -> player.isOnline() ? String.valueOf(plugin.getRewardManager().countAvailableRewards(data)) : "0";
             case "daily_reward_time" -> plugin.getMissionManager().getTimeUntilDailyReward(data.lastDailyReward);
-            case "daily_reward_available" -> System.currentTimeMillis() - data.lastDailyReward >= 86400000L ? "Yes" : "No";
+            case "daily_reward_available" -> DailyRewardCooldown.isAvailable(data.lastDailyReward, System.currentTimeMillis()) ? "Yes" : "No";
             case "completed_missions" -> String.valueOf(plugin.getMissionManager().getCompletedMissionsCount(data));
             case "missions_progress" -> plugin.getMissionManager().getCompletedMissionsCount(data) + "/" + plugin.getMissionManager().getDailyMissions().size();
             default -> mission(data, identifier.substring(8));

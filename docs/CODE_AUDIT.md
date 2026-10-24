@@ -213,12 +213,20 @@ Validation: the initial 16 checks produced 13 assertion failures plus an out-of-
 
 Validation: all twelve initial regressions failed before correction (ignored malformed auxiliary/messages/shop files and primary reload starting before validation). An additional startup test reproduced the need for explicit disable on synchronous failure. All 79 tests pass (41 existing plus 38 temporary), using real temporary YAML, directory read failures, packaged-default read/parse/close checks, file repair/retry, missing/default/empty rewards, prepared/corrupt journals, startup/reload recovery order, normal/failed startup and shop case/material entries. Bukkit lifecycle/construction and item/block registries are mocked; no live Minecraft server was used. Temporary sources/artifacts are removed before delivery. See CONFIGURATION.md for the source map and limits.
 
+## Verified fixes: daily reward arithmetic and claim-hook ownership (2026-10-24)
+
+- Share DailyRewardCooldown across the claim, action-button lore, availability placeholder and countdown formatter. Nonnegative saturated remaining milliseconds prevent overflow for ancient/future stored timestamps, retain the rolling 24-hour policy and make the exact deadline eligible. Formatting no longer drops fractional milliseconds and cannot announce availability early. Storage fields/keys remain unchanged.
+- Guard daily claims by UUID before invoking the XP hook, release ownership in finally, and recheck stopping/connection, cached player identity and eligibility afterwards. Reentry cannot double-credit; reset/replacement/disconnect or a hook moving the claim timestamp cannot resume a stale award. Existing cancellation/modification behavior remains: cancellation grants zero XP and consumes the cooldown. Mutated claim/progression state is marked dirty even if level feedback throws.
+
+Validation: all seven initial regressions failed before correction (timer/placeholder/menu/backend disagreement for old timestamps, double claim via an XP hook and continued stopped/disconnected/replaced-player awards). An expanded failure check reproduced missing dirty marking after failed level feedback. All 60 tests pass (41 existing plus 19 temporary). A BigInteger oracle checks 2,129 boundary/random signed-long timestamp pairs; tests cover exact/subsecond deadlines, future countdowns, normal cooldown, missing data/retry, modified/cancelled XP, moved timestamps and guard cleanup on exceptions. Bukkit/events/menu ItemStacks are mocked; temporary sources/artifacts are removed before delivery. Existing SQLite tests pass, but no live server or distributed claim lock was tested.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
 - Reward previews, unusual serialized item metadata and malformed configuration outside the verified editor/reward paths; check optional integration behavior on a live server.
-- Reproduce extreme stored timestamp arithmetic; review legacy compatibility fallbacks, optional integrations and non-item material handling in other menu/reward configuration paths.
+- Review legacy compatibility fallbacks, optional integrations and non-item material handling in other menu/reward configuration paths.
+- Review the other XP entry points for gain-hook/reset/quit reentrancy, cached-state ownership and dirty marking on presentation failure.
 - Distributed player-cache coherence and session-local elapsed-time durability remain unproven/limited; normal reset APIs, feedback and cycle time accounting now use the verified coordinator path.
 - Other startup/shutdown/reload callbacks, shared-database cache assumptions, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 

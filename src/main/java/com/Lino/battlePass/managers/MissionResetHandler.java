@@ -3,6 +3,8 @@ package com.Lino.battlePass.managers;
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.ResetResult;
+import com.Lino.battlePass.utils.DailyRewardCooldown;
+import java.util.function.LongSupplier;
 import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -16,13 +18,19 @@ import java.util.concurrent.CompletableFuture;
 public class MissionResetHandler {
 
     private final BattlePass plugin;
+    private final LongSupplier dailyRewardClock;
     private LocalDateTime nextMissionReset;
     private LocalDateTime missionCycleStart;
     private LocalDateTime seasonStartDate;
     private LocalDateTime seasonEndDate;
 
     public MissionResetHandler(BattlePass plugin) {
+        this(plugin, System::currentTimeMillis);
+    }
+
+    MissionResetHandler(BattlePass plugin, LongSupplier dailyRewardClock) {
         this.plugin = plugin;
+        this.dailyRewardClock = dailyRewardClock;
     }
 
     public void calculateNextReset() {
@@ -177,21 +185,13 @@ public class MissionResetHandler {
     }
 
     public String getTimeUntilDailyReward(long lastClaimed) {
-        LocalDateTime lastClaimTime = LocalDateTime.ofEpochSecond(lastClaimed / 1000, 0, java.time.ZoneOffset.UTC);
-        LocalDateTime nextAvailable = lastClaimTime.plusDays(1);
-        LocalDateTime now = LocalDateTime.now(java.time.ZoneOffset.UTC);
-
-        if (now.isAfter(nextAvailable)) {
+        long remaining = DailyRewardCooldown.remainingMillis(lastClaimed, dailyRewardClock.getAsLong());
+        if (remaining == 0) {
             return plugin.getMessageManager().getMessage("time.available-now");
         }
-
-        long hours = ChronoUnit.HOURS.between(now, nextAvailable);
-        long minutes = ChronoUnit.MINUTES.between(now, nextAvailable) % 60;
-
+        long hours = remaining / 3_600_000;
+        long minutes = remaining / 60_000 % 60;
         MessageManager messageManager = plugin.getMessageManager();
-        String hourStr = hours == 1 ? messageManager.getMessage("time.hour") : messageManager.getMessage("time.hours");
-        String minuteStr = minutes == 1 ? messageManager.getMessage("time.minute") : messageManager.getMessage("time.minutes");
-
         return messageManager.getMessage("time.hours-minutes", "%hours%", String.valueOf(hours),
                 "%minutes%", String.valueOf(minutes));
     }

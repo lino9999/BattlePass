@@ -5,6 +5,7 @@ import com.Lino.battlePass.events.BattlePassXPGainEvent;
 import com.Lino.battlePass.gui.BaseHolder;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.utils.ExperienceProgression;
+import com.Lino.battlePass.utils.DailyRewardCooldown;
 import com.Lino.battlePass.utils.Pagination;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -19,10 +20,14 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 public class GuiClickListener implements Listener {
 
     private final BattlePass plugin;
+    private final Set<UUID> dailyRewardClaims = new HashSet<>();
 
     public GuiClickListener(BattlePass plugin) {
         this.plugin = plugin;
@@ -220,52 +225,61 @@ public class GuiClickListener implements Listener {
     }
 
     private void handleDailyRewardClaim(Player player, int currentPage) {
-        PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        if (data == null) {
-            player.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.data-loading"));
-            return;
-        }
-        long now = System.currentTimeMillis();
-        long dayInMillis = 24 * 60 * 60 * 1000;
-
-        if (now - data.lastDailyReward >= dayInMillis) {
-            int xpReward = plugin.getConfigManager().getDailyRewardXP();
-
-            BattlePassXPGainEvent xpGainEvent = new BattlePassXPGainEvent(player, BattlePassXPGainEvent.XPSource.DAILY_REWARD, xpReward);
-            Bukkit.getPluginManager().callEvent(xpGainEvent);
-            xpReward = xpGainEvent.isCancelled() ? 0 : Math.max(0, xpGainEvent.getAmount());
-
-            data.lastDailyReward = now;
-
-            int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
-            int maxLevel = plugin.getRewardManager().getMaxLevel();
-
-            ExperienceProgression.addWithLimitedFeedback(data, xpReward, xpPerLevel, maxLevel, () -> {
+        UUID uuid = player.getUniqueId();
+        if (plugin.isStopping() || !player.isOnline() || !dailyRewardClaims.add(uuid)) return;
+        try {
+            PlayerData data = plugin.getPlayerDataManager().getPlayerData(uuid);
+            if (data == null) {
                 player.sendMessage(plugin.getMessageManager().getPrefix() +
-                        plugin.getMessageManager().getMessage("messages.level-up",
-                                "%level%", String.valueOf(data.level)));
-                player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+                        plugin.getMessageManager().getMessage("messages.data-loading"));
+                return;
+            }
+            long now = System.currentTimeMillis();
 
-                int available = plugin.getRewardManager().countAvailableRewards(data);
-                if (available > 0) {
-                    player.sendMessage(plugin.getMessageManager().getPrefix() +
-                            plugin.getMessageManager().getMessage("messages.new-rewards"));
+            if (DailyRewardCooldown.isAvailable(data.lastDailyReward, now)) {
+                int xpReward = plugin.getConfigManager().getDailyRewardXP();
+
+                BattlePassXPGainEvent xpGainEvent = new BattlePassXPGainEvent(player, BattlePassXPGainEvent.XPSource.DAILY_REWARD, xpReward);
+                Bukkit.getPluginManager().callEvent(xpGainEvent);
+                if (plugin.isStopping() || !player.isOnline() || plugin.getPlayerDataManager().getPlayerData(uuid) != data
+                        || !DailyRewardCooldown.isAvailable(data.lastDailyReward, now)) return;
+                xpReward = xpGainEvent.isCancelled() ? 0 : Math.max(0, xpGainEvent.getAmount());
+
+                try {
+                    data.lastDailyReward = now;
+
+                    int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
+                    int maxLevel = plugin.getRewardManager().getMaxLevel();
+
+                    ExperienceProgression.addWithLimitedFeedback(data, xpReward, xpPerLevel, maxLevel, () -> {
+                        player.sendMessage(plugin.getMessageManager().getPrefix() +
+                                plugin.getMessageManager().getMessage("messages.level-up",
+                                        "%level%", String.valueOf(data.level)));
+                        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+
+                        int available = plugin.getRewardManager().countAvailableRewards(data);
+                        if (available > 0) {
+                            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                                    plugin.getMessageManager().getMessage("messages.new-rewards"));
+                        }
+                    });
+                } finally {
+                    plugin.getPlayerDataManager().markForSave(uuid);
                 }
-            });
 
-            plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+                player.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.daily-reward.claimed",
+                                "%amount%", String.valueOf(xpReward)));
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
-            player.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.daily-reward.claimed",
-                            "%amount%", String.valueOf(xpReward)));
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-
-            plugin.getGuiManager().openBattlePassGUI(player, currentPage);
-        } else {
-            player.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.daily-reward.already-claimed"));
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                plugin.getGuiManager().openBattlePassGUI(player, currentPage);
+            } else {
+                player.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.daily-reward.already-claimed"));
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            }
+        } finally {
+            dailyRewardClaims.remove(uuid);
         }
     }
 }
