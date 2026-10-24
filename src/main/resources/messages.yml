@@ -120,6 +120,7 @@ messages:
     already-claimed: "<gradient:#FF6B6B:#FF0000>✗ You have already claimed your daily reward!</gradient>"
 
   event:
+    start-failed: "&cCould not start the XP event. Check the server log if the problem persists."
     started: "<gradient:#FFD700:#FF6B6B>XP EVENT STARTED!</gradient> &fAll mission XP is now <gradient:#00FF88:#45B7D1>%multiplier%x</gradient> for <gradient:#4ECDC4:#45B7D1>%duration%</gradient>!"
     ended: "<gradient:#FF6B6B:#FF0000>The XP event has ended.</gradient> &7Mission XP rewards are back to normal."
     stopped: "<gradient:#FF6B6B:#FF0000>The XP event has been stopped by an admin.</gradient>"

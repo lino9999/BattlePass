@@ -6,6 +6,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | --- | --- | --- |
 | Mission not counting, food, target matching | [MISSIONS.md](MISSIONS.md) | `listeners/MissionProgressListener`, `models/Mission`, `managers/MissionProgressTracker` |
 | XP grants, large level jumps, level feedback and actionbars | [EXPERIENCE.md](EXPERIENCE.md) | `ExperienceProgression`, `MissionProgressTracker`, `MissionActionbars`; four XP entry points |
+| XP multiplier event startup, countdown, bossbar and vouchers | [EXPERIENCE.md](EXPERIENCE.md) | `XPEventManager`, `commands/XPEventCommands`, `CustomItemsListener.handleXPEventUse` |
 | Daily missions, season dates, resets | [ARCHITECTURE.md](ARCHITECTURE.md) | `MissionManager`, `MissionResetHandler`, `SeasonRotationManager` |
 | Reset command results, legacy APIs and play-time cycle boundaries | [RESET_WORKFLOW.md](RESET_WORKFLOW.md) | `MissionManager` async request methods, `SeasonAdminCommands`, `PlayTimeTracker` |
 | Season reward rotation, archives and interrupted file updates | [SEASONS.md](SEASONS.md) | `SeasonRotationManager`, `SeasonArchiveInitializer`, `SeasonFileTransaction`, `AtomicFile` |

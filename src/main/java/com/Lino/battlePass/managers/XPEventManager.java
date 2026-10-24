@@ -7,159 +7,176 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Locale;
+import java.util.function.LongSupplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/** Server-thread event changes; immutable timing snapshots are safely published to placeholder readers. */
 public class XPEventManager {
-
     private final BattlePass plugin;
-    private int multiplier = 1;
-    private long endTime = 0;
-    private BossBar bossBar;
-    private BukkitRunnable countdownTask;
-    private long totalDuration = 0;
+    private final LongSupplier clock;
+    private volatile RunningEvent active;
+    private volatile boolean shuttingDown;
+    private boolean starting;
+    private long revision;
     private static final Pattern DURATION_TOKEN = Pattern.compile("(\\d+)([hms])");
 
-    public XPEventManager(BattlePass plugin) {
-        this.plugin = plugin;
-    }
+    public XPEventManager(BattlePass plugin) { this(plugin, System::currentTimeMillis); }
+
+    XPEventManager(BattlePass plugin, LongSupplier clock) { this.plugin = plugin; this.clock = clock; }
 
     public boolean startEvent(int multiplier, long durationMillis) {
-        long now = System.currentTimeMillis();
-        if (multiplier < 2 || multiplier > 100 || durationMillis <= 0 || durationMillis > Long.MAX_VALUE - now) {
+        long now = clock.getAsLong();
+        if (starting || !canRun() || multiplier < 2 || multiplier > 100 || durationMillis <= 0
+                || durationMillis > Long.MAX_VALUE - now) return false;
+        starting = true;
+        long preparedAt = revision;
+        RunningEvent prepared = new RunningEvent(multiplier, durationMillis, now + durationMillis);
+        try {
+            prepared.bar = Bukkit.createBossBar(prepared.title(), BarColor.YELLOW, BarStyle.SEGMENTED_10);
+            prepared.bar.setVisible(false);
+            prepared.bar.setProgress(1.0);
+            for (Player player : Bukkit.getOnlinePlayers()) prepared.bar.addPlayer(player);
+            prepared.task = Bukkit.getScheduler().runTaskTimer(plugin, prepared, 0L, 20L);
+            if (!canPublish(prepared, preparedAt)) { prepared.close(); return false; }
+            prepared.bar.setVisible(true);
+            if (!canPublish(prepared, preparedAt)) { prepared.close(); return false; }
+            RunningEvent previous = active;
+            active = prepared;
+            revision++;
+            if (previous != null) previous.close();
+            return active == prepared && canRun();
+        } catch (RuntimeException failure) {
+            if (active == prepared) { active = null; revision++; }
+            prepared.close();
+            plugin.getLogger().warning("Could not start XP event: " + failure.getMessage());
             return false;
+        } finally {
+            starting = false;
         }
-        // Expired events can still own a bar/task until their next scheduled tick.
-        stopEvent();
-
-        this.multiplier = multiplier;
-        this.totalDuration = durationMillis;
-        this.endTime = now + durationMillis;
-
-        bossBar = Bukkit.createBossBar(
-                formatBossBarTitle(),
-                BarColor.YELLOW,
-                BarStyle.SEGMENTED_10
-        );
-        bossBar.setProgress(1.0);
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            bossBar.addPlayer(player);
-        }
-
-        countdownTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                long remaining = endTime - System.currentTimeMillis();
-
-                if (remaining <= 0) {
-                    stopEvent();
-                    String endMsg = GradientColorParser.parse(
-                            plugin.getMessageManager().getPrefix() +
-                                    plugin.getMessageManager().getMessage("messages.event.ended"));
-                    for (Player p : Bukkit.getOnlinePlayers()) {
-                        p.sendMessage(endMsg);
-                    }
-                    this.cancel();
-                    return;
-                }
-
-                double progress = (double) remaining / totalDuration;
-                bossBar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
-                bossBar.setTitle(formatBossBarTitle());
-
-                if (remaining <= 60000) {
-                    bossBar.setColor(BarColor.RED);
-                } else if (remaining <= 300000) {
-                    bossBar.setColor(BarColor.PURPLE);
-                }
-            }
-        };
-        countdownTask.runTaskTimer(plugin, 0L, 20L);
-
-        return true;
     }
 
+    private boolean canPublish(RunningEvent prepared, long preparedAt) {
+        return canRun() && revision == preparedAt && clock.getAsLong() < prepared.endTime;
+    }
+
+    private boolean canRun() { return !shuttingDown && !plugin.isStopping() && plugin.isEnabled(); }
+
+    public void shutdown() { shuttingDown = true; stopEvent(); }
+
     public void stopEvent() {
-        multiplier = 1;
-        endTime = 0;
-        totalDuration = 0;
+        revision++;
+        RunningEvent previous = active;
+        active = null;
+        if (previous != null) previous.close();
+    }
 
-        if (countdownTask != null) {
-            countdownTask.cancel();
-            countdownTask = null;
-        }
-
-        if (bossBar != null) {
-            bossBar.removeAll();
-            bossBar = null;
-        }
+    private void stopOwned(RunningEvent event) {
+        if (active == event) stopEvent();
     }
 
     public void addPlayerToBossBar(Player player) {
-        if (bossBar != null && isEventActive()) {
-            bossBar.addPlayer(player);
-        }
+        RunningEvent current = active;
+        if (current != null && canRun() && current.isActive() && player.isOnline()) current.bar.addPlayer(player);
     }
 
     public void removePlayerFromBossBar(Player player) {
-        if (bossBar != null) {
-            bossBar.removePlayer(player);
-        }
+        RunningEvent current = active;
+        if (current != null) current.bar.removePlayer(player);
     }
 
     public boolean isEventActive() {
-        return multiplier > 1 && System.currentTimeMillis() < endTime;
+        RunningEvent current = active;
+        return current != null && current.isActive();
     }
 
     public int getMultiplier() {
-        if (!isEventActive()) {
-            return 1;
-        }
-        return multiplier;
+        RunningEvent current = active;
+        return current != null && current.isActive() ? current.multiplier : 1;
     }
 
     public String getTimeRemaining() {
-        if (!isEventActive()) return "None";
-
-        long remaining = endTime - System.currentTimeMillis();
+        RunningEvent current = active;
+        if (current == null || !current.isActive()) return "None";
+        long remaining = current.endTime - clock.getAsLong();
         if (remaining <= 0) return "None";
-
         long hours = remaining / 3600000;
         long minutes = (remaining % 3600000) / 60000;
         long seconds = (remaining % 60000) / 1000;
-
-        if (hours > 0) {
-            return hours + "h " + minutes + "m " + seconds + "s";
-        } else if (minutes > 0) {
-            return minutes + "m " + seconds + "s";
-        } else {
-            return seconds + "s";
-        }
+        if (hours > 0) return hours + "h " + minutes + "m " + seconds + "s";
+        if (minutes > 0) return minutes + "m " + seconds + "s";
+        return seconds + "s";
     }
 
-    private String formatBossBarTitle() {
-        long remaining = endTime - System.currentTimeMillis();
-        if (remaining <= 0) return "";
+    private final class RunningEvent implements Runnable {
+        final int multiplier;
+        final long totalDuration;
+        final long endTime;
+        private BossBar bar;
+        private BukkitTask task;
+        private volatile boolean closed;
+        private BarColor color = BarColor.YELLOW;
 
-        long hours = remaining / 3600000;
-        long minutes = (remaining % 3600000) / 60000;
-        long seconds = (remaining % 60000) / 1000;
+        RunningEvent(int multiplier, long totalDuration, long endTime) {
+            this.multiplier = multiplier; this.totalDuration = totalDuration; this.endTime = endTime;
+        }
 
-        StringBuilder time = new StringBuilder();
-        if (hours > 0) time.append(hours).append("h ");
-        if (minutes > 0) time.append(minutes).append("m ");
-        time.append(seconds).append("s");
+        // Final play-time credits are flushed after plugin stopping begins, before shutdown closes the event.
+        boolean isActive() { return !closed && !shuttingDown && clock.getAsLong() < endTime; }
 
-        return GradientColorParser.parse(
-                "<gradient:#FFD700:#FF6B6B>" + multiplier + "x XP Event</gradient>" +
-                        " &8| " +
-                        "&7Time Left: " +
-                        "<gradient:#4ECDC4:#45B7D1>" + time.toString().trim() + "</gradient>"
-        );
+        void close() {
+            if (closed) return;
+            closed = true;
+            if (task != null) release(task::cancel);
+            if (bar != null) { release(bar::removeAll); release(() -> bar.setVisible(false)); }
+        }
+
+        private void release(Runnable cleanup) {
+            try { cleanup.run(); }
+            catch (RuntimeException failure) { plugin.getLogger().warning("Could not release XP event resource: " + failure.getMessage()); }
+        }
+
+        @Override public void run() {
+            if (closed || active != this) return;
+            if (!canRun()) { stopOwned(this); return; }
+            long remaining = endTime - clock.getAsLong();
+            if (remaining <= 0) {
+                stopOwned(this);
+                if (!canRun() || active != null) return;
+                String message = GradientColorParser.parse(plugin.getMessageManager().getPrefix()
+                        + plugin.getMessageManager().getMessage("messages.event.ended"));
+                for (Player player : Bukkit.getOnlinePlayers()) player.sendMessage(message);
+                return;
+            }
+            try {
+                bar.setProgress(Math.max(0.0, Math.min(1.0, (double) remaining / totalDuration)));
+                bar.setTitle(title());
+                BarColor nextColor = remaining <= 60000 ? BarColor.RED : remaining <= 300000 ? BarColor.PURPLE : BarColor.YELLOW;
+                if (color != nextColor) { bar.setColor(nextColor); color = nextColor; }
+            } catch (RuntimeException failure) {
+                stopOwned(this);
+                plugin.getLogger().warning("Could not update XP event: " + failure.getMessage());
+            }
+        }
+
+        private String title() {
+            long remaining = endTime - clock.getAsLong();
+            if (remaining <= 0) return "";
+            long hours = remaining / 3600000;
+            long minutes = (remaining % 3600000) / 60000;
+            long seconds = (remaining % 60000) / 1000;
+            StringBuilder time = new StringBuilder();
+            if (hours > 0) time.append(hours).append("h ");
+            if (minutes > 0) time.append(minutes).append("m ");
+            time.append(seconds).append("s");
+            return GradientColorParser.parse(
+                    "<gradient:#FFD700:#FF6B6B>" + multiplier + "x XP Event</gradient>"
+                    + " &8| " + "&7Time Left: " + "<gradient:#4ECDC4:#45B7D1>"
+                    + time.toString().trim() + "</gradient>");
+        }
     }
 
     public static long parseDuration(String input) {
@@ -188,7 +205,8 @@ public class XPEventManager {
 
     public static int parseMultiplier(String input) {
         if (input == null) return -1;
-        input = input.toLowerCase(Locale.ROOT).trim().replace("x", "");
+        input = input.toLowerCase(Locale.ROOT).trim();
+        if (input.endsWith("x")) input = input.substring(0, input.length() - 1);
         try {
             int val = Integer.parseInt(input);
             if (val < 2 || val > 100) return -1;

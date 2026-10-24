@@ -260,9 +260,12 @@ public class CustomItemsListener implements Listener {
             return;
         }
 
+        if (!plugin.getXpEventManager().startEvent(2, 3600000)) {
+            player.sendMessage(plugin.getMessageManager().getPrefix() +
+                    plugin.getMessageManager().getMessage("messages.event.start-failed"));
+            return;
+        }
         consumeHeldItem(event, player, itemInHand);
-
-        plugin.getXpEventManager().startEvent(2, 3600000);
 
         String duration = plugin.getXpEventManager().getTimeRemaining();
 

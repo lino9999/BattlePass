@@ -10,7 +10,7 @@ Read this for voucher/token/boost feedback, repeated held-item sounds, inventory
 | Repeating held-item sounds and task ownership | `managers/SoundManager` |
 | Shutdown ordering | `BattlePass.onDisable`, `listeners/EventManager.stopCustomItemEffects` |
 
-Item recognition uses persistent tags. Redemption and player-state changes stay in the existing listener; `CustomItemEffects` only schedules presentation. Premium consumes one item, coins retain uncredited tokens at the wallet limit, boosts retain the existing XP-event/whole-stack contract, and event items retain their existing event activation contract. Do not move rewards into delayed callbacks.
+Item recognition uses persistent tags. Redemption and player-state changes stay in the existing listener; `CustomItemEffects` only schedules presentation. Premium consumes one item, coins retain uncredited tokens at the wallet limit, and boosts retain the existing XP-event/whole-stack contract. XP-event vouchers consume one item only after event preparation succeeds; rejected/failed starts retain the stack and do not announce activation. Do not move rewards into delayed callbacks. See `EXPERIENCE.md` for multiplier-event ownership and shutdown.
 
 The helper is server-thread state. A session binds UUID and the actual Player object, owns its queued effects and one pending inventory check, and is removed before its tasks are cancelled. The five inventory event kinds share one next-tick check per session; the check reads the final held item. Removing the pending check before calling SoundManager allows a later event to schedule another check. Feedback preserves the original configured-by-code counts, delays, sounds, volumes and pitches.
 

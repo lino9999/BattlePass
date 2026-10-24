@@ -45,7 +45,7 @@ final class XPEventCommands {
 
         if (!plugin.getXpEventManager().startEvent(multiplier, duration)) {
             sender.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.event.invalid-duration"));
+                    plugin.getMessageManager().getMessage("messages.event.start-failed"));
             return true;
         }
 
