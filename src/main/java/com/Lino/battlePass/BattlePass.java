@@ -39,6 +39,7 @@ public class BattlePass extends JavaPlugin {
 
     private volatile boolean stopping;
     private volatile long lifecycleGeneration;
+    private BattlePassTask periodicTask;
     private volatile boolean updateAvailable = false;
     private volatile String latestVersion = "";
 
@@ -132,7 +133,8 @@ public class BattlePass extends JavaPlugin {
         eventManager = new EventManager(this);
         getCommand("battlepass").setExecutor(new BattlePassCommand(this));
         getCommand("battlepass").setTabCompleter(new BattlePassTabCompleter());
-        new BattlePassTask(this).runTaskTimer(this, 6000L, 1200L);
+        periodicTask = new BattlePassTask(this);
+        periodicTask.runTaskTimer(this, 6000L, 1200L);
         restoreCoinsDistributionTask();
         registerPlaceholders();
         checkForUpdates();
@@ -164,6 +166,7 @@ public class BattlePass extends JavaPlugin {
     public void onDisable() {
         stopping = true;
         lifecycleGeneration++;
+        if (periodicTask != null) periodicTask.shutdown();
         if (seasonRotationManager != null) seasonRotationManager.shutdown();
         if (eventManager != null) {
             eventManager.stopCustomItemEffects();

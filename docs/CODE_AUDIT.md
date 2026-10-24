@@ -243,6 +243,14 @@ Validation: all 14 initial reward regressions and two additional invalid-icon re
 
 Validation: all ten initial temporary regressions failed before correction (zero/negative/raw-fallback damage, large-value overflow, disabled optional hook and registration/linkage startup failures). All 64 tests pass (41 existing plus 23 temporary). A BigDecimal oracle checks 275 boundary/random signed-double values through both damage paths; further checks cover reduced damage, shields, projectiles, aliases, registered cancellation dispatch, PvP, absent/enabled/disabled optional plugins, cleanup ownership/failure and real missing Mythic event API resolution under reflection. Bukkit/registration and event payloads are mocked, with the optional artifact excluded by the existing test configuration. No live combat/MythicMobs server was used. Temporary sources/artifacts are removed before delivery.
 
+## Verified fixes: periodic task ownership and reward-notification state (2026-10-24)
+
+- Bind BattlePassTask to its manager instances, guard reentry and check activity between phases/players/cleanup steps. BattlePass now owns and terminally closes/cancels the task before final play-time flush; retained/old-manager instances cannot operate after stop/re-enable. Preserve the 6000/1200-tick schedule and phase order. Pending resets suppress notifications while active elapsed-time sampling continues; per-player notification/time failures do not skip other players. Online collection snapshots avoid callback-induced iteration failures.
+- Extract RewardNotifications. Bind attempts to cached data/revision, normalize negative markers, publish/mark notification state before feedback and reject stale continuations. Restore/dirty a failed-send marker only while still owned so the next run can retry; sound failure retains an already delivered notification. Preserve normal deltas, decreasing-count updates, message/sound settings and database fields.
+- Use a monotonic five-minute cleanup clock with elapsed subtraction, preserving exact/recurring deadlines and ordinary nanoTime wraparound. A top-level failure releases the run guard, and a failed cleanup remains retryable. Explicit final play-time flush remains independent of periodic shutdown.
+
+Validation: all 15 initial regressions failed before correction (work after stop/disable or manager replacement, callback continuation, duplicate reentry, stale notification writes, failed-player interference, negative deltas, paused notifications and cleanup/time continuation). All 77 tests pass (41 existing plus 36 temporary), including normal phase order, state-before-send, unchanged/decreasing/maximum counters, send retry and sound failure, reset/replacement ownership, formatting callbacks, changing online players, time isolation, exact/recurring/wrapped cleanup clocks, scheduled handle cancellation, terminal/manual tasks, top-level retry and real onDisable closure/final-flush ordering. Tests mock Bukkit/scheduling/presentation; no live server was used. Temporary sources/artifacts are removed before delivery. See TASKS.md for responsibilities and preserved timing behavior.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
@@ -250,7 +258,6 @@ The audit is still active. Inspect and reproduce these candidates before changin
 - Exercise unusual platform/custom serialized metadata and optional integration behavior on a live server; inspect paths outside the verified basic parsing/snapshot/claim preparation coverage.
 - Review legacy compatibility fallbacks, optional integrations and non-item material handling in other menu/reward configuration paths.
 - Review arbitrary reentrant level-feedback callbacks and utility progression semantics beyond the verified gain-event boundary; current guards retain existing arithmetic and do not make presentation transactional.
-- Review BattlePassTask continuation during stop/reset and its reward-notification callbacks; the timer source was read but its lifecycle behavior has not yet been reproduced/verified.
 - Distributed player-cache coherence and session-local elapsed-time durability remain unproven/limited; normal reset APIs, feedback and cycle time accounting now use the verified coordinator path.
 - Other startup/shutdown/reload callbacks, shared-database cache assumptions, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 

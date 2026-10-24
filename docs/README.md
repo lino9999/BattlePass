@@ -20,6 +20,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | Battle Pass rendering | [ARCHITECTURE.md](ARCHITECTURE.md) | `gui/BattlePassGui` facade; `BattlePassRewardRenderer` for reward icons/lore; `BattlePassMenuControls` for navigation/actions |
 | Reward loading, serialization, archived previews or claims | [REWARDS.md](REWARDS.md) | `RewardConfiguration`, `ItemSerializer`, `RewardManager`, `RewardClaimHandler`, `models/Reward` snapshots |
 | Periodic coin deliveries / saved deadline | [COINS.md](COINS.md) | `CoinsDistributionTask`, `CoinDistributionRepository`, `PlayerDataManager` preflight and `BattlePass` timer lifecycle |
+| Periodic saves, reward notifications, cleanup and time sampling | [TASKS.md](TASKS.md) | `BattlePassTask`, `RewardNotifications`, `BattlePass.periodicTask` |
 | Custom item redemption, feedback, held-item sounds and quit cleanup | [ITEM_SOUNDS.md](ITEM_SOUNDS.md) | `CustomItemsListener`, `CustomItemRedemptions`, `CustomItemEffects`, `SoundManager` |
 | Update checks, HTTP cleanup and stale startup callbacks | [ARCHITECTURE.md](ARCHITECTURE.md) | `BattlePass.checkForUpdates`, `UpdateChecker`, `VersionUtils` |
 | Login notifications, disconnect and final play-time flush | [ARCHITECTURE.md](ARCHITECTURE.md) | `PlayerConnectionListener.JoinNotification`, `EventManager.stopJoinFeedback`, `PlayTimeTracker` |

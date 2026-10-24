@@ -26,7 +26,7 @@ Dirty revisions are acknowledged individually: a completed write cannot clear a 
 
 Do not hold the player-cache monitor while waiting for database futures. A load completion running on the shared SQLite executor also needs that monitor; blocking it can prevent queued writes from ever completing. Only the generation check/cache mutation uses the monitor during clear.
 
-`BattlePass.onDisable` invalidates startup work and cancels default archive generation before flushing online play time, stopping XP events/sounds/coin work, saving players synchronously, shutting down missions and closing the database. Final time progress happens before the XP multiplier is stopped; actionbar creation skips disabled plugins to avoid scheduling work during disable. Bukkit world, player and inventory operations belong on the server thread; database callbacks often schedule work back onto it.
+`BattlePass.onDisable` invalidates startup work, closes its owned periodic task and cancels default archive generation before flushing online play time, stopping XP events/sounds/coin work, saving players synchronously, shutting down missions and closing the database. Final time progress happens before the XP multiplier is stopped; actionbar creation skips disabled plugins to avoid scheduling work during disable. Bukkit world, player and inventory operations belong on the server thread; database callbacks often schedule work back onto it.
 
 ## Feature map
 
@@ -79,6 +79,7 @@ Public entry points keep their existing signatures. Their helpers are package-pr
 | `BattlePass.checkForUpdates` | `UpdateChecker` | HTTP request/cleanup and immutable parsed result; lifecycle publication remains in BattlePass |
 | `placeholders/BattlePassExpansion` | `LeaderboardPlaceholders` | Shared on-demand SQL refresh, immutable top-ten cache, server-thread names and closed-instance guards |
 | `utils/GradientColorParser` | `GradientText` | Grapheme/control tokenization, visible interpolation steps and carried legacy styles |
+| `tasks/BattlePassTask` | `RewardNotifications` | Owned notification attempts, early dirty markers, safe failed-send retries and per-player presentation isolation; see TASKS.md |
 
 `BattlePassGui` owns the existing player-data/page/max-level snapshot and inventory creation/opening. It passes that same snapshot to its renderers and preserves rendering order: progress, rewards, separator, navigation, actions. Renderers only populate the inventory; click handling stays in the existing listeners. `RewardManager` retains live reward maps and level/page limits, using RewardConfiguration for shared runtime/archive parsing. Its public claim method delegates to RewardClaimHandler with unchanged arguments. Claims prepare items before committing eligibility and mark dirty before delivery/feedback. Configuration paths, slot numbers and persistent tags remain unchanged; see REWARDS.md for snapshot and legacy API behavior.
 
