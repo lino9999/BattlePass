@@ -10,13 +10,12 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class MissionProgressTracker {
 
     private final BattlePass plugin;
     private final MissionActionbars actionbars;
-    private final Map<UUID, Set<String>> playerCompletedMissions = new ConcurrentHashMap<>();
+    private boolean closed;
 
     public MissionProgressTracker(BattlePass plugin) {
         this.plugin = plugin;
@@ -28,18 +27,18 @@ public class MissionProgressTracker {
     }
 
     public void trackProgress(Player player, String type, Collection<String> targets, int amount, List<Mission> dailyMissions) {
-        if (amount <= 0) return;
+        if (closed || amount <= 0 || !player.isOnline()) return;
 
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         if (data == null || dailyMissions.isEmpty() || targets.isEmpty()) return;
 
         UUID playerUUID = player.getUniqueId();
-        Set<String> completedKeys = playerCompletedMissions.computeIfAbsent(playerUUID, k -> ConcurrentHashMap.newKeySet());
-
-        boolean changed = false;
+        long revision = data.getProgressRevision();
+        boolean stoppingAtEntry = plugin.isStopping();
         MessageManager messageManager = plugin.getMessageManager();
 
         for (Mission mission : dailyMissions) {
+            if (!ownsProgress(player, data, revision, stoppingAtEntry)) return;
             if (!mission.type.equals(type)) continue;
 
             boolean matches = false;
@@ -53,35 +52,39 @@ public class MissionProgressTracker {
 
             String missionKey = generateMissionKey(mission);
 
-            if (completedKeys.contains(missionKey)) {
-                continue;
-            }
-
             int currentProgress = Math.max(0, data.missionProgress.getOrDefault(missionKey, 0));
 
             if (currentProgress >= mission.required) {
-                completedKeys.add(missionKey);
                 continue;
             }
 
             int newProgress = (int) Math.min((long) currentProgress + amount, mission.required);
             newProgress = Math.max(0, newProgress);
             data.missionProgress.put(missionKey, newProgress);
-            changed = true;
+            // Publish the dirty revision before the XP hook or presentation can save/reset this player.
+            plugin.getPlayerDataManager().markForSave(playerUUID);
 
             if (newProgress >= mission.required && currentProgress < mission.required) {
-                completedKeys.add(missionKey);
-
                 int eventMultiplier = plugin.getXpEventManager().getMultiplier();
                 int xpToAdd = (int) Math.min(Integer.MAX_VALUE, (long) mission.xpReward * eventMultiplier);
 
                 BattlePassXPGainEvent xpGainEvent = new BattlePassXPGainEvent(player, BattlePassXPGainEvent.XPSource.MISSION, xpToAdd);
                 Bukkit.getPluginManager().callEvent(xpGainEvent);
+                if (!ownsProgress(player, data, revision, stoppingAtEntry)
+                        || data.missionProgress.getOrDefault(missionKey, 0) != newProgress) return;
                 xpToAdd = xpGainEvent.isCancelled() ? 0 : Math.max(0, xpGainEvent.getAmount());
 
                 if (xpToAdd > 0) {
-                    checkLevelUp(player, data, xpToAdd);
+                    try {
+                        checkLevelUp(player, data, xpToAdd);
+                    } finally {
+                        if (plugin.getPlayerDataManager().getPlayerData(playerUUID) == data) {
+                            plugin.getPlayerDataManager().markForSave(playerUUID);
+                        }
+                    }
                 }
+
+                if (!ownsProgress(player, data, revision, stoppingAtEntry)) return;
 
                 String xpText = String.valueOf(xpToAdd);
                 if (eventMultiplier > 1) {
@@ -91,17 +94,22 @@ public class MissionProgressTracker {
                 player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.mission.completed",
                         "%mission%", mission.name,
                         "%reward_xp%", xpText));
+                if (!ownsProgress(player, data, revision, stoppingAtEntry)) return;
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
+                if (!ownsProgress(player, data, revision, stoppingAtEntry)) return;
                 showCompletedActionbar(player, mission.name);
             } else {
                 showProgressActionbar(player, mission.name, newProgress, mission.required);
             }
         }
+    }
 
-        if (changed) {
-            plugin.getPlayerDataManager().markForSave(player.getUniqueId());
-        }
+    private boolean ownsProgress(Player player, PlayerData data, long revision, boolean stoppingAtEntry) {
+        // Already-stopping entry is the controlled final play-time flush, before tracker shutdown.
+        return !closed && player.isOnline() && data.getProgressRevision() == revision
+                && plugin.getPlayerDataManager().getPlayerData(player.getUniqueId()) == data
+                && (stoppingAtEntry || !plugin.isStopping());
     }
 
     private String generateMissionKey(Mission mission) {
@@ -109,9 +117,12 @@ public class MissionProgressTracker {
     }
 
     public void resetProgress() {
-        playerCompletedMissions.clear();
+        if (closed) return;
+        for (PlayerData data : plugin.getPlayerDataManager().getPlayerCache().values()) {
+            data.invalidateProgress();
+            data.missionProgress.clear();
+        }
         actionbars.clearAll();
-        for (PlayerData data : plugin.getPlayerDataManager().getPlayerCache().values()) data.missionProgress.clear();
     }
 
     private void checkLevelUp(Player player, PlayerData data, int amount) {
@@ -119,7 +130,7 @@ public class MissionProgressTracker {
         int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
         int maxLevel = plugin.getRewardManager().getMaxLevel();
 
-        long levels = ExperienceProgression.addWithLimitedFeedback(data, amount, xpPerLevel, maxLevel, () -> {
+        ExperienceProgression.addWithLimitedFeedback(data, amount, xpPerLevel, maxLevel, () -> {
             player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.level-up",
                     "%level%", String.valueOf(data.level)));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
@@ -129,10 +140,6 @@ public class MissionProgressTracker {
                 player.sendMessage(messageManager.getPrefix() + messageManager.getMessage("messages.new-rewards"));
             }
         });
-
-        if (levels > 0) {
-            plugin.getPlayerDataManager().markForSave(player.getUniqueId());
-        }
     }
 
     private void showProgressActionbar(Player player, String missionName, int current, int required) {
@@ -144,13 +151,15 @@ public class MissionProgressTracker {
     }
 
     public void clearPlayerActionbars(UUID uuid) {
+        if (closed) return;
+        PlayerData data = plugin.getPlayerDataManager().getPlayerData(uuid);
+        if (data != null) data.invalidateProgress();
         actionbars.clearPlayer(uuid);
-        playerCompletedMissions.remove(uuid);
     }
 
     public void shutdown() {
+        closed = true;
         actionbars.clearAll();
-        playerCompletedMissions.clear();
     }
 
     public int getCompletedMissionsCount(PlayerData data, List<Mission> missions) {

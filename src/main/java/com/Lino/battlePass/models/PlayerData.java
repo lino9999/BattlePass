@@ -18,10 +18,16 @@ public class PlayerData {
     public final Map<String, Integer> missionProgress = new ConcurrentHashMap<>();
     public final Set<Integer> claimedFreeRewards = ConcurrentHashMap.newKeySet();
     public final Set<Integer> claimedPremiumRewards = ConcurrentHashMap.newKeySet();
+    private long progressRevision;
 
     public PlayerData(UUID uuid) {
         this.uuid = uuid;
     }
+
+    /** Runtime reset/session boundary for synchronous XP hooks; deliberately not persisted or copied. */
+    public long getProgressRevision() { return progressRevision; }
+
+    public void invalidateProgress() { progressRevision++; }
 
     /** Credits only the amount representable by the persisted integer balance. */
     public int addBattleCoins(int amount) {

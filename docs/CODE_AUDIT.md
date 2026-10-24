@@ -220,13 +220,21 @@ Validation: all twelve initial regressions failed before correction (ignored mal
 
 Validation: all seven initial regressions failed before correction (timer/placeholder/menu/backend disagreement for old timestamps, double claim via an XP hook and continued stopped/disconnected/replaced-player awards). An expanded failure check reproduced missing dirty marking after failed level feedback. All 60 tests pass (41 existing plus 19 temporary). A BigInteger oracle checks 2,129 boundary/random signed-long timestamp pairs; tests cover exact/subsecond deadlines, future countdowns, normal cooldown, missing data/retry, modified/cancelled XP, moved timestamps and guard cleanup on exceptions. Bukkit/events/menu ItemStacks are mocked; temporary sources/artifacts are removed before delivery. Existing SQLite tests pass, but no live server or distributed claim lock was tested.
 
+## Verified fixes: mission/boost hook ownership and durable command mutations (2026-10-24)
+
+- Remove the redundant completed-mission key cache: the persisted progress threshold already prevents duplicate completion and now permits progress again after resetplayer. Reset/quit cleanup invalidates a runtime-only PlayerData revision and clears actionbars; mission, boost and daily hooks reject same-object resets as well as cache replacement/disconnect/stop. Tracker shutdown is terminal, while controlled final play-time progress entering during stopping remains supported. Mission completion stays visible before its XP hook, preserving same-mission reentry prevention and allowing nested different-mission progress.
+- Mark mission progress dirty before hooks/presentation, renew dirty marking after XP in finally, and mark administrative XP/coin mutations before success feedback. A hook saving intermediate progress or a presentation exception can no longer silently leave later cached mutations clean. The administrative XP path still does not fire gain events.
+- Guard synchronous custom-item uses independently of the 50 ms debounce, invalidate the current use on quit, and terminally close redemption on shutdown. Boosts validate the original hand/slot, cloned metadata, exact quantity, cached data/revision, active use and current max level after the gain hook. Invalidated requests retain the held item and do not award old XP; ordinary modified/cancelled event behavior is preserved. No SQL/schema or configuration changes.
+
+Validation: all 13 initial temporary regressions failed before correction (stale mission/boost data, reset completion cache, item/quantity/slot replacement, reentry beyond debounce and missing dirty marking after presentation failures). All 82 tests pass (41 existing plus 41 temporary), including same-object reset for daily/boost hooks, modified/cancelled XP, nested same/different missions, final stopping-time progress, direct progress clearing, quit/shutdown and closed-instance behavior, both hands, metadata/eligibility changes, guard retry, intermediate-save dirty renewal, add/remove XP/coins and runtime-only snapshot revision. Tests use mocked Bukkit/events/inventory and sentinel presentation failures; existing real SQLite tests also pass. Temporary sources and generated artifacts are removed before delivery; no live Minecraft server was used. Guards are not a transaction around arbitrary third-party/UI callbacks and do not roll back externally saved completion or side effects.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
 - Reward previews, unusual serialized item metadata and malformed configuration outside the verified editor/reward paths; check optional integration behavior on a live server.
 - Review legacy compatibility fallbacks, optional integrations and non-item material handling in other menu/reward configuration paths.
-- Review the other XP entry points for gain-hook/reset/quit reentrancy, cached-state ownership and dirty marking on presentation failure.
+- Review arbitrary reentrant level-feedback callbacks and utility progression semantics beyond the verified gain-event boundary; current guards retain existing arithmetic and do not make presentation transactional.
 - Distributed player-cache coherence and session-local elapsed-time durability remain unproven/limited; normal reset APIs, feedback and cycle time accounting now use the verified coordinator path.
 - Other startup/shutdown/reload callbacks, shared-database cache assumptions, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 

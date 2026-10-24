@@ -238,10 +238,12 @@ public class GuiClickListener implements Listener {
 
             if (DailyRewardCooldown.isAvailable(data.lastDailyReward, now)) {
                 int xpReward = plugin.getConfigManager().getDailyRewardXP();
+                long revision = data.getProgressRevision();
 
                 BattlePassXPGainEvent xpGainEvent = new BattlePassXPGainEvent(player, BattlePassXPGainEvent.XPSource.DAILY_REWARD, xpReward);
                 Bukkit.getPluginManager().callEvent(xpGainEvent);
                 if (plugin.isStopping() || !player.isOnline() || plugin.getPlayerDataManager().getPlayerData(uuid) != data
+                        || data.getProgressRevision() != revision
                         || !DailyRewardCooldown.isAvailable(data.lastDailyReward, now)) return;
                 xpReward = xpGainEvent.isCancelled() ? 0 : Math.max(0, xpGainEvent.getAmount());
 

@@ -11,15 +11,22 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.function.BooleanSupplier;
+
 /** Synchronous custom-item redemption; registration and cooldowns stay in the listener. */
 final class CustomItemRedemptions {
     private final BattlePass plugin;
     private final CustomItemEffects effects;
+    private boolean closed;
 
     CustomItemRedemptions(BattlePass plugin, CustomItemEffects effects) {
         this.plugin = plugin;
         this.effects = effects;
     }
+
+    boolean isActive() { return !closed && !plugin.isStopping() && plugin.isEnabled(); }
+
+    void shutdown() { closed = true; }
 
     private void consumeHeldItem(PlayerInteractEvent event, Player player, ItemStack item) {
         if (item.getAmount() > 1) {
@@ -119,7 +126,7 @@ final class CustomItemRedemptions {
         }
     }
 
-    void handleLevelBoostUse(PlayerInteractEvent event, Player player) {
+    void handleLevelBoostUse(PlayerInteractEvent event, Player player, BooleanSupplier currentUse) {
         event.setCancelled(true);
 
         ItemStack itemInHand = event.getItem();
@@ -145,22 +152,34 @@ final class CustomItemRedemptions {
 
         int amount = itemInHand.getAmount();
         int totalXP = (int) Math.min(Integer.MAX_VALUE, (long) amount * 100);
+        long revision = data.getProgressRevision();
+        HeldItemSnapshot held = new HeldItemSnapshot(player, event.getHand(), itemInHand);
 
         BattlePassXPGainEvent xpGainEvent = new BattlePassXPGainEvent(player, BattlePassXPGainEvent.XPSource.LEVEL_BOOST, totalXP);
         Bukkit.getPluginManager().callEvent(xpGainEvent);
+        if (!isActive() || !currentUse.getAsBoolean() || !player.isOnline()
+                || plugin.getPlayerDataManager().getPlayerData(player.getUniqueId()) != data
+                || data.getProgressRevision() != revision || !held.stillHeld(player)) return;
+        maxLevel = plugin.getRewardManager().getMaxLevel();
+        if (data.level >= maxLevel) return;
         totalXP = xpGainEvent.isCancelled() ? 0 : Math.max(0, xpGainEvent.getAmount());
 
         consumeEntireHeldItem(event, player);
 
         int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
-        long levelsGained = ExperienceProgression.addWithLimitedFeedback(data, totalXP, xpPerLevel, maxLevel, () -> {
-            player.sendMessage(plugin.getMessageManager().getPrefix() +
-                    plugin.getMessageManager().getMessage("messages.level-up",
-                            "%level%", String.valueOf(data.level)));
-            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-        });
-
-        plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+        long levelsGained;
+        try {
+            levelsGained = ExperienceProgression.addWithLimitedFeedback(data, totalXP, xpPerLevel, maxLevel, () -> {
+                player.sendMessage(plugin.getMessageManager().getPrefix() +
+                        plugin.getMessageManager().getMessage("messages.level-up",
+                                "%level%", String.valueOf(data.level)));
+                player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+            });
+        } finally {
+            if (plugin.getPlayerDataManager().getPlayerData(player.getUniqueId()) == data) {
+                plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+            }
+        }
 
         player.sendMessage(plugin.getMessageManager().getPrefix() +
                 plugin.getMessageManager().getMessage("messages.items.xp-boost-used",

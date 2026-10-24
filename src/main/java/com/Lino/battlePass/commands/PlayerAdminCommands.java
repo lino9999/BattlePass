@@ -51,6 +51,7 @@ final class PlayerAdminCommands {
         dataReset.missionProgress.clear();
 
         plugin.getPlayerDataManager().markForSave(targetReset.getUniqueId());
+        plugin.getMissionManager().clearPlayerActionbars(targetReset.getUniqueId());
 
         sender.sendMessage(plugin.getMessageManager().getPrefix() +
                 plugin.getMessageManager().getMessage("messages.reset-player.sender",
@@ -146,7 +147,13 @@ final class PlayerAdminCommands {
             int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
 
             if (add) {
-                checkLevelUp(target, data, xpPerLevel, amount);
+                try {
+                    checkLevelUp(target, data, xpPerLevel, amount);
+                } finally {
+                    if (plugin.getPlayerDataManager().getPlayerData(target.getUniqueId()) == data) {
+                        plugin.getPlayerDataManager().markForSave(target.getUniqueId());
+                    }
+                }
                 sender.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.xp.added-sender",
                                 "%amount%", String.valueOf(amount), "%target%", target.getName()));
@@ -159,6 +166,7 @@ final class PlayerAdminCommands {
                 totalXP -= (long) (newLevel - 1) * xpPerLevel;
                 data.level = newLevel;
                 data.xp = (int) Math.min(Integer.MAX_VALUE, totalXP);
+                plugin.getPlayerDataManager().markForSave(target.getUniqueId());
 
                 sender.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.xp.removed-sender",
@@ -168,7 +176,6 @@ final class PlayerAdminCommands {
                                 "%amount%", String.valueOf(amount)));
             }
 
-            plugin.getPlayerDataManager().markForSave(target.getUniqueId());
             return true;
 
         } catch (NumberFormatException e) {
@@ -216,6 +223,7 @@ final class PlayerAdminCommands {
 
             if (add) {
                 amount = data.addBattleCoins(amount);
+                plugin.getPlayerDataManager().markForSave(target.getUniqueId());
                 sender.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.coins.added-sender",
                                 "%amount%", String.valueOf(amount), "%target%", target.getName()));
@@ -233,6 +241,7 @@ final class PlayerAdminCommands {
                 }
 
                 data.battleCoins -= amount;
+                plugin.getPlayerDataManager().markForSave(target.getUniqueId());
                 sender.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.coins.removed-sender",
                                 "%amount%", String.valueOf(amount), "%target%", target.getName()));
@@ -241,7 +250,6 @@ final class PlayerAdminCommands {
                                 "%amount%", String.valueOf(amount)));
             }
 
-            plugin.getPlayerDataManager().markForSave(target.getUniqueId());
             return true;
 
         } catch (NumberFormatException e) {
@@ -294,7 +302,7 @@ final class PlayerAdminCommands {
     }
 
     private void checkLevelUp(Player player, PlayerData data, int xpPerLevel, int amount) {
-        long levels = ExperienceProgression.addWithLimitedFeedback(data, amount, xpPerLevel, plugin.getRewardManager().getMaxLevel(), () -> {
+        ExperienceProgression.addWithLimitedFeedback(data, amount, xpPerLevel, plugin.getRewardManager().getMaxLevel(), () -> {
             player.sendMessage(plugin.getMessageManager().getPrefix() +
                     plugin.getMessageManager().getMessage("messages.level-up",
                             "%level%", String.valueOf(data.level)));
@@ -306,9 +314,5 @@ final class PlayerAdminCommands {
                         plugin.getMessageManager().getMessage("messages.new-rewards"));
             }
         });
-
-        if (levels > 0) {
-            plugin.getPlayerDataManager().markForSave(player.getUniqueId());
-        }
     }
 }

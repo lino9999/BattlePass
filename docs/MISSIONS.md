@@ -49,6 +49,10 @@ Temporary regression tests verified canonical/formatted/namespaced names, additi
 
 If a canonical target still does not count on a live server, collect the active mission target/type, server/plugin versions, disabled worlds, player-data loading status and plugins cancelling/replacing consumption. Check those before adding fallback statistic/right-click listeners, which could award duplicate or unconsumed items.
 
+## Mission progress ownership
+
+MissionProgressTracker derives completion from PlayerData.missionProgress rather than a second completed-key cache. resetplayer clears progress and calls mission cleanup to invalidate pending gain hooks and remove old actionbars; an already completed mission can then progress again. Hooks recheck the runtime data revision/cache identity and exact completion value before awarding XP. Progress keys and cancellation behavior remain unchanged. See EXPERIENCE.md for reentry, dirty marking and final shutdown credits.
+
 ## WALK_DISTANCE and PLAY_TIME
 
 `MovementMissionTracker` records coordinate changes (including within a block) with separate fractional buffers for WALK, FLY, SWIM and SNEAK. A whole block is sent through the normal mission path with that mode; ANY missions match those updates as usual. Fractions remain associated with their own mode. Teleports, world changes, invalid/large discontinuities and disabled worlds reset the baseline/fractions; cancelled movement/teleports do not. Stored Location objects are snapshots, not mutable event references.

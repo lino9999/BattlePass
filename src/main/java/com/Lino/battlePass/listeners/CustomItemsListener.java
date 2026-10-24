@@ -21,6 +21,7 @@ public class CustomItemsListener implements Listener {
 
     private final BattlePass plugin;
     private final Map<UUID, Long> lastCustomItemUse = new ConcurrentHashMap<>();
+    private final Map<UUID, Object> activeUses = new ConcurrentHashMap<>();
     private final CustomItemEffects effects;
     private final CustomItemRedemptions redemptions;
 
@@ -36,9 +37,10 @@ public class CustomItemsListener implements Listener {
                 event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
-        if (plugin.isStopping() || !plugin.isEnabled()) return;
+        if (!redemptions.isActive()) return;
 
         Player player = event.getPlayer();
+        if (!player.isOnline()) return;
         ItemStack item = event.getItem();
 
         if (item == null) return;
@@ -54,19 +56,26 @@ public class CustomItemsListener implements Listener {
 
         if (!isUsableHand(event, player)) return;
 
-        long now = System.currentTimeMillis();
-        Long last = lastCustomItemUse.get(player.getUniqueId());
-        if (last != null && now - last < 50) return;
-        lastCustomItemUse.put(player.getUniqueId(), now);
+        UUID uuid = player.getUniqueId();
+        Object use = new Object();
+        if (activeUses.putIfAbsent(uuid, use) != null) return;
+        try {
+            long now = System.currentTimeMillis();
+            Long last = lastCustomItemUse.get(uuid);
+            if (last != null && now - last < 50) return;
+            lastCustomItemUse.put(uuid, now);
 
-        if (premium) {
-            redemptions.handlePremiumPassUse(event, player, item);
-        } else if (coins) {
-            redemptions.handleBattleCoinsUse(event, player);
-        } else if (boost) {
-            redemptions.handleLevelBoostUse(event, player);
-        } else {
-            redemptions.handleXPEventUse(event, player);
+            if (premium) {
+                redemptions.handlePremiumPassUse(event, player, item);
+            } else if (coins) {
+                redemptions.handleBattleCoinsUse(event, player);
+            } else if (boost) {
+                redemptions.handleLevelBoostUse(event, player, () -> activeUses.get(uuid) == use);
+            } else {
+                redemptions.handleXPEventUse(event, player);
+            }
+        } finally {
+            activeUses.remove(uuid);
         }
     }
 
@@ -103,12 +112,16 @@ public class CustomItemsListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
+        // Keep the in-stack guard occupied while invalidating a redemption interrupted by quit.
+        activeUses.computeIfPresent(uuid, (ignored, use) -> new Object());
         lastCustomItemUse.remove(uuid);
         effects.cleanup(uuid);
     }
 
     public void shutdown() {
+        redemptions.shutdown();
         effects.shutdown();
         lastCustomItemUse.clear();
+        activeUses.clear();
     }
 }
