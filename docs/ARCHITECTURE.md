@@ -68,6 +68,8 @@ Public entry points keep their existing signatures. Their helpers are package-pr
 | `managers/RewardManager` | `RewardClaimHandler` | Claim eligibility, persisted claim checks, command/item delivery, feedback and dirty marking |
 | `managers/MissionProgressTracker` | `MissionActionbars` | Per-task bar ownership, message timing, replacement/offline/quit/reset/shutdown cleanup |
 | `managers/SeasonRotationManager` | `SeasonArchiveInitializer` | Frozen default templates, bounded filesystem batches, demand preparation and job cancellation |
+| `managers/ConfigManager` | `GuiConfiguration` | GUI material parsing/defaults, claimed-reward visibility and custom model data; public getters remain on the facade |
+| `listeners/CustomItemsListener` | `CustomItemRedemptions` | Synchronous premium/coin/boost/event redemption and hand/stack consumption; event registration and cooldown remain on the listener |
 | `listeners/CustomItemsListener` | `CustomItemEffects` | Session-owned delayed presentation, coalesced next-tick checks and quit/shutdown cleanup |
 | `BattlePass.checkForUpdates` | `UpdateChecker` | HTTP request/cleanup and immutable parsed result; lifecycle publication remains in BattlePass |
 | `placeholders/BattlePassExpansion` | `LeaderboardPlaceholders` | Shared on-demand SQL refresh, immutable top-ten cache, server-thread names and closed-instance guards |

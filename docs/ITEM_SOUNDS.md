@@ -5,12 +5,13 @@ Read this for voucher/token/boost feedback, repeated held-item sounds, inventory
 | Responsibility | Entry point |
 | --- | --- |
 | Item identity and persistent tags | `managers/CustomItemManager` |
-| Redemption, hand/stack rules, cooldown and event registration | `listeners/CustomItemsListener` |
+| Event registration, hand eligibility, cooldown and quit/shutdown entry points | `listeners/CustomItemsListener` |
+| Redemption, stack consumption, XP hook and immediate feedback | `listeners/CustomItemRedemptions` |
 | Delayed feedback, coalesced inventory checks and session cleanup | `listeners/CustomItemEffects` |
 | Repeating held-item sounds and task ownership | `managers/SoundManager` |
 | Shutdown ordering | `BattlePass.onDisable`, `listeners/EventManager.stopCustomItemEffects` |
 
-Item recognition uses persistent tags. Redemption and player-state changes stay in the existing listener; `CustomItemEffects` only schedules presentation. Premium consumes one item, coins retain uncredited tokens at the wallet limit, and boosts retain the existing XP-event/whole-stack contract. XP-event vouchers consume one item only after event preparation succeeds; rejected/failed starts retain the stack and do not announce activation. Do not move rewards into delayed callbacks. See `EXPERIENCE.md` for multiplier-event ownership and shutdown.
+Item recognition uses persistent tags. The listener dispatches synchronously to its package-private `CustomItemRedemptions`, sharing the same plugin and `CustomItemEffects` instance. The helper moves the original method bodies without changing their ordering or rules; it is not another registered listener. `CustomItemEffects` only schedules presentation. Premium consumes one item, coins retain uncredited tokens at the wallet limit, and boosts retain the existing XP-event/whole-stack contract. XP-event vouchers consume one item only after event preparation succeeds; rejected/failed starts retain the stack and do not announce activation. Do not move rewards into delayed callbacks. See `EXPERIENCE.md` for multiplier-event ownership and shutdown.
 
 The helper is server-thread state. A session binds UUID and the actual Player object, owns its queued effects and one pending inventory check, and is removed before its tasks are cancelled. The five inventory event kinds share one next-tick check per session; the check reads the final held item. Removing the pending check before calling SoundManager allows a later event to schedule another check. Feedback preserves the original configured-by-code counts, delays, sounds, volumes and pitches.
 

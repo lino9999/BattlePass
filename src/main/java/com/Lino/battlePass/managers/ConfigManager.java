@@ -1,18 +1,13 @@
 package com.Lino.battlePass.managers;
 
-import java.util.Locale;
-
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.utils.ConfigurationFiles;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ConfigManager {
 
@@ -35,17 +30,7 @@ public class ConfigManager {
     private int missionResetHours = 24;
     private boolean customItemSoundsEnabled = true;
 
-    private Material guiFreeLockedMaterial = Material.GRAY_STAINED_GLASS;
-    private Material guiPremiumLockedMaterial = Material.GRAY_STAINED_GLASS;
-    private Material guiPremiumNoPassMaterial = Material.IRON_BARS;
-    private Material guiRewardAvailableMaterial = Material.CHEST;
-    private Material guiSeparatorMaterial = Material.GRAY_STAINED_GLASS_PANE;
-    private Material guiFreeClaimedMaterial = Material.GREEN_STAINED_GLASS;
-    private Material guiPremiumClaimedMaterial = Material.LIME_STAINED_GLASS;
-    private boolean hideFreeClaimedRewards = false;
-    private boolean hidePremiumClaimedRewards = false;
-    private final Map<String, Integer> guiCustomModelData = new HashMap<>();
-    private int guiNavigationCustomModelData = 0;
+    private final GuiConfiguration gui;
     private List<String> missionDisabledWorlds = new ArrayList<>();
     private int actionbarProgressDuration = 10;
     private int actionbarCompletedDuration = 15;
@@ -61,6 +46,7 @@ public class ConfigManager {
 
     public ConfigManager(BattlePass plugin) {
         this.plugin = plugin;
+        this.gui = new GuiConfiguration(plugin);
         reload();
     }
 
@@ -94,31 +80,7 @@ public class ConfigManager {
         dbPrefix = config.getString("database.prefix", "bp_");
         dbPoolSize = Math.max(1, config.getInt("database.pool-size", 10));
 
-        guiCustomModelData.clear();
-
-        guiFreeLockedMaterial = parseGuiMaterial("gui.reward-locked.free", Material.GRAY_STAINED_GLASS);
-        guiPremiumLockedMaterial = parseGuiMaterial("gui.reward-locked.premium", Material.GRAY_STAINED_GLASS);
-        guiPremiumNoPassMaterial = parseGuiMaterial("gui.premium-no-pass", Material.IRON_BARS);
-        guiRewardAvailableMaterial = parseGuiMaterial("gui.reward-available", Material.CHEST);
-        guiSeparatorMaterial = parseGuiMaterial("gui.separator", Material.GRAY_STAINED_GLASS_PANE);
-
-        if (isGuiEntryNone("gui.reward-claimed.free")) {
-            hideFreeClaimedRewards = true;
-            guiFreeClaimedMaterial = null;
-        } else {
-            hideFreeClaimedRewards = false;
-            guiFreeClaimedMaterial = parseGuiMaterial("gui.reward-claimed.free", Material.GREEN_STAINED_GLASS);
-        }
-
-        if (isGuiEntryNone("gui.reward-claimed.premium")) {
-            hidePremiumClaimedRewards = true;
-            guiPremiumClaimedMaterial = null;
-        } else {
-            hidePremiumClaimedRewards = false;
-            guiPremiumClaimedMaterial = parseGuiMaterial("gui.reward-claimed.premium", Material.LIME_STAINED_GLASS);
-        }
-
-        guiNavigationCustomModelData = Math.max(0, config.getInt("gui.navigation.custom-model-data", 0));
+        gui.reload(config);
 
         missionDisabledWorlds = config.getStringList("missions.disabled-worlds");
         actionbarProgressDuration = Math.max(1, config.getInt("missions.actionbar.progress-duration", 10));
@@ -143,57 +105,12 @@ public class ConfigManager {
         battlePassPremiumConfig = nextPremium;
     }
 
-    private Material parseMaterial(String materialName, Material defaultMaterial) {
-        if (materialName == null || materialName.isEmpty()) {
-            return defaultMaterial;
-        }
-
-        try {
-            return Material.valueOf(materialName.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            plugin.getLogger().warning("Invalid material '" + materialName + "' in config. Using default: " + defaultMaterial.name());
-            return defaultMaterial;
-        }
-    }
-
-    private boolean isGuiEntryNone(String path) {
-        Object raw = config.get(path);
-        String materialName;
-        if (raw instanceof ConfigurationSection section) {
-            materialName = section.getString("material");
-        } else {
-            materialName = config.getString(path);
-        }
-        return materialName != null && materialName.equalsIgnoreCase("NONE");
-    }
-
-    private Material parseGuiMaterial(String path, Material defaultMaterial) {
-        Object raw = config.get(path);
-        String materialName = null;
-        int customModelData = 0;
-
-        if (raw instanceof ConfigurationSection section) {
-            materialName = section.getString("material");
-            customModelData = section.getInt("custom-model-data", 0);
-        } else if (raw instanceof String) {
-            materialName = (String) raw;
-        }
-
-        if (customModelData > 0) {
-            guiCustomModelData.put(path, customModelData);
-        } else {
-            guiCustomModelData.remove(path);
-        }
-
-        return parseMaterial(materialName, defaultMaterial);
-    }
-
     public Integer getGuiCustomModelData(String path) {
-        return guiCustomModelData.get(path);
+        return gui.getGuiCustomModelData(path);
     }
 
     public int getGuiNavigationCustomModelData() {
-        return guiNavigationCustomModelData;
+        return gui.getGuiNavigationCustomModelData();
     }
 
     public boolean isMissionWorldDisabled(String worldName) {
@@ -279,39 +196,39 @@ public class ConfigManager {
     }
 
     public Material getGuiFreeLockedMaterial() {
-        return guiFreeLockedMaterial;
+        return gui.getGuiFreeLockedMaterial();
     }
 
     public Material getGuiPremiumLockedMaterial() {
-        return guiPremiumLockedMaterial;
+        return gui.getGuiPremiumLockedMaterial();
     }
 
     public Material getGuiPremiumNoPassMaterial() {
-        return guiPremiumNoPassMaterial;
+        return gui.getGuiPremiumNoPassMaterial();
     }
 
     public Material getGuiRewardAvailableMaterial() {
-        return guiRewardAvailableMaterial;
+        return gui.getGuiRewardAvailableMaterial();
     }
 
     public Material getGuiSeparatorMaterial() {
-        return guiSeparatorMaterial;
+        return gui.getGuiSeparatorMaterial();
     }
 
     public Material getGuiFreeClaimedMaterial() {
-        return guiFreeClaimedMaterial;
+        return gui.getGuiFreeClaimedMaterial();
     }
 
     public Material getGuiPremiumClaimedMaterial() {
-        return guiPremiumClaimedMaterial;
+        return gui.getGuiPremiumClaimedMaterial();
     }
 
     public boolean shouldHideFreeClaimedRewards() {
-        return hideFreeClaimedRewards;
+        return gui.shouldHideFreeClaimedRewards();
     }
 
     public boolean shouldHidePremiumClaimedRewards() {
-        return hidePremiumClaimedRewards;
+        return gui.shouldHidePremiumClaimedRewards();
     }
 
     public String getDatabaseType() {
