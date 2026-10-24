@@ -1,7 +1,7 @@
 # Working on BattlePass
 
 - Start with `docs/README.md`, then read only the task's relevant guide and files.
-- Java 21, Maven, Spigot 1.21.4 API. Root package: `com.Lino.battlePass`.
+- Java 21 bytecode, Maven, Spigot 1.21.11 API; Java 25 for 26.x compatibility checks/servers. Target: Paper and Spigot 1.21.11–26.3; see `docs/COMPATIBILITY.md`. Root package: `com.Lino.battlePass`.
 - Use `rg` for focused searches; avoid reading the entire repository or generated output.
 - For bug fixes, reproduce the failure in a regression test where feasible, then run the relevant tests and `mvn clean package`.
 - Owner instruction: do not commit or push test files. Newly created regression tests are temporary: after verification, delete their sources and generated classes/reports from the PC before staging changes. Preserve pre-existing tests unless the owner asks to remove them. Summarize the verification in the relevant guide instead.

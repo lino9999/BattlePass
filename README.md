@@ -1,10 +1,10 @@
-# ⚔️ BattlePass - Ultimate Progression Plugin for Minecraft (1.21+)
+# ⚔️ BattlePass - Ultimate Progression Plugin for Minecraft (1.21.11–26.3)
 
 > **The most advanced, feature-rich Battle Pass system for Spigot & Paper servers.**
 > Engage your players with Daily Missions, Tiered Rewards, and a custom Currency Shop.
 > **No config editing required** — manage everything via In-Game GUI!
 
-![Java](https://img.shields.io/badge/Java-21-orange) ![Spigot](https://img.shields.io/badge/API-1.21-yellow) ![License](https://img.shields.io/badge/License-MIT-blue)
+![Java](https://img.shields.io/badge/Java-21%20%2F%2025-orange) ![Spigot](https://img.shields.io/badge/Minecraft-1.21.11%E2%80%9326.3-yellow) ![License](https://img.shields.io/badge/License-MIT-blue)
 
 ---
 
@@ -78,6 +78,8 @@ Unlike other plugins, **BattlePass** focuses on ease of use for admins and engag
 
 ## 📥 Installation
 
+Supports Spigot and available Paper releases from Minecraft Java 1.21.11 through 26.3. Use Java 21 on 1.21.11 and Java 25 on 26.x. See the [compatibility matrix](docs/COMPATIBILITY.md) for exact builds and verification limits. Paper has no published 26.1 build; its 26.1.1 build is alpha.
+
 1.  Download `BattlePass.jar`.
 2.  Drop it into your server's `/plugins/` folder.
 3.  (Optional) Install **PlaceholderAPI** for placeholders.
@@ -87,6 +89,8 @@ Unlike other plugins, **BattlePass** focuses on ease of use for admins and engag
 ### Build from source
 
 Use Java 21 and Maven, then run `mvn clean package`. The build runs the regression tests and produces `target/BattlePass-8.6.jar`. The release version is defined in `pom.xml`; Maven also writes it into the packaged `plugin.yml`.
+
+Material missions resolve the running server's material catalog, including blocks introduced within the supported range. Use `BREAK_BLOCK` to count breaking any configured block and `PLACE_BLOCK` for placement; `MINE_BLOCK` retains its ore-only behavior. Newer blocks must exist in the server version where the mission runs. Configuration examples and progress troubleshooting are in [the mission guide](docs/MISSIONS.md).
 
 See [the issue review](docs/ISSUE_REVIEW.md) for the fixes, configuration examples and validation details. Existing databases are migrated automatically at startup. If MySQL reports an `ALTER` permission error, grant the plugin's database account permission to update its tables before restarting.
 

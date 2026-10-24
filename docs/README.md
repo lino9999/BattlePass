@@ -5,6 +5,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | Task | Read first | Entry points |
 | --- | --- | --- |
 | Mission not counting, food/block targets, dirt breaking | [MISSIONS.md](MISSIONS.md) | `listeners/MissionProgressListener`, `BlockMissionTracker`, `models/Mission`, `MissionProgressTracker` |
+| Minecraft/Paper/Spigot versions, new block materials or removed platform APIs | [COMPATIBILITY.md](COMPATIBILITY.md) | `pom.xml` API profiles, `plugin.yml`, `Mission.matchesTarget`, `ItemSerializer` |
 | Damage counting/overflow, projectiles or unavailable MythicMobs hook | [MISSIONS.md](MISSIONS.md) | `CombatMissionTracker.calculateDamageAmount`, `EventManager.registerMythicMobs` |
 | XP grants, large level jumps, level feedback and actionbars | [EXPERIENCE.md](EXPERIENCE.md) | `ExperienceProgression`, `MissionProgressTracker`, `MissionActionbars`; four XP entry points |
 | XP multiplier event startup, countdown, bossbar and vouchers | [EXPERIENCE.md](EXPERIENCE.md) | `XPEventManager`, `commands/XPEventCommands`, `CustomItemRedemptions.handleXPEventUse` |

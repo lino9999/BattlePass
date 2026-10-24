@@ -1,7 +1,7 @@
 name: BattlePass
 version: '${project.version}'
 main: com.Lino.battlePass.BattlePass
-api-version: '1.21'
+api-version: '1.21.11'
 author: Lino
 website: https://www.spigotmc.org/resources/battlepass.125992/
 license: MIT

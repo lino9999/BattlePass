@@ -4,6 +4,7 @@ import org.bukkit.Material;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class Mission {
     public final String name;
@@ -45,8 +46,8 @@ public class Mission {
         }
 
         // Resolve material names at comparison time so persisted progress keys stay unchanged.
-        Material configuredMaterial = Material.matchMaterial(configuredTarget.trim());
+        Material configuredMaterial = Material.matchMaterial(configuredTarget.trim().toLowerCase(Locale.ROOT));
         return configuredMaterial != null
-                && configuredMaterial == Material.matchMaterial(actionTarget.trim());
+                && configuredMaterial == Material.matchMaterial(actionTarget.trim().toLowerCase(Locale.ROOT));
     }
 }

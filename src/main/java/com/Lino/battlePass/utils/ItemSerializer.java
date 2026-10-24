@@ -8,10 +8,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
-import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 
@@ -27,7 +27,7 @@ public class ItemSerializer {
             try (BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream)) {
                 dataOutput.writeObject(item);
             }
-            String base64 = Base64Coder.encodeLines(outputStream.toByteArray());
+            String base64 = encodeItemData(outputStream.toByteArray());
             section.set("serialized-item", base64);
 
             section.set("material", item.getType().name());
@@ -66,7 +66,7 @@ public class ItemSerializer {
             try {
                 String data = section.getString("serialized-item");
                 try (BukkitObjectInputStream dataInput = new BukkitObjectInputStream(
-                        new ByteArrayInputStream(Base64Coder.decodeLines(data)))) {
+                        new ByteArrayInputStream(decodeItemData(data)))) {
                     Object decoded = dataInput.readObject();
                     if (!(decoded instanceof ItemStack item) || !isUsableItem(item)) {
                         throw new IllegalStateException("Serialized reward is not a usable item");
@@ -146,5 +146,18 @@ public class ItemSerializer {
     public static boolean isUsableItem(ItemStack item) {
         return item != null && item.getAmount() > 0 && item.getType() != null
                 && item.getType().isItem() && !item.getType().isAir();
+    }
+
+    private static String encodeItemData(byte[] data) {
+        return Base64.getMimeEncoder(76, new byte[] {'\n'}).encodeToString(data);
+    }
+
+    private static byte[] decodeItemData(String data) {
+        // Retain legacy line-wrapped payloads without depending on SnakeYAML's removed internal codec.
+        String compact = data.replace("\r", "").replace("\n", "").replace("\t", "").replace(" ", "");
+        if (compact.length() % 4 != 0) {
+            throw new IllegalArgumentException("Invalid Base64 reward item length");
+        }
+        return Base64.getDecoder().decode(compact);
     }
 }

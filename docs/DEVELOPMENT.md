@@ -2,12 +2,14 @@
 
 ## Toolchain
 
-Use JDK 21 and Maven 3.9.x (`java -version`, `mvn -version`). There is no checked-in Maven wrapper. The project compiles against Spigot API `1.21.4-R0.1-SNAPSHOT` and declares `api-version: '1.21'`. Do not assume compatibility with older Minecraft versions.
+Use JDK 21 and Maven 3.9.x (`java -version`, `mvn -version`) for the release build. There is no checked-in Maven wrapper. The project compiles against Spigot API `1.21.11-R0.1-SNAPSHOT`, declares `api-version: '1.21.11'` and uses compiler `release=21`. Use JDK 25 for the 26.x API matrix and servers; the output remains Java 21 bytecode. See [COMPATIBILITY.md](COMPATIBILITY.md) for the Paper/Spigot 1.21.11–26.3 matrix and material guarantees. Do not compile the distributed JAR against the newest API: that can introduce calls absent from the minimum server.
 
 ```powershell
 mvn test
 mvn clean package
 ```
+
+Optional API checks use `mvn -Dserver.api.version=26.3-R0.1-SNAPSHOT clean test` for Spigot or `mvn -Ppaper-api -Dserver.api.version=26.3.build.218-stable clean test` for Paper, with JDK 25. Paper's default profile version is the same minimum 1.21.11 snapshot. Clean between variants so incremental compilation cannot reuse classes from another API/compiler. These change the provided server dependency only; return to the default profile for the final clean package. Never shade a server API into the plugin.
 
 The packaged plugin is `target/BattlePass-<version>.jar`; `target/original-*.jar` is the pre-shade artifact. The current version is in `pom.xml`. Source resources are filtered during packaging. Maven Shade may generate `dependency-reduced-pom.xml`; it is ignored.
 

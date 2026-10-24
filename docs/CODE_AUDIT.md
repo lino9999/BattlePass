@@ -269,6 +269,8 @@ Validation: 94 tests pass (41 existing plus 53 temporary), with the real registe
 
 ## Remaining review work
 
+Compatibility work (2026-10-24) reproduces and fixes a removed SnakeYAML Base64 dependency on Spigot 26.x and uppercase material namespaces written by the mission editor. The default build now uses the minimum 1.21.11 API, Java release 21 and an optional Paper API profile. Complete material-catalog tests pass after clean compilation for six Spigot and five available Paper APIs; nine live server checks exercise core startup, registered block/food progress and plain-item serialization using the release JAR. Exact versions, counts and limits are recorded in [COMPATIBILITY.md](COMPATIBILITY.md). This does not validate optional integrations or arbitrary custom metadata.
+
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
 - Exercise unusual platform/custom serialized metadata and optional integration behavior on a live server; inspect paths outside the verified basic parsing/snapshot/claim preparation coverage.
@@ -277,4 +279,4 @@ The audit is still active. Inspect and reproduce these candidates before changin
 - Distributed player-cache coherence and session-local elapsed-time durability remain unproven/limited; normal reset APIs, feedback and cycle time accounting now use the verified coordinator path.
 - Other startup/shutdown/reload callbacks, shared-database cache assumptions, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 
-Review every production source file and relevant resource; track further findings and verification here. A live Minecraft or MySQL server has not been exercised so far.
+Review every production source file and relevant resource; track further findings and verification here. Live Minecraft compatibility probes are recorded in COMPATIBILITY.md; a live MySQL server has not been exercised so far.
