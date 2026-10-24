@@ -1,15 +1,63 @@
 package com.Lino.battlePass.utils;
 
 import com.Lino.battlePass.models.EditableReward;
+import com.Lino.battlePass.models.Reward;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.inventory.ItemStack;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 /** Shared parsing; interactive editors reject unreadable entries instead of silently deleting them on save. */
 public final class RewardConfiguration {
+    private static final Pattern LEVEL_KEY = Pattern.compile("level-[1-9]\\d*");
     private RewardConfiguration() {}
+
+    /** Shared active/archive definitions; empty configured levels remain available to editor pagination. */
+    public static Map<Integer, List<Reward>> readRuntimeRewards(FileConfiguration config, boolean free, Consumer<String> warning) {
+        Map<Integer, List<Reward>> levels = new TreeMap<>();
+        for (String key : config.getKeys(false)) {
+            if (!LEVEL_KEY.matcher(key).matches()) continue;
+            int level;
+            try { level = Integer.parseInt(key.substring("level-".length())); }
+            catch (NumberFormatException ignored) { continue; }
+            List<Reward> rewards = new ArrayList<>();
+            ConfigurationSection section = config.getConfigurationSection(key);
+            if (section == null) {
+                warning.accept("Invalid reward level at " + key + ". Skipping.");
+            } else if (section.contains("command") || section.contains("material") || section.contains("serialized-item")) {
+                addRuntime(rewards, section, level, free, warning);
+            } else if (section.contains("items")) {
+                ConfigurationSection items = section.getConfigurationSection("items");
+                if (items == null) warning.accept("Invalid reward items section at " + key + ". Skipping.");
+                else for (String itemKey : items.getKeys(false)) {
+                    ConfigurationSection item = items.getConfigurationSection(itemKey);
+                    if (item == null) warning.accept("Invalid reward entry at " + key + ".items." + itemKey + ". Skipping.");
+                    else addRuntime(rewards, item, level, free, warning);
+                }
+            }
+            levels.put(level, rewards);
+        }
+        return levels;
+    }
+
+    private static void addRuntime(List<Reward> rewards, ConfigurationSection section, int level, boolean free, Consumer<String> warning) {
+        try {
+            if (section.contains("command")) {
+                String command = section.getString("command");
+                if (command == null || command.isBlank()) throw new IllegalArgumentException("Empty reward command");
+                rewards.add(new Reward(level, command, section.getString("display", "Mystery Reward"), free));
+            } else {
+                ItemStack item = ItemSerializer.loadItemFromConfig(section);
+                if (!ItemSerializer.isUsableItem(item)) throw new IllegalArgumentException("Reward item could not be loaded");
+                String display = section.getString("display", item.getAmount() + "x " + item.getType().name().toLowerCase(Locale.ROOT).replace('_', ' '));
+                rewards.add(new Reward(level, item, display, free, section.getCurrentPath()));
+            }
+        } catch (RuntimeException failure) {
+            warning.accept("Invalid " + (free ? "free" : "premium") + " reward at " + section.getCurrentPath() + ": " + failure.getMessage() + ". Skipping.");
+        }
+    }
 
     public static List<EditableReward> readEditableRewards(FileConfiguration config, int level) {
         return read(config, level, false);

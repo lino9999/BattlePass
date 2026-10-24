@@ -9,7 +9,7 @@ Use this guide for clicks, drags, navigation, menu reloads or editable reward pr
 | Reward category/level editing and closing sessions | `listeners/RewardsEditorListener`, `gui/RewardsCategoryGui`, `LevelRewardEditGui` |
 | Mission list/type/details editing | `listeners/MissionEditorListener`, `gui/MissionEditorGui`, `MissionTypeSelectionGui`, `MissionDetailsGui` |
 | Main menu rebuilding on reload | `BattlePass.reload`; `GuiManager` keeps navigation history |
-| Sparse reward definitions | `managers/RewardManager.collectLevels` / `loadLevel` |
+| Sparse reward definitions and shared archived previews | `utils/RewardConfiguration.readRuntimeRewards`, `managers/RewardManager.loadRewards` |
 | Page bounds and final integer level | `utils/Pagination` |
 
 Every built-in menu has an immutable `BaseHolder.MenuContext`. Its `MenuType`, displayed page, premium flag, mission key/slot entries and active level-editor object determine actions. Titles, item labels and translation prefixes are presentation only. Do not restore `startsWith`/title substring routing or parse page numbers from titles. All ten GUI builders attach their context; inherited builders override `BaseGui.getMenuContext`, static builders pass context to the three-argument `BaseGui.createInventory` overload.
@@ -21,6 +21,8 @@ Main menu handlers act only on top raw slots. Each listener cancels top drags on
 Reload rebuilds only owned main menus using their context, preserves navigation history, and avoids scanning every possible reward page. The delayed reopen checks that the player is online and has not opened another inventory in the meantime. Leaderboard callbacks refresh only the exact inventory they populated, irrespective of its title.
 
 Reward loading visits configured canonical positive `level-N` keys rather than every number through the maximum. Item order, command precedence, stored configuration paths and the minimum maximum-level value of 54 stay intact. Malformed `items` sections are skipped with a warning. Material/enchantment identifiers use `Locale.ROOT`, including item deserialization; custom display text remains unchanged.
+
+Active/archive labels and item definitions now use the same parser, including serialized-only entries and `display` labels. Reward objects retain cloned loaded items, and malformed archive YAML reports failure instead of an empty preview. Main-menu reward icons fall back to their existing defaults for air/non-item materials, while claimed NONE remains hidden. See REWARDS.md for parsing and delivery details.
 
 Use `Pagination` for page counts, clamping and cell-to-level conversion. `levelAt` returns zero for a nonrepresentable cell; do not render or activate it. Reward category editors retain their extra page for adding levels, cap at `Integer.MAX_VALUE`, and use the selected archived season's own levels. Mission-list context records raw configured keys so colored labels cannot change the selected pool. Non-section mission pools are omitted from the editor.
 

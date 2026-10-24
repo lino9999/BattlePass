@@ -17,7 +17,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | Menu input, titles, editors, pages, reload | [MENUS.md](MENUS.md) | `BaseHolder.MenuContext`; the three click listeners; `Pagination` |
 | Editor drafts, chat, season files and YAML saves | [EDITORS.md](EDITORS.md) | `RewardEditorManager`, `RewardEditorStorage`, `MissionEditorManager`, `AtomicYamlFile` |
 | Battle Pass rendering | [ARCHITECTURE.md](ARCHITECTURE.md) | `gui/BattlePassGui` facade; `BattlePassRewardRenderer` for reward icons/lore; `BattlePassMenuControls` for navigation/actions |
-| Reward loading or claims | [ARCHITECTURE.md](ARCHITECTURE.md) | `managers/RewardManager` for loading/maps; `RewardClaimHandler` for eligibility/delivery |
+| Reward loading, serialization, archived previews or claims | [REWARDS.md](REWARDS.md) | `RewardConfiguration`, `ItemSerializer`, `RewardManager`, `RewardClaimHandler`, `models/Reward` snapshots |
 | Periodic coin deliveries / saved deadline | [COINS.md](COINS.md) | `CoinsDistributionTask`, `CoinDistributionRepository`, `PlayerDataManager` preflight and `BattlePass` timer lifecycle |
 | Custom item redemption, feedback, held-item sounds and quit cleanup | [ITEM_SOUNDS.md](ITEM_SOUNDS.md) | `CustomItemsListener`, `CustomItemRedemptions`, `CustomItemEffects`, `SoundManager` |
 | Update checks, HTTP cleanup and stale startup callbacks | [ARCHITECTURE.md](ARCHITECTURE.md) | `BattlePass.checkForUpdates`, `UpdateChecker`, `VersionUtils` |

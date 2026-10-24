@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,39 +57,35 @@ final class RewardClaimHandler {
         Set<Integer> dbClaimedSet = isPremium ? dbClaimedData.get("premium") : dbClaimedData.get("free");
 
         if (dbClaimedSet != null && dbClaimedSet.contains(level)) {
-            MessageManager mm = plugin.getMessageManager();
-            player.sendMessage(mm.getPrefix() + mm.getMessage("messages.rewards.already-claimed-error"));
+            if (claimed.add(level)) plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+            player.sendMessage(messages.getPrefix() + messages.getMessage("messages.rewards.already-claimed-error"));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-
-            if (isPremium) {
-                if (!data.claimedPremiumRewards.contains(level)) {
-                    data.claimedPremiumRewards.add(level);
-                    plugin.getPlayerDataManager().markForSave(player.getUniqueId());
-                }
-            } else {
-                if (!data.claimedFreeRewards.contains(level)) {
-                    data.claimedFreeRewards.add(level);
-                    plugin.getPlayerDataManager().markForSave(player.getUniqueId());
-                }
-            }
             return;
         }
 
-        if (isPremium) {
-            data.claimedPremiumRewards.add(level);
-        } else {
-            data.claimedFreeRewards.add(level);
+        FileConfiguration config = isPremium ? configManager.getBattlePassPremiumConfig() : configManager.getBattlePassFreeConfig();
+        String levelPath = "level-" + level;
+        List<Reward> plannedRewards;
+        List<ItemStack> preparedItems = new ArrayList<>();
+        try {
+            plannedRewards = List.copyOf(rewards);
+            for (Reward reward : plannedRewards) {
+                preparedItems.add(reward.command == null ? prepareItem(reward, config, levelPath) : null);
+            }
+        } catch (RuntimeException failure) {
+            plugin.getLogger().warning("Could not prepare " + (isPremium ? "premium" : "free") + " level " + level + ": " + failure.getMessage());
+            player.sendMessage(messages.getPrefix() + "§cError while claiming reward. Please try again.");
+            return;
         }
+        claimed.add(level);
+        // Claims must be dirty before reward commands or feedback can save/disconnect the player.
+        plugin.getPlayerDataManager().markForSave(player.getUniqueId());
 
         MessageManager messageManager = plugin.getMessageManager();
         StringBuilder message = new StringBuilder(messageManager.getPrefix() + messageManager.getMessage(
                 isPremium ? "messages.rewards.premium-claimed" : "messages.rewards.free-claimed"));
-        FileConfiguration config = isPremium ?
-                configManager.getBattlePassPremiumConfig() :
-                configManager.getBattlePassFreeConfig();
-        String levelPath = "level-" + level;
-
-        for (Reward reward : rewards) {
+        for (int rewardIndex = 0; rewardIndex < plannedRewards.size(); rewardIndex++) {
+            Reward reward = plannedRewards.get(rewardIndex);
             if (reward.command != null) {
                 String command = reward.command.replace("<player>", player.getName());
                 try {
@@ -99,35 +96,7 @@ final class RewardClaimHandler {
                 message.append("\n").append(messageManager.getMessage("messages.rewards.command-reward",
                         "%reward%", reward.displayName));
             } else {
-                ItemStack item = null;
-                if (reward.configurationPath != null) {
-                    item = ItemSerializer.loadItemFromConfig(config.getConfigurationSection(reward.configurationPath));
-                } else if (config.contains(levelPath)) {
-                    ConfigurationSection levelSection = config.getConfigurationSection(levelPath);
-                    if (levelSection != null) {
-                        if (levelSection.contains("serialized-item")) {
-                            item = ItemSerializer.loadItemFromConfig(levelSection);
-                        } else if (levelSection.contains("items")) {
-                            ConfigurationSection itemsSection = levelSection.getConfigurationSection("items");
-                            if (itemsSection != null) {
-                                for (String key : itemsSection.getKeys(false)) {
-                                    ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
-                                    if (itemSection != null && !itemSection.contains("command")) {
-                                        ItemStack loadedItem = ItemSerializer.loadItemFromConfig(itemSection);
-                                        if (loadedItem != null && loadedItem.getType() == reward.material) {
-                                            item = loadedItem;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (item == null) {
-                    item = new ItemStack(reward.material, reward.amount);
-                }
+                ItemStack item = preparedItems.get(rewardIndex);
 
                 int amount = item.getAmount();
                 HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(item);
@@ -150,6 +119,44 @@ final class RewardClaimHandler {
 
         player.sendMessage(message.toString());
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-        plugin.getPlayerDataManager().markForSave(player.getUniqueId());
+    }
+
+    private ItemStack prepareItem(Reward reward, FileConfiguration config, String levelPath) {
+        ItemStack snapshot = reward.getItemStack();
+        if (snapshot != null) {
+            if (!ItemSerializer.isUsableItem(snapshot)) throw new IllegalStateException("Reward snapshot is not a usable item");
+            return snapshot;
+        }
+        ItemStack item = null;
+        if (reward.configurationPath != null) {
+            item = ItemSerializer.loadItemFromConfig(config.getConfigurationSection(reward.configurationPath));
+        } else if (config.contains(levelPath)) {
+            ConfigurationSection levelSection = config.getConfigurationSection(levelPath);
+            if (levelSection != null) {
+                if (levelSection.contains("serialized-item")) {
+                    item = ItemSerializer.loadItemFromConfig(levelSection);
+                } else if (levelSection.contains("items")) {
+                    ConfigurationSection itemsSection = levelSection.getConfigurationSection("items");
+                    if (itemsSection != null) {
+                        for (String key : itemsSection.getKeys(false)) {
+                            ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
+                            if (itemSection != null && !itemSection.contains("command")) {
+                                ItemStack loadedItem = ItemSerializer.loadItemFromConfig(itemSection);
+                                if (loadedItem != null && loadedItem.getType() == reward.material) {
+                                    item = loadedItem;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (item == null) {
+            item = new ItemStack(reward.material, reward.amount);
+        }
+        if (!ItemSerializer.isUsableItem(item)) throw new IllegalStateException("Reward is not a usable item");
+        return item;
     }
 }

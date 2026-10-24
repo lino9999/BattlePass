@@ -13,6 +13,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 final class BattlePassRewardRenderer {
 
@@ -20,6 +22,7 @@ final class BattlePassRewardRenderer {
     private final PlayerData playerData;
     private final int page;
     private final int maxLevel;
+    private final Set<String> warnedIcons = new HashSet<>();
 
     BattlePassRewardRenderer(BattlePass plugin, PlayerData playerData, int page, int maxLevel) {
         this.plugin = plugin;
@@ -72,7 +75,7 @@ final class BattlePassRewardRenderer {
         String rewardType = plugin.getMessageManager().getMessage(isPremium ? "reward-types.premium" : "reward-types.free");
 
         if (data.level >= level && hasAccess) {
-            ItemStack item = new ItemStack(plugin.getConfigManager().getGuiRewardAvailableMaterial());
+            ItemStack item = createIcon(plugin.getConfigManager().getGuiRewardAvailableMaterial(), Material.CHEST, "gui.reward-available");
             ItemMeta meta = item.getItemMeta();
             applyGuiCustomModelData(meta, "gui.reward-available");
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-available.name",
@@ -85,7 +88,7 @@ final class BattlePassRewardRenderer {
             return item;
 
         } else if (!hasAccess && isPremium) {
-            ItemStack item = new ItemStack(plugin.getConfigManager().getGuiPremiumNoPassMaterial());
+            ItemStack item = createIcon(plugin.getConfigManager().getGuiPremiumNoPassMaterial(), Material.IRON_BARS, "gui.premium-no-pass");
             ItemMeta meta = item.getItemMeta();
             applyGuiCustomModelData(meta, "gui.premium-no-pass");
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-premium-locked.name",
@@ -101,7 +104,8 @@ final class BattlePassRewardRenderer {
                     plugin.getConfigManager().getGuiPremiumLockedMaterial() :
                     plugin.getConfigManager().getGuiFreeLockedMaterial();
 
-            ItemStack item = new ItemStack(lockedMaterial);
+            ItemStack item = createIcon(lockedMaterial, Material.GRAY_STAINED_GLASS,
+                    isPremium ? "gui.reward-locked.premium" : "gui.reward-locked.free");
             ItemMeta meta = item.getItemMeta();
             applyGuiCustomModelData(meta, isPremium ? "gui.reward-locked.premium" : "gui.reward-locked.free");
             meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-level-locked.name",
@@ -131,7 +135,8 @@ final class BattlePassRewardRenderer {
             return null;
         }
 
-        ItemStack item = new ItemStack(material);
+        ItemStack item = createIcon(material, isPremium ? Material.LIME_STAINED_GLASS : Material.GREEN_STAINED_GLASS,
+                isPremium ? "gui.reward-claimed.premium" : "gui.reward-claimed.free");
         ItemMeta meta = item.getItemMeta();
         applyGuiCustomModelData(meta, isPremium ? "gui.reward-claimed.premium" : "gui.reward-claimed.free");
         meta.setDisplayName(plugin.getMessageManager().getMessage("items.reward-claimed.name",
@@ -166,7 +171,7 @@ final class BattlePassRewardRenderer {
     }
 
     void setupSeparator(Inventory gui) {
-        ItemStack separator = new ItemStack(plugin.getConfigManager().getGuiSeparatorMaterial());
+        ItemStack separator = createIcon(plugin.getConfigManager().getGuiSeparatorMaterial(), Material.GRAY_STAINED_GLASS_PANE, "gui.separator");
         ItemMeta meta = separator.getItemMeta();
         applyGuiCustomModelData(meta, "gui.separator");
         meta.setDisplayName(plugin.getMessageManager().getMessage("items.separator.name"));
@@ -175,5 +180,13 @@ final class BattlePassRewardRenderer {
         for (int i = 18; i < 27; i++) {
             gui.setItem(i, separator);
         }
+    }
+
+    private ItemStack createIcon(Material configured, Material fallback, String path) {
+        if (configured == null || !configured.isItem() || configured.isAir()) {
+            if (warnedIcons.add(path)) plugin.getLogger().warning("Material at " + path + " is not a usable icon. Using " + fallback.name());
+            configured = fallback;
+        }
+        return new ItemStack(configured);
     }
 }

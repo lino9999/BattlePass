@@ -4,11 +4,11 @@ import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.Reward;
 import com.Lino.battlePass.utils.GradientColorParser;
 import com.Lino.battlePass.utils.Pagination;
+import com.Lino.battlePass.utils.ConfigurationFiles;
+import com.Lino.battlePass.utils.RewardConfiguration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -126,53 +126,8 @@ public class RewardsCategoryGui {
         File file = plugin.getSeasonRotationManager().getSeasonRewardFile(seasonNumber, premium);
         if (!file.exists()) return rewardsByLevel;
 
-        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-
-        for (String key : config.getKeys(false)) {
-            if (!key.startsWith("level-")) continue;
-
-            int level;
-            try {
-                level = Integer.parseInt(key.replace("level-", ""));
-            } catch (NumberFormatException e) {
-                continue;
-            }
-            if (level < 1 || !key.equals("level-" + level)) continue;
-
-            List<Reward> rewards = new ArrayList<>();
-            ConfigurationSection section = config.getConfigurationSection(key);
-            if (section == null) continue;
-
-            if (section.contains("items")) {
-                ConfigurationSection items = section.getConfigurationSection("items");
-                if (items != null) {
-                    for (String itemKey : items.getKeys(false)) {
-                        ConfigurationSection itemSection = items.getConfigurationSection(itemKey);
-                        if (itemSection != null && itemSection.contains("command")) {
-                            String display = itemSection.getString("display", "Reward");
-                            String cmd = itemSection.getString("command", "");
-                            rewards.add(new Reward(level, cmd, display, premium));
-                        } else if (itemSection != null) {
-                            String material = itemSection.getString("material", "STONE");
-                            String displayName = itemSection.getString("display-name", material);
-                            rewards.add(new Reward(level, "", displayName, premium));
-                        }
-                    }
-                }
-            } else if (section.contains("command")) {
-                String display = section.getString("display", "Reward");
-                String cmd = section.getString("command", "");
-                rewards.add(new Reward(level, cmd, display, premium));
-            } else if (section.contains("material")) {
-                String material = section.getString("material", "STONE");
-                String displayName = section.getString("display-name", material);
-                rewards.add(new Reward(level, "", displayName, premium));
-            }
-
-            rewardsByLevel.put(level, rewards);
-        }
-
-        return rewardsByLevel;
+        FileConfiguration config = ConfigurationFiles.read(file);
+        return RewardConfiguration.readRuntimeRewards(config, !premium, plugin.getLogger()::warning);
     }
 
     private ItemStack createLevelChest(int level, List<Reward> rewards) {

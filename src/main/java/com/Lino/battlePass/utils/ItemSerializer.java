@@ -12,23 +12,21 @@ import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Locale;
 
 public class ItemSerializer {
 
     public static void saveItemToConfig(ConfigurationSection section, ItemStack item) {
-        if (item == null || item.getType() == Material.AIR) {
+        if (!isUsableItem(item)) {
             return;
         }
 
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
-            dataOutput.writeObject(item);
-            dataOutput.close();
+            try (BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream)) {
+                dataOutput.writeObject(item);
+            }
             String base64 = Base64Coder.encodeLines(outputStream.toByteArray());
             section.set("serialized-item", base64);
 
@@ -67,11 +65,14 @@ public class ItemSerializer {
         if (section.contains("serialized-item")) {
             try {
                 String data = section.getString("serialized-item");
-                ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64Coder.decodeLines(data));
-                BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
-                ItemStack item = (ItemStack) dataInput.readObject();
-                dataInput.close();
-                return item;
+                try (BukkitObjectInputStream dataInput = new BukkitObjectInputStream(
+                        new ByteArrayInputStream(Base64Coder.decodeLines(data)))) {
+                    Object decoded = dataInput.readObject();
+                    if (!(decoded instanceof ItemStack item) || !isUsableItem(item)) {
+                        throw new IllegalStateException("Serialized reward is not a usable item");
+                    }
+                    return item;
+                }
             } catch (Exception e) {
                 if (strict) throw new IllegalStateException("Invalid serialized reward item", e);
                 e.printStackTrace();
@@ -87,6 +88,10 @@ public class ItemSerializer {
         try {
             material = Material.valueOf(materialName.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
+            return null;
+        }
+        if (!material.isItem() || material.isAir()) {
+            if (strict) throw new IllegalStateException("Reward material is not a usable item: " + materialName);
             return null;
         }
 
@@ -136,5 +141,10 @@ public class ItemSerializer {
         }
 
         return item;
+    }
+
+    public static boolean isUsableItem(ItemStack item) {
+        return item != null && item.getAmount() > 0 && item.getType() != null
+                && item.getType().isItem() && !item.getType().isAir();
     }
 }
