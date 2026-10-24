@@ -205,12 +205,20 @@ Validation: the ten initial regressions produced nine assertion failures and a d
 
 Validation: the initial 16 checks produced 13 assertion failures plus an out-of-range Color error and a zero-argument index error; ordinary plain-text interpolation already passed. All 75 tests pass (41 existing plus 34 temporary). Coverage includes endpoints/whitespace, all five legacy styles/resets, formatting across tags, both RGB marker forms, combining/joined/supplementary Unicode, multiline/empty/malformed/literal replacement text and visible content of all packaged message strings/lists. Locale checks use Turkish and compare English results for materials, labels, router permissions, four item factories and tab scenarios/permissions. Factory tests stop at a deliberate mock sentinel after selection; they do not claim live item delivery. Existing SQLite tests also pass. Temporary sources/artifacts are removed before delivery; no client font/audio/server smoke test was used.
 
+## Verified fixes: strict managed YAML reads and preserved component state (2026-10-24)
+
+- Added ConfigurationFiles strict reads/preflight for all six managed YAML files. ConfigManager stages its four auxiliary documents before changing cached settings/references; MessageManager stages custom data and strict packaged defaults before publication; ShopManager stages its map. Invalid syntax/read errors now propagate instead of becoming empty successful configurations, while valid empty rewards and missing-file resource seeding retain their existing behavior. Custom translations continue to override packaged defaults without file rewrites.
+- Startup performs file-only season recovery before configuration managers/validation read live rewards; reload performs locked recovery before preflight/primary reload. Prepared journals can therefore repair interrupted invalid YAML, and malformed recovery records remain blocking evidence. Synchronous startup/resource/constructor failures invalidate callbacks, log and explicitly disable the partial plugin; valid startup still reaches asynchronous database initialization.
+- Shop material names normalize case; air/non-item icons fall back to STONE and unusable reward-item entries are skipped with warnings. Existing prices, valid entries and reserved-slot rules remain. This is preflight/per-component publication with existing field defaults, not a transaction across every config/file/SQL operation or concurrent external edits.
+
+Validation: all twelve initial regressions failed before correction (ignored malformed auxiliary/messages/shop files and primary reload starting before validation). An additional startup test reproduced the need for explicit disable on synchronous failure. All 79 tests pass (41 existing plus 38 temporary), using real temporary YAML, directory read failures, packaged-default read/parse/close checks, file repair/retry, missing/default/empty rewards, prepared/corrupt journals, startup/reload recovery order, normal/failed startup and shop case/material entries. Bukkit lifecycle/construction and item/block registries are mocked; no live Minecraft server was used. Temporary sources/artifacts are removed before delivery. See CONFIGURATION.md for the source map and limits.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
 - Reward previews, unusual serialized item metadata and malformed configuration outside the verified editor/reward paths; check optional integration behavior on a live server.
-- Reproduce malformed auxiliary YAML reload behavior and extreme stored timestamp arithmetic; review legacy compatibility fallbacks alongside optional integrations.
+- Reproduce extreme stored timestamp arithmetic; review legacy compatibility fallbacks, optional integrations and non-item material handling in other menu/reward configuration paths.
 - Distributed player-cache coherence and session-local elapsed-time durability remain unproven/limited; normal reset APIs, feedback and cycle time accounting now use the verified coordinator path.
 - Other startup/shutdown/reload callbacks, shared-database cache assumptions, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 

@@ -3,10 +3,10 @@ package com.Lino.battlePass.managers;
 import java.util.Locale;
 
 import com.Lino.battlePass.BattlePass;
+import com.Lino.battlePass.utils.ConfigurationFiles;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -65,6 +65,15 @@ public class ConfigManager {
     }
 
     public void reload() {
+        FileConfiguration nextMissions = ConfigurationFiles.read(new File(plugin.getDataFolder(), "missions.yml"));
+        FileConfiguration nextMessages = ConfigurationFiles.read(new File(plugin.getDataFolder(), "messages.yml"));
+        File freeFile = new File(plugin.getDataFolder(), "BattlePassFREE.yml");
+        File premiumFile = new File(plugin.getDataFolder(), "BattlePassPREMIUM.yml");
+        if (!freeFile.exists()) plugin.saveResource("BattlePassFREE.yml", false);
+        if (!premiumFile.exists()) plugin.saveResource("BattlePassPREMIUM.yml", false);
+        FileConfiguration nextFree = ConfigurationFiles.read(freeFile);
+        FileConfiguration nextPremium = ConfigurationFiles.read(premiumFile);
+
         config = plugin.getConfig();
         xpPerLevel = Math.max(1, config.getInt("experience.xp-per-level", 200));
         seasonResetType = config.getString("season.reset-type", "DURATION");
@@ -120,8 +129,7 @@ public class ConfigManager {
             coinsDistribution.add(Math.max(0, config.getInt("battle-coins.distribution." + i, 11 - i)));
         }
 
-        File missionsFile = new File(plugin.getDataFolder(), "missions.yml");
-        missionsConfig = YamlConfiguration.loadConfiguration(missionsFile);
+        missionsConfig = nextMissions;
         int configuredMissionsCount = missionsConfig.getInt("daily-missions-count", 7);
         if (configuredMissionsCount > 7) {
             plugin.getLogger().warning("daily-missions-count is set to " + configuredMissionsCount +
@@ -130,20 +138,9 @@ public class ConfigManager {
         }
         dailyMissionsCount = Math.max(0, configuredMissionsCount);
 
-        File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
-        messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
-
-        File battlePassFreeFile = new File(plugin.getDataFolder(), "BattlePassFREE.yml");
-        if (!battlePassFreeFile.exists()) {
-            plugin.saveResource("BattlePassFREE.yml", false);
-        }
-        battlePassFreeConfig = YamlConfiguration.loadConfiguration(battlePassFreeFile);
-
-        File battlePassPremiumFile = new File(plugin.getDataFolder(), "BattlePassPREMIUM.yml");
-        if (!battlePassPremiumFile.exists()) {
-            plugin.saveResource("BattlePassPREMIUM.yml", false);
-        }
-        battlePassPremiumConfig = YamlConfiguration.loadConfiguration(battlePassPremiumFile);
+        messagesConfig = nextMessages;
+        battlePassFreeConfig = nextFree;
+        battlePassPremiumConfig = nextPremium;
     }
 
     private Material parseMaterial(String materialName, Material defaultMaterial) {

@@ -33,6 +33,17 @@ public class SeasonRotationManager {
         reload();
     }
 
+    /** Before any configuration manager reads potentially interrupted live reward files at startup. */
+    public static void recoverFilesBeforeStartup(BattlePass plugin) {
+        try { new SeasonFileTransaction(plugin.getDataFolder().toPath(), plugin.getLogger()).recover(); }
+        catch (IOException | InvalidConfigurationException failure) { throw new IllegalStateException("Could not recover season reward files", failure); }
+    }
+
+    public synchronized void recoverPendingFiles() {
+        try { files.recover(); }
+        catch (IOException | InvalidConfigurationException failure) { throw failure("recover season reward files", failure); }
+    }
+
     public synchronized void reload() {
         try {
             files.recover();

@@ -2,6 +2,8 @@ package com.Lino.battlePass.managers;
 
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.utils.GradientColorParser;
+import com.Lino.battlePass.utils.ConfigurationFiles;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -16,7 +18,7 @@ import java.util.List;
 public class MessageManager {
 
     private final BattlePass plugin;
-    private FileConfiguration messagesConfig;
+    private volatile FileConfiguration messagesConfig;
 
     public MessageManager(BattlePass plugin) {
         this.plugin = plugin;
@@ -25,14 +27,17 @@ public class MessageManager {
 
     public void reload() {
         File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
-        messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
+        FileConfiguration candidate = ConfigurationFiles.read(messagesFile);
         try (InputStream defaults = plugin.getResource("messages.yml")) {
             if (defaults != null) {
-                messagesConfig.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defaults, StandardCharsets.UTF_8)));
+                YamlConfiguration packaged = new YamlConfiguration();
+                packaged.load(new InputStreamReader(defaults, StandardCharsets.UTF_8));
+                candidate.setDefaults(packaged);
             }
-        } catch (IOException failure) {
-            plugin.getLogger().warning("Could not load default messages: " + failure.getMessage());
+        } catch (IOException | InvalidConfigurationException failure) {
+            throw new IllegalStateException("Could not load default messages: " + failure.getMessage(), failure);
         }
+        messagesConfig = candidate;
     }
 
     public String getMessage(String path, Object... replacements) {

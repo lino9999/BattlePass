@@ -1,6 +1,7 @@
 package com.Lino.battlePass;
 
 import com.Lino.battlePass.commands.BattlePassTabCompleter;
+import com.Lino.battlePass.utils.ConfigurationFiles;
 import com.Lino.battlePass.listeners.MissionProgressListener;
 import com.Lino.battlePass.placeholders.BattlePassExpansion;
 import org.bukkit.Bukkit;
@@ -47,47 +48,57 @@ public class BattlePass extends JavaPlugin {
         long generation = ++lifecycleGeneration;
         updateAvailable = false;
         latestVersion = "";
-        saveDefaultConfig();
-        saveResourceIfNotExists("missions.yml");
-        saveResourceIfNotExists("messages.yml");
-        saveResourceIfNotExists("BattlePassFREE.yml");
-        saveResourceIfNotExists("BattlePassPREMIUM.yml");
-        saveResourceIfNotExists("shop.yml");
+        try {
+            saveDefaultConfig();
+            saveResourceIfNotExists("missions.yml");
+            saveResourceIfNotExists("messages.yml");
+            saveResourceIfNotExists("BattlePassFREE.yml");
+            saveResourceIfNotExists("BattlePassPREMIUM.yml");
+            saveResourceIfNotExists("shop.yml");
 
-        configManager = new ConfigManager(this);
-        messageManager = new MessageManager(this);
+            SeasonRotationManager.recoverFilesBeforeStartup(this);
+            ConfigurationFiles.validateManagedFiles(getDataFolder());
 
-        seasonRotationManager = new SeasonRotationManager(this);
+            configManager = new ConfigManager(this);
+            messageManager = new MessageManager(this);
 
-        configManager.reload();
+            seasonRotationManager = new SeasonRotationManager(this);
 
-        xpEventManager = new XPEventManager(this);
+            configManager.reload();
 
-        databaseManager = new DatabaseManager(this);
-        playerDataManager = new PlayerDataManager(this, databaseManager);
-        rewardManager = new RewardManager(this, configManager);
-        missionManager = new MissionManager(this, configManager, databaseManager, playerDataManager);
-        shopManager = new ShopManager(this);
-        customItemManager = new CustomItemManager(this);
-        soundManager = new SoundManager(this, customItemManager);
-        guiManager = new GuiManager(this, playerDataManager, missionManager, rewardManager, messageManager, configManager);
-        rewardEditorManager = new RewardEditorManager(this);
-        missionEditorManager = new MissionEditorManager(this);
+            xpEventManager = new XPEventManager(this);
 
-        databaseManager.initialize().thenRun(() -> {
-            if (!isLifecycleActive(generation)) return;
-            getServer().getScheduler().runTask(this, () -> {
+            databaseManager = new DatabaseManager(this);
+            playerDataManager = new PlayerDataManager(this, databaseManager);
+            rewardManager = new RewardManager(this, configManager);
+            missionManager = new MissionManager(this, configManager, databaseManager, playerDataManager);
+            shopManager = new ShopManager(this);
+            customItemManager = new CustomItemManager(this);
+            soundManager = new SoundManager(this, customItemManager);
+            guiManager = new GuiManager(this, playerDataManager, missionManager, rewardManager, messageManager, configManager);
+            rewardEditorManager = new RewardEditorManager(this);
+            missionEditorManager = new MissionEditorManager(this);
+
+            databaseManager.initialize().thenRun(() -> {
                 if (!isLifecycleActive(generation)) return;
-                try {
-                    rewardManager.loadRewards();
-                    missionManager.initialize();
-                    waitForMissions(generation);
-                } catch (RuntimeException failure) { failStartup(generation, failure); }
+                getServer().getScheduler().runTask(this, () -> {
+                    if (!isLifecycleActive(generation)) return;
+                    try {
+                        rewardManager.loadRewards();
+                        missionManager.initialize();
+                        waitForMissions(generation);
+                    } catch (RuntimeException failure) { failStartup(generation, failure); }
+                });
+            }).exceptionally(ex -> {
+                failStartup(generation, ex);
+                return null;
             });
-        }).exceptionally(ex -> {
-            failStartup(generation, ex);
-            return null;
-        });
+        } catch (RuntimeException failure) {
+            stopping = true;
+            lifecycleGeneration++;
+            getLogger().severe("BattlePass could not start: " + failure.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
+        }
     }
 
     private void waitForMissions(long generation) {
@@ -254,6 +265,8 @@ public class BattlePass extends JavaPlugin {
     }
 
     public void reload() {
+        seasonRotationManager.recoverPendingFiles();
+        ConfigurationFiles.validateManagedFiles(getDataFolder());
         reloadConfig();
         seasonRotationManager.reload();
         configManager.reload();

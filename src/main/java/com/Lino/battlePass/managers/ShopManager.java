@@ -3,13 +3,13 @@ package com.Lino.battlePass.managers;
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.models.ShopItem;
+import com.Lino.battlePass.utils.ConfigurationFiles;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -33,8 +33,8 @@ public class ShopManager {
             plugin.saveResource("shop.yml", false);
         }
 
-        FileConfiguration shopConfig = YamlConfiguration.loadConfiguration(shopFile);
-        shopItems.clear();
+        FileConfiguration shopConfig = ConfigurationFiles.read(shopFile);
+        Map<Integer, ShopItem> candidate = new HashMap<>();
 
         ConfigurationSection items = shopConfig.getConfigurationSection("shop-items");
         if (items != null) {
@@ -53,7 +53,8 @@ public class ShopManager {
                 }
                 Material material;
                 try {
-                    material = Material.valueOf(item.getString("material", "STONE"));
+                    material = Material.valueOf(item.getString("material", "STONE").toUpperCase(Locale.ROOT));
+                    if (!material.isItem() || material.isAir()) throw new IllegalArgumentException("No usable item icon");
                 } catch (IllegalArgumentException e) {
                     plugin.getLogger().warning("Invalid material for shop item '" + key + "': " + item.getString("material") + ". Using STONE.");
                     material = Material.STONE;
@@ -68,7 +69,8 @@ public class ShopManager {
                     List<Map<?, ?>> itemMaps = item.getMapList("items");
                     for (Map<?, ?> map : itemMaps) {
                         try {
-                            Material mat = Material.valueOf(String.valueOf(map.get("material")));
+                            Material mat = Material.valueOf(String.valueOf(map.get("material")).toUpperCase(Locale.ROOT));
+                            if (!mat.isItem() || mat.isAir()) throw new IllegalArgumentException("No usable item reward");
                             int amount = map.get("amount") instanceof Integer ? (Integer) map.get("amount") : 1;
                             itemsList.add(new ItemStack(mat, Math.max(1, amount)));
                         } catch (Exception e) {
@@ -77,9 +79,11 @@ public class ShopManager {
                     }
                 }
 
-                shopItems.put(slot, new ShopItem(slot, material, displayName, lore, price, commands, itemsList));
+                candidate.put(slot, new ShopItem(slot, material, displayName, lore, price, commands, itemsList));
             }
         }
+        shopItems.clear();
+        shopItems.putAll(candidate);
     }
 
     public void purchaseItem(Player player, int slot) {
