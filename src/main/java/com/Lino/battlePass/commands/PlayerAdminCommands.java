@@ -294,7 +294,7 @@ final class PlayerAdminCommands {
     }
 
     private void checkLevelUp(Player player, PlayerData data, int xpPerLevel, int amount) {
-        int levels = ExperienceProgression.add(data, amount, xpPerLevel, plugin.getRewardManager().getMaxLevel(), () -> {
+        long levels = ExperienceProgression.addWithLimitedFeedback(data, amount, xpPerLevel, plugin.getRewardManager().getMaxLevel(), () -> {
             player.sendMessage(plugin.getMessageManager().getPrefix() +
                     plugin.getMessageManager().getMessage("messages.level-up",
                             "%level%", String.valueOf(data.level)));

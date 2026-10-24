@@ -241,7 +241,7 @@ public class GuiClickListener implements Listener {
             int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
             int maxLevel = plugin.getRewardManager().getMaxLevel();
 
-            ExperienceProgression.add(data, xpReward, xpPerLevel, maxLevel, () -> {
+            ExperienceProgression.addWithLimitedFeedback(data, xpReward, xpPerLevel, maxLevel, () -> {
                 player.sendMessage(plugin.getMessageManager().getPrefix() +
                         plugin.getMessageManager().getMessage("messages.level-up",
                                 "%level%", String.valueOf(data.level)));

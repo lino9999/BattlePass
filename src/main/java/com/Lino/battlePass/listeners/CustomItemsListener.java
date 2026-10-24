@@ -207,7 +207,7 @@ public class CustomItemsListener implements Listener {
         consumeEntireHeldItem(event, player);
 
         int xpPerLevel = plugin.getConfigManager().getXpPerLevel();
-        int levelsGained = ExperienceProgression.add(data, totalXP, xpPerLevel, maxLevel, () -> {
+        long levelsGained = ExperienceProgression.addWithLimitedFeedback(data, totalXP, xpPerLevel, maxLevel, () -> {
             player.sendMessage(plugin.getMessageManager().getPrefix() +
                     plugin.getMessageManager().getMessage("messages.level-up",
                             "%level%", String.valueOf(data.level)));

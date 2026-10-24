@@ -62,6 +62,7 @@ Public entry points keep their existing signatures. Their helpers are package-pr
 | `gui/BattlePassGui` | `BattlePassRewardRenderer` | Free/premium reward rows, available/locked/claimed icons, reward lore and row separator |
 | | `BattlePassMenuControls` | Progress summary, navigation tags and action buttons |
 | `managers/RewardManager` | `RewardClaimHandler` | Claim eligibility, persisted claim checks, command/item delivery, feedback and dirty marking |
+| `managers/MissionProgressTracker` | `MissionActionbars` | Per-task bar ownership, message timing, replacement/offline/quit/reset/shutdown cleanup |
 
 `BattlePassGui` owns the existing player-data/page/max-level snapshot and inventory creation/opening. It passes that same snapshot to its renderers and preserves rendering order: progress, rewards, separator, navigation, actions. Renderers only populate the inventory; click handling stays in the existing listeners. `RewardManager` retains reward loading, reward maps, level/page limits and editable reward conversion; its public claim method delegates to `RewardClaimHandler` with unchanged arguments. Neither extraction changes configuration paths, slot numbers, persistent tags or claim/save ordering.
 
@@ -89,7 +90,7 @@ Crafting and villager trading use the facade's MONITOR/ignoreCancelled statistic
 - Coin distribution has one managed task. Rescheduling/manual season resets preserve an existing delivery deadline.
 - Coin delivery flushes/invalidate-loads before its atomic database commit, then updates cached balances and notifications. Never credit from the old leaderboard balance or advance a deadline before credit success. See COINS.md for cache gates and the synchronous commit boundary.
 - XP grants fire `BattlePassXPGainEvent`; cancellation and modified nonnegative amounts are respected.
-- Use `utils/ExperienceProgression` for XP accumulation/level conversion so the wide total survives until levels are deducted; its callback preserves per-level feedback. XP events/storage remain int-valued and lifetime counts/remaining XP cap at the representable maximum.
+- Use `utils/ExperienceProgression.addWithLimitedFeedback` for production XP so the wide total survives level conversion. Up to 100 gained levels retain per-level feedback; larger jumps apply the same final state and summarize feedback once. The legacy `add` API retains arbitrary per-level callbacks. XP events/storage remain int-valued and lifetime counts/remaining XP saturate. See EXPERIENCE.md for caller and timer maps.
 - Credit currency through `PlayerData.addBattleCoins` and use the returned credited amount. Coin-token redemption must retain any uncredited tokens at the wallet limit; configured distributions cannot be negative.
 - Custom item identity comes from persistent tags, not material/name alone. Redeeming a stack must consume the same quantity used for the reward and the correct hand.
 - Loaded item rewards use `Reward.configurationPath` for exact item/metadata selection. Do not rediscover an entry by material: multiple rewards may share a material. Claims enforce cached claim/level/premium eligibility in `RewardManager`; shop delivery must clone configured item stacks.
