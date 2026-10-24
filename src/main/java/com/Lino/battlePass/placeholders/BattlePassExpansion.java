@@ -4,21 +4,25 @@ import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.PlayerData;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
 
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import java.util.Locale;
+import java.util.function.LongSupplier;
 
 public class BattlePassExpansion extends PlaceholderExpansion {
 
     private final BattlePass plugin;
+    private final LeaderboardPlaceholders leaderboard;
 
-    public BattlePassExpansion(BattlePass plugin) {
+    public BattlePassExpansion(BattlePass plugin) { this(plugin, System::nanoTime); }
+
+    BattlePassExpansion(BattlePass plugin, LongSupplier clock) {
         this.plugin = plugin;
+        leaderboard = new LeaderboardPlaceholders(plugin, clock);
     }
+
+    public void shutdown() { leaderboard.close(); }
 
     @Override
     public String getIdentifier() {
@@ -47,198 +51,82 @@ public class BattlePassExpansion extends PlaceholderExpansion {
 
     @Override
     public String onRequest(OfflinePlayer player, String identifier) {
-        if (player == null) {
-            return "";
-        }
-
-        UUID uuid = player.getUniqueId();
-        PlayerData data = plugin.getPlayerDataManager().getPlayerData(uuid);
-
-        if (data == null) {
-            return "Loading...";
-        }
-
-        switch (identifier.toLowerCase()) {
-            case "level":
-                return String.valueOf(data.level);
-
-            case "xp":
-                return String.valueOf(data.xp);
-
-            case "xp_needed":
-                return String.valueOf(plugin.getConfigManager().getXpPerLevel());
-
-            case "xp_progress":
-                return String.valueOf(data.xp) + "/" + plugin.getConfigManager().getXpPerLevel();
-
-            case "xp_percentage":
-                int percentage = (data.xp * 100) / plugin.getConfigManager().getXpPerLevel();
-                return String.valueOf(percentage);
-
-            case "total_levels":
-                return String.valueOf(data.totalLevels);
-
-            case "premium":
-                return data.hasPremium ? "Yes" : "No";
-
-            case "premium_status":
-                return data.hasPremium ? "Active" : "Inactive";
-
-            case "coins":
-            case "battlecoins":
-                return String.valueOf(data.battleCoins);
-
-            case "available_rewards":
-                if (player.isOnline()) {
-                    Player onlinePlayer = player.getPlayer();
-                    return String.valueOf(plugin.getRewardManager().countAvailableRewards(data));
-                }
-                return "0";
-
-            case "season_time":
-            case "season_remaining":
+        if (identifier == null) return null;
+        if (leaderboard.isClosed() || plugin.isStopping() || !plugin.isEnabled()) return "";
+        identifier = identifier.toLowerCase(Locale.ROOT);
+        if (identifier.startsWith("top_")) return leaderboard.top(identifier.substring(4));
+        switch (identifier) {
+            case "rank", "leaderboard_rank":
+                return player == null ? "" : leaderboard.rank(player.getUniqueId());
+            case "season_time", "season_remaining":
                 return plugin.getMissionManager().getTimeUntilSeasonEnd();
-
-            case "missions_time":
-            case "missions_reset":
+            case "missions_time", "missions_reset":
                 return plugin.getMissionManager().getTimeUntilReset();
-
-            case "daily_reward_time":
-                return plugin.getMissionManager().getTimeUntilDailyReward(data.lastDailyReward);
-
-            case "daily_reward_available":
-                long now = System.currentTimeMillis();
-                return (now - data.lastDailyReward >= 24 * 60 * 60 * 1000) ? "Yes" : "No";
-
-            case "rank":
-            case "leaderboard_rank":
-                return getPlayerRank(uuid);
-
             case "coins_distribution_time":
-                if (plugin.getCoinsDistributionTask() != null) {
-                    return plugin.getCoinsDistributionTask().getTimeUntilNextDistribution();
-                }
-                return "Unknown";
-
-            case "completed_missions":
-                return String.valueOf(getCompletedMissionsCount(data));
-
+                var distribution = plugin.getCoinsDistributionTask();
+                return distribution == null ? "Unknown" : distribution.getTimeUntilNextDistribution();
             case "total_missions":
                 return String.valueOf(plugin.getMissionManager().getDailyMissions().size());
-
-            case "missions_progress":
-                int completed = getCompletedMissionsCount(data);
-                int total = plugin.getMissionManager().getDailyMissions().size();
-                return completed + "/" + total;
-
             case "current_season":
                 return String.valueOf(plugin.getSeasonRotationManager().getCurrentSeason());
-
             case "total_seasons":
                 return String.valueOf(plugin.getSeasonRotationManager().getTotalSeasons());
-
             case "xp_event_active":
                 return plugin.getXpEventManager().isEventActive() ? "Yes" : "No";
-
             case "xp_event_multiplier":
-                return String.valueOf(plugin.getXpEventManager().getMultiplier()) + "x";
-
-            case "xp_event_time":
-            case "xp_event_remaining":
+                return plugin.getXpEventManager().getMultiplier() + "x";
+            case "xp_event_time", "xp_event_remaining":
                 return plugin.getXpEventManager().getTimeRemaining();
         }
-
-        if (identifier.startsWith("mission_")) {
-            return getMissionPlaceholder(data, identifier.substring(8));
-        }
-
-        if (identifier.startsWith("top_")) {
-            return getTopPlayerPlaceholder(identifier.substring(4));
-        }
-
-        return null;
+        if (identifier.startsWith("mission_name_")) return mission(null, identifier.substring(8));
+        if (identifier.startsWith("mission_") && !identifier.startsWith("mission_progress_") && !identifier.startsWith("mission_status_")) return "";
+        boolean personal = switch (identifier) {
+            case "level", "xp", "xp_needed", "xp_progress", "xp_percentage", "total_levels", "premium",
+                    "premium_status", "coins", "battlecoins", "available_rewards", "daily_reward_time",
+                    "daily_reward_available", "completed_missions", "missions_progress" -> true;
+            default -> identifier.startsWith("mission_progress_") || identifier.startsWith("mission_status_");
+        };
+        if (!personal) return null;
+        if (player == null) return "";
+        PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data == null) return "Loading...";
+        return switch (identifier) {
+            case "level" -> String.valueOf(data.level);
+            case "xp" -> String.valueOf(data.xp);
+            case "xp_needed" -> String.valueOf(plugin.getConfigManager().getXpPerLevel());
+            case "xp_progress" -> data.xp + "/" + plugin.getConfigManager().getXpPerLevel();
+            case "xp_percentage" -> String.valueOf((long) data.xp * 100 / Math.max(1, plugin.getConfigManager().getXpPerLevel()));
+            case "total_levels" -> String.valueOf(data.totalLevels);
+            case "premium" -> data.hasPremium ? "Yes" : "No";
+            case "premium_status" -> data.hasPremium ? "Active" : "Inactive";
+            case "coins", "battlecoins" -> String.valueOf(data.battleCoins);
+            case "available_rewards" -> player.isOnline() ? String.valueOf(plugin.getRewardManager().countAvailableRewards(data)) : "0";
+            case "daily_reward_time" -> plugin.getMissionManager().getTimeUntilDailyReward(data.lastDailyReward);
+            case "daily_reward_available" -> System.currentTimeMillis() - data.lastDailyReward >= 86400000L ? "Yes" : "No";
+            case "completed_missions" -> String.valueOf(plugin.getMissionManager().getCompletedMissionsCount(data));
+            case "missions_progress" -> plugin.getMissionManager().getCompletedMissionsCount(data) + "/" + plugin.getMissionManager().getDailyMissions().size();
+            default -> mission(data, identifier.substring(8));
+        };
     }
 
-    private String getPlayerRank(UUID uuid) {
-        CompletableFuture<List<PlayerData>> future = plugin.getDatabaseManager().getTop10Players();
-        List<PlayerData> topPlayers = future.join();
-
-        for (int i = 0; i < topPlayers.size(); i++) {
-            if (topPlayers.get(i).uuid.equals(uuid)) {
-                return String.valueOf(i + 1);
-            }
-        }
-
-        return "Unranked";
-    }
-
-    private int getCompletedMissionsCount(PlayerData data) {
-        return plugin.getMissionManager().getCompletedMissionsCount(data);
-    }
-
-    private String getMissionPlaceholder(PlayerData data, String missionIdentifier) {
+    private String mission(PlayerData data, String identifier) {
+        int separator = identifier.indexOf('_');
+        if (separator < 0) return "";
+        String field = identifier.substring(0, separator);
+        if (!field.equals("name") && !field.equals("progress") && !field.equals("status")) return "";
         List<Mission> missions = plugin.getMissionManager().getDailyMissions();
-
         try {
-            int missionIndex = Integer.parseInt(missionIdentifier.replace("progress_", "").replace("name_", "").replace("status_", "")) - 1;
-
-            if (missionIndex >= 0 && missionIndex < missions.size()) {
-                Mission mission = missions.get(missionIndex);
-
-                String key = mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
-
-                int progress = Math.max(0, data.missionProgress.getOrDefault(key, 0));
-
-                if (missionIdentifier.startsWith("progress_")) {
-                    return progress + "/" + mission.required;
-                } else if (missionIdentifier.startsWith("name_")) {
-                    return mission.name;
-                } else if (missionIdentifier.startsWith("status_")) {
-                    return progress >= mission.required ? "Completed" : "In Progress";
-                }
-            }
-        } catch (NumberFormatException ignored) {}
-
-        return "";
-    }
-
-    private String getTopPlayerPlaceholder(String identifier) {
-        try {
-            String[] parts = identifier.split("_");
-            int position = Integer.parseInt(parts[0]);
-
-            if (position < 1 || position > 10) {
-                return "";
-            }
-
-            CompletableFuture<List<PlayerData>> future = plugin.getDatabaseManager().getTop10Players();
-            List<PlayerData> topPlayers = future.join();
-
-            if (position > topPlayers.size()) {
-                return "Empty";
-            }
-
-            PlayerData topPlayer = topPlayers.get(position - 1);
-
-            if (parts.length > 1) {
-                switch (parts[1].toLowerCase()) {
-                    case "name":
-                        return Bukkit.getOfflinePlayer(topPlayer.uuid).getName();
-                    case "level":
-                        return String.valueOf(topPlayer.level);
-                    case "xp":
-                        return String.valueOf(topPlayer.xp);
-                    case "coins":
-                        return String.valueOf(topPlayer.battleCoins);
-                    case "totallevels":
-                        return String.valueOf(topPlayer.totalLevels);
-                }
-            }
-
-            return Bukkit.getOfflinePlayer(topPlayer.uuid).getName();
-
-        } catch (NumberFormatException ignored) {}
-
-        return "";
+            int position = Integer.parseInt(identifier.substring(separator + 1));
+            if (position < 1 || position > missions.size()) return "";
+            Mission mission = missions.get(position - 1);
+            if (field.equals("name")) return mission.name;
+            if (data == null) return "";
+            String key = mission.type + "_" + mission.target + "_" + mission.required + "_" + mission.name.hashCode();
+            int progress = Math.max(0, data.missionProgress.getOrDefault(key, 0));
+            return field.equals("progress") ? progress + "/" + mission.required
+                    : progress >= mission.required ? "Completed" : "In Progress";
+        } catch (NumberFormatException invalid) {
+            return "";
+        }
     }
 }

@@ -163,6 +163,7 @@ public class BattlePass extends JavaPlugin {
             xpEventManager.shutdown();
         }
         if (placeholderExpansion != null) {
+            placeholderExpansion.shutdown();
             placeholderExpansion.unregister();
         }
         if (soundManager != null) {

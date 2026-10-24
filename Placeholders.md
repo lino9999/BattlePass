@@ -96,8 +96,10 @@ Replace X with the position (1-10)
 
 ## Notes
 
-- Placeholders that need player data return `Loading...` for a moment right after the player joins, while the data is being loaded.
+- Personal placeholders return `Loading...` while player data is being loaded. Global season/mission/event timers, season counts, total missions, mission names and top players also work without a viewing player.
+- Rank and top-player placeholders share a cached leaderboard refreshed on demand every five seconds. They never wait for SQL in the request. Before the first result they return `Loading...`; during a refresh or database error they retain the last successful result.
 - `%battlepass_coins_distribution_time%` returns `Unknown` until the coin delivery system has started.
 - `%battlepass_rank%` returns `Unranked` when the player is not in the leaderboard (or is excluded from it).
 - `%battlepass_top_X_name%` returns `Empty` when that leaderboard position has no player.
+- A ranked player whose profile has no known name is displayed as `Unknown`.
 - The mission placeholders (`mission_progress_X`, `mission_name_X`, `mission_status_X`) depend on the `daily-missions-count` setting in missions.yml (default 7).
