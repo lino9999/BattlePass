@@ -160,6 +160,7 @@ public class BattlePass extends JavaPlugin {
         lifecycleGeneration++;
         if (seasonRotationManager != null) seasonRotationManager.shutdown();
         if (eventManager != null) {
+            eventManager.stopCustomItemEffects();
             eventManager.flushPlayTime();
         }
         if (xpEventManager != null) {

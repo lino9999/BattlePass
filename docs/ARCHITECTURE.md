@@ -29,7 +29,7 @@ Do not hold the player-cache monitor while waiting for database futures. A load 
 | Session movement/play time | `listeners/MovementMissionTracker`, `PlayTimeTracker`, `PlayerConnectionListener`, `tasks/BattlePassTask` | `missions.disabled-worlds`; WALK_DISTANCE/PLAY_TIME pool targets |
 | Periodic coins | `tasks/CoinsDistributionTask`, `managers/CoinDistributionRepository`, `BattlePass.startCoinsDistributionTask` | `config.yml`; saved next-distribution deadline; [COINS.md](COINS.md) |
 | Rewards and claims | `managers/RewardManager`, `models/Reward`, `gui/BattlePassGui` | `BattlePassFREE.yml`, `BattlePassPREMIUM.yml` |
-| Custom vouchers/tokens/elixirs | `managers/CustomItemManager`, `listeners/CustomItemsListener` | PersistentDataContainer keys, `messages.yml` |
+| Custom vouchers/tokens/elixirs | `managers/CustomItemManager`, `listeners/CustomItemsListener`, `CustomItemEffects`, `managers/SoundManager` | PersistentDataContainer keys, `messages.yml`; [ITEM_SOUNDS.md](ITEM_SOUNDS.md) |
 | Shop | `managers/ShopManager`, `gui/ShopGui`, `models/ShopItem` | `shop.yml` |
 | Mission editing | `managers/MissionEditorManager`, `listeners/MissionEditorListener`, `gui/Mission*Gui` | Edits `missions.yml` pools |
 | Reward editing | `managers/RewardEditorManager`, `listeners/RewardsEditorListener`, editor GUIs | Reward configuration |
@@ -64,6 +64,7 @@ Public entry points keep their existing signatures. Their helpers are package-pr
 | `managers/RewardManager` | `RewardClaimHandler` | Claim eligibility, persisted claim checks, command/item delivery, feedback and dirty marking |
 | `managers/MissionProgressTracker` | `MissionActionbars` | Per-task bar ownership, message timing, replacement/offline/quit/reset/shutdown cleanup |
 | `managers/SeasonRotationManager` | `SeasonArchiveInitializer` | Frozen default templates, bounded filesystem batches, demand preparation and job cancellation |
+| `listeners/CustomItemsListener` | `CustomItemEffects` | Session-owned delayed presentation, coalesced next-tick checks and quit/shutdown cleanup |
 
 `BattlePassGui` owns the existing player-data/page/max-level snapshot and inventory creation/opening. It passes that same snapshot to its renderers and preserves rendering order: progress, rewards, separator, navigation, actions. Renderers only populate the inventory; click handling stays in the existing listeners. `RewardManager` retains reward loading, reward maps, level/page limits and editable reward conversion; its public claim method delegates to `RewardClaimHandler` with unchanged arguments. Neither extraction changes configuration paths, slot numbers, persistent tags or claim/save ordering.
 

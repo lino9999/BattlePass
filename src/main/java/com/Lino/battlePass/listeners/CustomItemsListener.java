@@ -26,9 +26,11 @@ public class CustomItemsListener implements Listener {
 
     private final BattlePass plugin;
     private final Map<UUID, Long> lastCustomItemUse = new ConcurrentHashMap<>();
+    private final CustomItemEffects effects;
 
     public CustomItemsListener(BattlePass plugin) {
         this.plugin = plugin;
+        this.effects = new CustomItemEffects(plugin);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -37,6 +39,7 @@ public class CustomItemsListener implements Listener {
                 event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
+        if (plugin.isStopping() || !plugin.isEnabled()) return;
 
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
@@ -122,10 +125,10 @@ public class CustomItemsListener implements Listener {
 
         for (int i = 0; i < 20; i++) {
             final int index = i;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            effects.playLater(player, i * 2L, () -> {
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME,
                         0.5f, 0.5f + (index * 0.1f));
-            }, i * 2L);
+            });
         }
     }
 
@@ -166,10 +169,10 @@ public class CustomItemsListener implements Listener {
 
         for (int i = 0; i < Math.min(amount, 10); i++) {
             final int index = i;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            effects.playLater(player, i * 3L, () -> {
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
                         0.8f, 1.2f + (index * 0.1f));
-            }, i * 3L);
+            });
         }
     }
 
@@ -226,10 +229,10 @@ public class CustomItemsListener implements Listener {
 
         for (int i = 0; i < Math.min(amount, 15); i++) {
             final int index = i;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            effects.playLater(player, i * 2L, () -> {
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
                         0.6f, 0.8f + (index * 0.15f));
-            }, i * 2L);
+            });
         }
 
         if (levelsGained > 0) {
@@ -274,54 +277,47 @@ public class CustomItemsListener implements Listener {
 
         for (int i = 0; i < 10; i++) {
             final int index = i;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            effects.playLater(player, i * 3L, () -> {
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL,
                         1.0f, 0.5f + (index * 0.15f));
-            }, i * 3L);
+            });
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerItemHeld(PlayerItemHeldEvent event) {
-        Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            plugin.getSoundManager().checkAndUpdateSound(player);
-        }, 1L);
+        effects.checkNextTick(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
-        Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            plugin.getSoundManager().checkAndUpdateSound(player);
-        }, 1L);
+        effects.checkNextTick(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInventoryClose(InventoryCloseEvent event) {
-        if (event.getPlayer() instanceof Player) {
-            Player player = (Player) event.getPlayer();
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                plugin.getSoundManager().checkAndUpdateSound(player);
-            }, 1L);
-        }
+        if (event.getPlayer() instanceof Player player) effects.checkNextTick(player);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDropItem(PlayerDropItemEvent event) {
-        Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            plugin.getSoundManager().checkAndUpdateSound(player);
-        }, 1L);
+        effects.checkNextTick(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerPickupItem(EntityPickupItemEvent event) {
-        if (event.getEntity() instanceof Player) {
-            Player player = (Player) event.getEntity();
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                plugin.getSoundManager().checkAndUpdateSound(player);
-            }, 1L);
-        }
+        if (event.getEntity() instanceof Player player) effects.checkNextTick(player);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        UUID uuid = event.getPlayer().getUniqueId();
+        lastCustomItemUse.remove(uuid);
+        effects.cleanup(uuid);
+    }
+
+    public void shutdown() {
+        effects.shutdown();
+        lastCustomItemUse.clear();
     }
 }

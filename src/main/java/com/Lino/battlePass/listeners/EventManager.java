@@ -60,6 +60,8 @@ public class EventManager {
         }
     }
 
+    public void stopCustomItemEffects() { customItemsListener.shutdown(); }
+
     public Object beginPlayTimeCycle() {
         flushPlayTime();
         return playerConnectionListener.beginPlayTimeCycle();
