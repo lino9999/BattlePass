@@ -80,6 +80,7 @@ Public entry points keep their existing signatures. Their helpers are package-pr
 | `placeholders/BattlePassExpansion` | `LeaderboardPlaceholders` | Shared on-demand SQL refresh, immutable top-ten cache, server-thread names and closed-instance guards |
 | `utils/GradientColorParser` | `GradientText` | Grapheme/control tokenization, visible interpolation steps and carried legacy styles |
 | `tasks/BattlePassTask` | `RewardNotifications` | Owned notification attempts, early dirty markers, safe failed-send retries and per-player presentation isolation; see TASKS.md |
+| `gui/LeaderboardGui` | `LeaderboardResults` | Per-open SQL result, copied top-ten DTOs, lifecycle/view guards and unavailable feedback; see MENUS.md |
 
 `BattlePassGui` owns the existing player-data/page/max-level snapshot and inventory creation/opening. It passes that same snapshot to its renderers and preserves rendering order: progress, rewards, separator, navigation, actions. Renderers only populate the inventory; click handling stays in the existing listeners. `RewardManager` retains live reward maps and level/page limits, using RewardConfiguration for shared runtime/archive parsing. Its public claim method delegates to RewardClaimHandler with unchanged arguments. Claims prepare items before committing eligibility and mark dirty before delivery/feedback. Configuration paths, slot numbers and persistent tags remain unchanged; see REWARDS.md for snapshot and legacy API behavior.
 

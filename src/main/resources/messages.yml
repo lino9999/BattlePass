@@ -14,6 +14,7 @@ messages:
   no-permission: "<gradient:#FF0000:#FF6B6B>✗ You don't have permission to use this command!</gradient>"
   player-not-found: "<gradient:#FF0000:#FF6B6B>✗ Player not found!</gradient>"
   data-loading: "<gradient:#FFD93D:#FF6B6B>⏳ Your Battle Pass data is still loading, please try again in a moment!</gradient>"
+  leaderboard-unavailable: "&cThe leaderboard is temporarily unavailable. Please try again."
   invalid-amount: "<gradient:#FF0000:#FF6B6B>✗ Invalid amount! Please enter a number.</gradient>"
   amount-must-be-positive: "<gradient:#FF0000:#FF6B6B>✗ Amount must be positive!</gradient>"
   invalid-item-type: "<gradient:#FF0000:#FF6B6B>✗ Invalid item type! Use 'premium', 'coins' or 'levelboost'.</gradient>"

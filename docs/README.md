@@ -25,6 +25,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | Update checks, HTTP cleanup and stale startup callbacks | [ARCHITECTURE.md](ARCHITECTURE.md) | `BattlePass.checkForUpdates`, `UpdateChecker`, `VersionUtils` |
 | Login notifications, disconnect and final play-time flush | [ARCHITECTURE.md](ARCHITECTURE.md) | `PlayerConnectionListener.JoinNotification`, `EventManager.stopJoinFeedback`, `PlayTimeTracker` |
 | PlaceholderAPI globals, percentages and cached leaderboard | [PLACEHOLDERS.md](PLACEHOLDERS.md) | `BattlePassExpansion`, `LeaderboardPlaceholders`; public names in root `Placeholders.md` |
+| Leaderboard menu query failures, closed views and late SQL responses | [MENUS.md](MENUS.md) | `gui/LeaderboardGui`, `LeaderboardResults`; separate from the placeholder cache |
 | Gradients, Unicode, formatting and locale-sensitive identifiers | [TEXT.md](TEXT.md) | `GradientColorParser`, `GradientText`, `ConfigManager`, command router/completer |
 | YAML read/reload failures, GUI materials and startup validation | [CONFIGURATION.md](CONFIGURATION.md) | `ConfigurationFiles`, `ConfigManager`, `GuiConfiguration`, `MessageManager`, `ShopManager`, startup/reload recovery ordering |
 | Other menus, custom items, coins | [ARCHITECTURE.md](ARCHITECTURE.md) | Use the feature table |

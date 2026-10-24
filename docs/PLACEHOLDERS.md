@@ -22,3 +22,5 @@ Database completion may run off the server thread. Resolve offline names through
 One request object owns pending SQL/name-publication work. Shutdown detaches it before cancelling a queued publication task; late callbacks cannot publish, look up names or reset newer ownership. `BattlePass.onDisable` calls expansion.shutdown before PlaceholderAPI's final unregister method. Old expansion instances remain closed after re-enable; a new expansion has a fresh cache. Cancellation failure is logged without aborting the rest of plugin shutdown. No repeating cache task, persisted cache, new configuration key or database migration is introduced.
 
 The regression record in `CODE_AUDIT.md` covers actual worker completions/concurrent readers with mocked Bukkit scheduling/profiles and the existing SQLite suite. No live PlaceholderAPI scoreboard/hologram server was exercised.
+
+The menu uses a separate gui/LeaderboardResults helper with one fresh SQL query per open, copied DTOs and exact-view/lifecycle checks. It does not read this placeholder cache. See MENUS.md for inline completion before inventory opening, failure messages and server-thread rendering ownership.

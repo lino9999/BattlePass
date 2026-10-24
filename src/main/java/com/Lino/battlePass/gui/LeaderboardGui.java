@@ -1,16 +1,12 @@
 package com.Lino.battlePass.gui;
 
 import com.Lino.battlePass.BattlePass;
-import com.Lino.battlePass.models.PlayerData;
 import com.Lino.battlePass.utils.GradientColorParser;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,60 +62,7 @@ public class LeaderboardGui extends BaseGui {
     }
 
     private void setupLeaderboard(Inventory gui) {
-        plugin.getDatabaseManager().getTop10Players().thenAccept(topPlayers -> {
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (!player.isOnline()) return;
-
-                int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
-
-                for (int i = 0; i < topPlayers.size() && i < 10; i++) {
-                    PlayerData topPlayer = topPlayers.get(i);
-                    OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(topPlayer.uuid);
-
-                    // FIX: Controllo se il nome è null per evitare il crash
-                    String playerName = offlinePlayer.getName();
-                    if (playerName == null) {
-                        playerName = "Unknown";
-                    }
-
-                    ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
-                    SkullMeta skullMeta = (SkullMeta) skull.getItemMeta();
-                    skullMeta.setOwningPlayer(offlinePlayer);
-
-                    String rank;
-                    if (i == 0) rank = plugin.getMessageManager().getMessage("items.leaderboard-rank.first");
-                    else if (i == 1) rank = plugin.getMessageManager().getMessage("items.leaderboard-rank.second");
-                    else if (i == 2) rank = plugin.getMessageManager().getMessage("items.leaderboard-rank.third");
-                    else rank = plugin.getMessageManager().getMessage("items.leaderboard-rank.other", "%rank%", String.valueOf(i + 1));
-
-                    skullMeta.setDisplayName(plugin.getMessageManager().getMessage("items.leaderboard-player.name",
-                            "%rank%", rank, "%player%", playerName));
-
-                    String status = topPlayer.uuid.equals(player.getUniqueId()) ?
-                            plugin.getMessageManager().getMessage("items.leaderboard-status.you") :
-                            plugin.getMessageManager().getMessage("items.leaderboard-status.other");
-
-                    List<String> lore = new ArrayList<>();
-                    for (String line : plugin.getMessageManager().getMessagesConfig().getStringList("items.leaderboard-player.lore")) {
-                        String processedLine = line
-                                .replace("%level%", String.valueOf(topPlayer.level))
-                                .replace("%total_levels%", String.valueOf(topPlayer.totalLevels))
-                                .replace("%xp%", String.valueOf(topPlayer.xp))
-                                .replace("%coins%", String.valueOf(topPlayer.battleCoins))
-                                .replace("%status%", status);
-                        lore.add(GradientColorParser.parse(processedLine));
-                    }
-
-                    skullMeta.setLore(lore);
-                    skull.setItemMeta(skullMeta);
-                    gui.setItem(slots[i], skull);
-                }
-
-                if (player.getOpenInventory().getTopInventory() == gui) {
-                    player.updateInventory();
-                }
-            });
-        });
+        new LeaderboardResults(plugin, player, gui).request();
     }
 
     private void setupCoinsInfo(Inventory gui) {
