@@ -35,11 +35,16 @@ public class Mission {
         if (configuredTarget.equalsIgnoreCase(actionTarget)) {
             return true;
         }
-        if (!"EAT_ITEM".equals(type) || actionTarget == null) {
+        boolean materialTarget = switch (type == null ? "" : type) {
+            case "EAT_ITEM", "BREAK_BLOCK", "MINE_BLOCK", "PLACE_BLOCK", "CRAFT_ITEM",
+                    "SMELT_ITEM", "ENCHANT_ITEM", "FISH_ITEM" -> true;
+            default -> false;
+        };
+        if (!materialTarget || actionTarget == null) {
             return false;
         }
 
-        // Resolve food names at comparison time so persisted progress keys stay unchanged.
+        // Resolve material names at comparison time so persisted progress keys stay unchanged.
         Material configuredMaterial = Material.matchMaterial(configuredTarget.trim());
         return configuredMaterial != null
                 && configuredMaterial == Material.matchMaterial(actionTarget.trim());

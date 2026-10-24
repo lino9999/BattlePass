@@ -1,4 +1,4 @@
-# Mission progress and food troubleshooting
+# Mission progress and material target troubleshooting
 
 ## Data flow and edit locations
 
@@ -39,7 +39,7 @@ mission-pools:
 
 Omit `additional-targets` to require ordinary golden apples only; use `target: ENCHANTED_GOLDEN_APPLE` for enchanted apples only. These are distinct materials. The displayed name does not select what counts.
 
-Food target comparison accepts Bukkit material spellings (for example `Golden Apple`, `minecraft:golden_apple`) as well as canonical IDs and surrounding whitespace. It uses `Material.matchMaterial` only for `EAT_ITEM`, including additional targets; custom mob identifiers retain their existing text matching. Prefer canonical singular material IDs in configuration.
+Material target comparison accepts Bukkit material spellings (for example `Golden Apple`, `minecraft:golden_apple`, `minecraft:dirt`) as well as canonical IDs and surrounding whitespace. Material.matchMaterial applies to EAT_ITEM, BREAK_BLOCK, MINE_BLOCK, PLACE_BLOCK, CRAFT_ITEM, SMELT_ITEM, ENCHANT_ITEM and FISH_ITEM, including additional targets. Other types/custom mob identifiers retain their existing literal text matching. Prefer canonical singular material IDs in configuration. This comparison never rewrites stored target/type/name fields or progress keys.
 
 ## Golden apple report: evidence and limits
 
@@ -48,6 +48,23 @@ The 2026-10-23 customer report had no server version or configuration available.
 Temporary regression tests verified canonical/formatted/namespaced names, additional targets and distinct apple variants. They also exercised Bukkit cancellation dispatch, both hands, full/reduced hunger, one unit per stack consumption, wildcard missions and the dirty-save marker through the real progress tracker, with a mocked MissionManager bridge. The full build passed 55 tests on 2026-10-23 before the two temporary test sources and their generated classes/reports were removed at the owner's request. These temporary tests are not retained in the current repository.
 
 If a canonical target still does not count on a live server, collect the active mission target/type, server/plugin versions, disabled worlds, player-data loading status and plugins cancelling/replacing consumption. Check those before adding fallback statistic/right-click listeners, which could award duplicate or unconsumed items.
+
+## BREAK_BLOCK and the DIRT report (2026-10-24)
+
+Registered MONITOR/ignoreCancelled block-break dispatch emits BREAK_BLOCK with the actual block's material name and amount one. The path does not require dropped items. The canonical type is BREAK_BLOCK; a raw type BREAK does not match. MINE_BLOCK is a separate ore-only path requiring item drops; DIRT is not a mining ore.
+
+Canonical BREAK_BLOCK + DIRT already counts and marks progress dirty. GRASS_BLOCK is distinct from DIRT even when its drop is dirt; include it explicitly if desired:
+
+```yaml
+type: BREAK_BLOCK
+target: DIRT
+additional-targets:
+  - GRASS_BLOCK
+```
+
+The packaged break-dirt pool already includes GRASS_BLOCK, COARSE_DIRT, ROOTED_DIRT, PODZOL, MYCELIUM, DIRT_PATH and FARMLAND. Its generated mission counts these eight block types including DIRT. Disabled worlds, paused progress, unloaded player data and cancelled breaks still prevent counting.
+
+The customer follow-up did not include the active mission/server version. Tests reproduced failures for namespaced/whitespace block targets and alternatives, which the material comparison now resolves for all eight material-based mission types. The exact customer's cause remains unverified. The initial 14 report checks had eleven passing unchanged cases and three failing formatted-target cases; all 94 tests passed after correction (41 existing plus 53 temporary). Coverage includes the actual block event/registered cancellation handler, real MissionManager/progress tracker, packaged generation, dirty marking, raw progress keys, duplicate alternatives, all material target types, ore/drop/world/data gates and unchanged custom identifiers. Bukkit player/scheduler behavior is mocked; no live server was used. Temporary sources/artifacts are removed before delivery.
 
 ## Mission progress ownership
 

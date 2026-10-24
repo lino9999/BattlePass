@@ -259,6 +259,14 @@ Validation: all 15 initial regressions failed before correction (work after stop
 
 Validation: all ten initial regressions failed before correction; an additional error-formatting/view-replacement regression also failed before its guard was added. All 68 tests pass (41 existing plus 27 temporary), covering active/late/queued/disabled/replaced database results, closed/offline/new views, query/render/chat/scheduling failures, normal slots/ranks/statistics, Unknown/empty results, immediate completion before opening, bounded copied snapshots, real worker completion without player/inventory reads and packaged default fallback without rewriting translations. Bukkit/scheduling/profiles/metadata are mocked; no live server was used. Temporary sources/artifacts are removed before delivery.
 
+## Verified report: dirt breaking and material target spellings (2026-10-24)
+
+The canonical BREAK_BLOCK/DIRT route passes before any change, including dirty marking and breaks without drops. The packaged generated dirt pool also counts all eight configured block variants. Cancellation, disabled worlds and unloaded data still block progress; GRASS_BLOCK is a distinct material unless included, raw BREAK is not BREAK_BLOCK, and MINE_BLOCK retains its ore/drop gate. These checks do not establish the customer's exact active configuration/version.
+
+Three formatted primary/additional block targets failed before correction. Extend existing food material resolution to BREAK_BLOCK, MINE_BLOCK, PLACE_BLOCK, CRAFT_ITEM, SMELT_ITEM, ENCHANT_ITEM and FISH_ITEM. Resolve material spellings/namespaces/whitespace only at comparison time; preserve all stored fields/keys, one credit per action and literal custom mob matching.
+
+Validation: 94 tests pass (41 existing plus 53 temporary), with the real registered block handler, MissionManager/progress tracker, packaged pool generation, dirty markers, additional/duplicate alternatives, canonical/formatted names across eight material target types, distinct grass/dirt, type/ore/drop/world/data gates and unknown/custom/null-type matching. The initial 14 checks passed eleven canonical/guard cases and failed three formatted-target cases. Bukkit players/scheduling are mocked; no live server was used. Temporary sources/artifacts are removed before delivery; see MISSIONS.md.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
