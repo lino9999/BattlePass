@@ -69,6 +69,7 @@ Public entry points keep their existing signatures. Their helpers are package-pr
 | `listeners/CustomItemsListener` | `CustomItemEffects` | Session-owned delayed presentation, coalesced next-tick checks and quit/shutdown cleanup |
 | `BattlePass.checkForUpdates` | `UpdateChecker` | HTTP request/cleanup and immutable parsed result; lifecycle publication remains in BattlePass |
 | `placeholders/BattlePassExpansion` | `LeaderboardPlaceholders` | Shared on-demand SQL refresh, immutable top-ten cache, server-thread names and closed-instance guards |
+| `utils/GradientColorParser` | `GradientText` | Grapheme/control tokenization, visible interpolation steps and carried legacy styles |
 
 `BattlePassGui` owns the existing player-data/page/max-level snapshot and inventory creation/opening. It passes that same snapshot to its renderers and preserves rendering order: progress, rewards, separator, navigation, actions. Renderers only populate the inventory; click handling stays in the existing listeners. `RewardManager` retains reward loading, reward maps, level/page limits and editable reward conversion; its public claim method delegates to `RewardClaimHandler` with unchanged arguments. Neither extraction changes configuration paths, slot numbers, persistent tags or claim/save ordering.
 

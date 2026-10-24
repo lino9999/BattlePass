@@ -21,6 +21,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | Update checks, HTTP cleanup and stale startup callbacks | [ARCHITECTURE.md](ARCHITECTURE.md) | `BattlePass.checkForUpdates`, `UpdateChecker`, `VersionUtils` |
 | Login notifications, disconnect and final play-time flush | [ARCHITECTURE.md](ARCHITECTURE.md) | `PlayerConnectionListener.JoinNotification`, `EventManager.stopJoinFeedback`, `PlayTimeTracker` |
 | PlaceholderAPI globals, percentages and cached leaderboard | [PLACEHOLDERS.md](PLACEHOLDERS.md) | `BattlePassExpansion`, `LeaderboardPlaceholders`; public names in root `Placeholders.md` |
+| Gradients, Unicode, formatting and locale-sensitive identifiers | [TEXT.md](TEXT.md) | `GradientColorParser`, `GradientText`, `ConfigManager`, command router/completer |
 | Other menus, custom items, coins | [ARCHITECTURE.md](ARCHITECTURE.md) | Use the feature table |
 | Build, regression tests, push | [DEVELOPMENT.md](DEVELOPMENT.md) | `pom.xml`, `AGENTS.md` |
 | Active bug/optimization audit | [CODE_AUDIT.md](CODE_AUDIT.md) | Verified fixes, pending investigations and test evidence |

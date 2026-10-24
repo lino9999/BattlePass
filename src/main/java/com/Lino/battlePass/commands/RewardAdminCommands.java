@@ -1,5 +1,7 @@
 package com.Lino.battlePass.commands;
 
+import java.util.Locale;
+
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.gui.RewardsEditorGui;
 import com.Lino.battlePass.managers.SeasonRotationManager;
@@ -94,7 +96,7 @@ final class RewardAdminCommands {
             return true;
         }
 
-        String itemType = args[1].toLowerCase();
+        String itemType = args[1].toLowerCase(Locale.ROOT);
         Player target = Bukkit.getPlayer(args[2]);
 
         if (target == null) {

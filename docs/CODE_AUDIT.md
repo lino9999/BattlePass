@@ -197,12 +197,20 @@ Validation: all seven initial regressions failed before correction (late stopped
 
 Validation: the ten initial regressions produced nine assertion failures and a divide-by-zero error before correction (SQL waits/query duplication, global data gates, overflow, locale and malformed identifiers). All 75 tests pass (41 existing plus 34 temporary). Coverage includes shared cold/warm reads, five-second/wrapped-clock boundaries, copied values, failures/retry/empty/null-name results, twelve concurrent readers, actual worker completion with main-thread profile publication, close/late/reentrant/cancellation and onDisable ordering, top-ten bounds, normal personal/global aliases and mission keys. A BigInteger oracle checks 128 percentage cases. Bukkit scheduling/profiles and the database-facing futures are mocked; the existing SQLite tests also pass. No live PlaceholderAPI/Minecraft server was used. Temporary sources/artifacts are removed before delivery.
 
+## Verified fixes: gradient text and locale-independent identifiers (2026-10-24)
+
+- Extracted GradientText from the public color parser. Count/render the same non-whitespace grapheme tokens, treating legacy/RGB codes as controls. Spaces/formatting no longer prevent the last visible glyph reaching its endpoint; inline hex no longer becomes colored digits or drives interpolation beyond the valid color range. Unicode surrogate pairs, combining accents, joined emoji and variation selectors stay together. Multiline tags are recognized; ordinary plain-text interpolation and the single-glyph midpoint remain.
+- Carry and reapply legacy styles after inserted RGB codes, including styles before/across tags; explicit colors/reset clear them. Strip both recognized legacy marker forms consistently and leave invalid controls literal. Preserve visible packaged message content and quote regex replacements safely. This remains a small gradient/legacy parser rather than full nested MiniMessage support.
+- Use Locale.ROOT in configured materials, material/target labels, command routing, item types and tab matching. Player-name suggestions now pass through the common typed-prefix filter, and zero completion arguments return safely. Existing permissions, factories, command delivery and persisted mission names/keys remain unchanged.
+
+Validation: the initial 16 checks produced 13 assertion failures plus an out-of-range Color error and a zero-argument index error; ordinary plain-text interpolation already passed. All 75 tests pass (41 existing plus 34 temporary). Coverage includes endpoints/whitespace, all five legacy styles/resets, formatting across tags, both RGB marker forms, combining/joined/supplementary Unicode, multiline/empty/malformed/literal replacement text and visible content of all packaged message strings/lists. Locale checks use Turkish and compare English results for materials, labels, router permissions, four item factories and tab scenarios/permissions. Factory tests stop at a deliberate mock sentinel after selection; they do not claim live item delivery. Existing SQLite tests also pass. Temporary sources/artifacts are removed before delivery; no client font/audio/server smoke test was used.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
 
 - Reward previews, unusual serialized item metadata and malformed configuration outside the verified editor/reward paths; check optional integration behavior on a live server.
-- Reproduce GUI-material/default-locale behavior, malformed auxiliary YAML reloads, gradient visible-character/Unicode handling, remaining default-locale case conversions and extreme stored timestamp arithmetic before changing those paths.
+- Reproduce malformed auxiliary YAML reload behavior and extreme stored timestamp arithmetic; review legacy compatibility fallbacks alongside optional integrations.
 - Distributed player-cache coherence and session-local elapsed-time durability remain unproven/limited; normal reset APIs, feedback and cycle time accounting now use the verified coordinator path.
 - Other startup/shutdown/reload callbacks, shared-database cache assumptions, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 

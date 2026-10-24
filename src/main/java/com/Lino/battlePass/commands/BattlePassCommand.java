@@ -1,5 +1,7 @@
 package com.Lino.battlePass.commands;
 
+import java.util.Locale;
+
 import com.Lino.battlePass.BattlePass;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -33,7 +35,7 @@ public class BattlePassCommand implements CommandExecutor {
             return true;
         }
 
-        switch (args[0].toLowerCase()) {
+        switch (args[0].toLowerCase(Locale.ROOT)) {
             case "help":
                 sendHelpMessage(sender);
                 return true;

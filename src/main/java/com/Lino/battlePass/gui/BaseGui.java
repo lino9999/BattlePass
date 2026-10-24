@@ -1,5 +1,7 @@
 package com.Lino.battlePass.gui;
 
+import java.util.Locale;
+
 import com.Lino.battlePass.BattlePass;
 import com.Lino.battlePass.utils.GradientColorParser;
 import org.bukkit.Bukkit;
@@ -74,6 +76,6 @@ public abstract class BaseGui {
     }
 
     protected String formatMaterial(Material material) {
-        return material.name().toLowerCase().replace("_", " ");
+        return material.name().toLowerCase(Locale.ROOT).replace("_", " ");
     }
 }

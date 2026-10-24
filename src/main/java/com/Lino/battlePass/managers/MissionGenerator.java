@@ -1,5 +1,7 @@
 package com.Lino.battlePass.managers;
 
+import java.util.Locale;
+
 import com.Lino.battlePass.models.Mission;
 import com.Lino.battlePass.models.MissionTemplate;
 import org.bukkit.configuration.ConfigurationSection;
@@ -104,7 +106,7 @@ public class MissionGenerator {
         if (target == null || target.equals("ANY")) {
             return "";
         }
-        return target.toLowerCase().replace("_", " ");
+        return target.toLowerCase(Locale.ROOT).replace("_", " ");
     }
 
     private static class WeightedMissionTemplate {

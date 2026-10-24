@@ -1,5 +1,7 @@
 package com.Lino.battlePass.managers;
 
+import java.util.Locale;
+
 import com.Lino.battlePass.BattlePass;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -150,7 +152,7 @@ public class ConfigManager {
         }
 
         try {
-            return Material.valueOf(materialName.toUpperCase());
+            return Material.valueOf(materialName.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             plugin.getLogger().warning("Invalid material '" + materialName + "' in config. Using default: " + defaultMaterial.name());
             return defaultMaterial;

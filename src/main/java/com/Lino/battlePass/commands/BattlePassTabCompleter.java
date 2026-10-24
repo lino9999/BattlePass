@@ -1,5 +1,7 @@
 package com.Lino.battlePass.commands;
 
+import java.util.Locale;
+
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -14,6 +16,7 @@ public class BattlePassTabCompleter implements TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length == 0) return List.of();
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
@@ -54,7 +57,7 @@ public class BattlePassTabCompleter implements TabCompleter {
                 completions.add("levelboost");
                 completions.add("xpevent");
             } else if (sender.hasPermission("battlepass.admin")) {
-                String subCommand = args[0].toLowerCase();
+                String subCommand = args[0].toLowerCase(Locale.ROOT);
 
                 if (subCommand.equals("addpremium") || subCommand.equals("removepremium") ||
                         subCommand.equals("addxp") || subCommand.equals("removexp") ||
@@ -62,13 +65,13 @@ public class BattlePassTabCompleter implements TabCompleter {
                         subCommand.equals("excludefromtop") || subCommand.equals("includetop") ||
                         subCommand.equals("resetplayer")) {
 
-                    return Bukkit.getOnlinePlayers().stream()
+                    completions.addAll(Bukkit.getOnlinePlayers().stream()
                             .map(Player::getName)
-                            .collect(Collectors.toList());
+                            .collect(Collectors.toList()));
                 }
             }
         } else if (args.length == 3 && sender.hasPermission("battlepass.admin")) {
-            String subCommand = args[0].toLowerCase();
+            String subCommand = args[0].toLowerCase(Locale.ROOT);
 
             if (subCommand.equals("edit") && args[1].equalsIgnoreCase("rewards")) {
                 completions.add("season");
@@ -78,9 +81,9 @@ public class BattlePassTabCompleter implements TabCompleter {
                 completions.add("2h");
                 completions.add("3h");
             } else if (subCommand.equals("giveitem")) {
-                return Bukkit.getOnlinePlayers().stream()
+                completions.addAll(Bukkit.getOnlinePlayers().stream()
                         .map(Player::getName)
-                        .collect(Collectors.toList());
+                        .collect(Collectors.toList()));
             } else if (subCommand.equals("addxp") || subCommand.equals("removexp") ||
                     subCommand.equals("addcoins") || subCommand.equals("removecoins")) {
 
@@ -91,7 +94,7 @@ public class BattlePassTabCompleter implements TabCompleter {
                 completions.add("1000");
             }
         } else if (args.length == 4 && sender.hasPermission("battlepass.admin")) {
-            String subCommand = args[0].toLowerCase();
+            String subCommand = args[0].toLowerCase(Locale.ROOT);
 
             if (subCommand.equals("edit") && args[1].equalsIgnoreCase("rewards") && args[2].equalsIgnoreCase("season")) {
                 completions.add("1");
@@ -106,9 +109,9 @@ public class BattlePassTabCompleter implements TabCompleter {
             }
         }
 
-        String lastArg = args[args.length - 1].toLowerCase();
+        String lastArg = args[args.length - 1].toLowerCase(Locale.ROOT);
         return completions.stream()
-                .filter(s -> s.toLowerCase().startsWith(lastArg))
+                .filter(s -> s.toLowerCase(Locale.ROOT).startsWith(lastArg))
                 .collect(Collectors.toList());
     }
 }
