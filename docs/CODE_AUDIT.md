@@ -236,6 +236,13 @@ Validation: all 13 initial temporary regressions failed before correction (stale
 
 Validation: all 14 initial reward regressions and two additional invalid-icon regressions failed before their corrections. All 72 tests pass (41 existing plus 31 temporary): serialized-only/split fields, empty/invalid entries, active/archive labels/precedence, metadata configuration, wrong/null serialized payloads and stream cleanup, strict/lenient fallback, real ItemStack snapshot cloning and inventory mutation, no repeat decoding, public list mutability, failed candidate publication, sparse final-integer levels, dirty timing, command order, preparation failures, already persisted claims and all invalid/hidden icon kinds. Tests mock Bukkit registries/metadata/inventories and some stream reads; a real serialized-null payload is exercised. No live server/full platform metadata round trip was used. Temporary sources/artifacts are removed before delivery. See REWARDS.md for the source map and delivery's nontransactional limits.
 
+## Verified fixes: final damage accounting and optional hook startup isolation (2026-10-24)
+
+- CombatMissionTracker now shares one amount conversion based on finite positive final damage. Fully reduced/zero, negative and NaN/infinite amounts do not become progress via raw damage or absolute-value fallback. Preserve ordinary rounding/minimum one per positive hit and clamp before the int cast so large finite values saturate instead of wrapping. Damage targets, projectile attribution, cause aliases, PvP mission separation and MONITOR/ignoreCancelled annotations are unchanged.
+- EventManager requires enabled MythicMobs, registers core listeners first and contains optional RuntimeException/LinkageError failures. Failed registration attempts listener-specific cleanup, reports cleanup failures and keeps core startup alive; successful registration logs afterwards. No changes to mission pools, saved keys, world/reset filters or the Mythic kill payload.
+
+Validation: all ten initial temporary regressions failed before correction (zero/negative/raw-fallback damage, large-value overflow, disabled optional hook and registration/linkage startup failures). All 64 tests pass (41 existing plus 23 temporary). A BigDecimal oracle checks 275 boundary/random signed-double values through both damage paths; further checks cover reduced damage, shields, projectiles, aliases, registered cancellation dispatch, PvP, absent/enabled/disabled optional plugins, cleanup ownership/failure and real missing Mythic event API resolution under reflection. Bukkit/registration and event payloads are mocked, with the optional artifact excluded by the existing test configuration. No live combat/MythicMobs server was used. Temporary sources/artifacts are removed before delivery.
+
 ## Remaining review work
 
 The audit is still active. Inspect and reproduce these candidates before changing behavior:
@@ -243,6 +250,7 @@ The audit is still active. Inspect and reproduce these candidates before changin
 - Exercise unusual platform/custom serialized metadata and optional integration behavior on a live server; inspect paths outside the verified basic parsing/snapshot/claim preparation coverage.
 - Review legacy compatibility fallbacks, optional integrations and non-item material handling in other menu/reward configuration paths.
 - Review arbitrary reentrant level-feedback callbacks and utility progression semantics beyond the verified gain-event boundary; current guards retain existing arithmetic and do not make presentation transactional.
+- Review BattlePassTask continuation during stop/reset and its reward-notification callbacks; the timer source was read but its lifecycle behavior has not yet been reproduced/verified.
 - Distributed player-cache coherence and session-local elapsed-time durability remain unproven/limited; normal reset APIs, feedback and cycle time accounting now use the verified coordinator path.
 - Other startup/shutdown/reload callbacks, shared-database cache assumptions, editors, GUI caches, serialization, placeholders, configuration and optional integrations.
 

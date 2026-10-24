@@ -5,6 +5,7 @@ Read the matching guide, then inspect the named classes. Paths below are relativ
 | Task | Read first | Entry points |
 | --- | --- | --- |
 | Mission not counting, food, target matching | [MISSIONS.md](MISSIONS.md) | `listeners/MissionProgressListener`, `models/Mission`, `managers/MissionProgressTracker` |
+| Damage counting/overflow, projectiles or unavailable MythicMobs hook | [MISSIONS.md](MISSIONS.md) | `CombatMissionTracker.calculateDamageAmount`, `EventManager.registerMythicMobs` |
 | XP grants, large level jumps, level feedback and actionbars | [EXPERIENCE.md](EXPERIENCE.md) | `ExperienceProgression`, `MissionProgressTracker`, `MissionActionbars`; four XP entry points |
 | XP multiplier event startup, countdown, bossbar and vouchers | [EXPERIENCE.md](EXPERIENCE.md) | `XPEventManager`, `commands/XPEventCommands`, `CustomItemRedemptions.handleXPEventUse` |
 | XP hook resets/quit, stale held items and dirty marking | [EXPERIENCE.md](EXPERIENCE.md), [ITEM_SOUNDS.md](ITEM_SOUNDS.md) | `PlayerData` runtime progress revision, `MissionProgressTracker`, `CustomItemRedemptions`, `HeldItemSnapshot` |

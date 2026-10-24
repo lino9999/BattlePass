@@ -4,6 +4,9 @@ import com.Lino.battlePass.BattlePass;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.PluginManager;
 
 public class EventManager {
 
@@ -43,10 +46,25 @@ public class EventManager {
         plugin.getServer().getPluginManager().registerEvents(rewardsEditorListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(missionEditorListener, plugin);
 
-        // Check for MythicMobs hook
-        if (plugin.getServer().getPluginManager().getPlugin("MythicMobs") != null) {
+        registerMythicMobs(plugin.getServer().getPluginManager());
+    }
+
+    private void registerMythicMobs(PluginManager plugins) {
+        if (!plugins.isPluginEnabled("MythicMobs")) return;
+        Listener optional = null;
+        try {
+            optional = new MythicMobsListener(plugin);
+            plugins.registerEvents(optional, plugin);
             plugin.getLogger().info("MythicMobs found! Hooking into MythicMobs events...");
-            plugin.getServer().getPluginManager().registerEvents(new MythicMobsListener(plugin), plugin);
+        } catch (RuntimeException | LinkageError failure) {
+            if (optional != null) {
+                try { HandlerList.unregisterAll(optional); }
+                catch (RuntimeException | LinkageError cleanupFailure) {
+                    plugin.getLogger().warning("Could not remove failed MythicMobs listener: " + cleanupFailure.getMessage());
+                }
+            }
+            plugin.getLogger().warning("MythicMobs integration unavailable; continuing without custom-mob missions: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
         }
     }
 

@@ -29,7 +29,7 @@ final class CombatMissionTracker {
 
     void onEntityDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
-        int amount = calculateDamageTakenAmount(player, event);
+        int amount = calculateDamageAmount(event);
         if (amount <= 0) return;
 
         plugin.getMissionManager().progressMission(player, "DAMAGE_TAKEN", enumerateDamageTypes(event), amount);
@@ -38,7 +38,7 @@ final class CombatMissionTracker {
     void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         Entity trueDamager = getTrueDamager(event.getDamager());
         if (trueDamager instanceof Player player) {
-            int amount = calculateDamageDealtAmount(event);
+            int amount = calculateDamageAmount(event);
             if (amount <= 0) return;
             List<String> victimTypes = enumerateVictimTypes(event.getEntity());
             plugin.getMissionManager().progressMission(player, "DAMAGE_DEALT", victimTypes, amount);
@@ -58,53 +58,11 @@ final class CombatMissionTracker {
         }
     }
 
-    private int calculateDamageTakenAmount(Player player, EntityDamageEvent event) {
-        double finalDamage = event.getFinalDamage();
-        double rawDamage = event.getDamage();
-
-        // If player is blocking with a shield and took no final damage, the attack was blocked.
-        if (player.isBlocking() && finalDamage <= 0) {
-            return 0;
-        }
-
-        double effectiveDamage;
-        if (finalDamage > 0) {
-            effectiveDamage = finalDamage;
-        } else if (rawDamage > 0) {
-            effectiveDamage = rawDamage;
-        } else if (finalDamage < 0) {
-            effectiveDamage = Math.abs(finalDamage);
-        } else {
-            effectiveDamage = 0;
-        }
-
-        int amount = (int) Math.round(effectiveDamage);
-        if (effectiveDamage > 0 && amount == 0) {
-            amount = 1;
-        }
-        return Math.max(0, amount);
-    }
-
-    private int calculateDamageDealtAmount(EntityDamageByEntityEvent event) {
-        double finalDamage = event.getFinalDamage();
-        double rawDamage = event.getDamage();
-
-        double effectiveDamage;
-        if (finalDamage > 0) {
-            effectiveDamage = finalDamage;
-        } else if (rawDamage > 0) {
-            effectiveDamage = rawDamage;
-        } else if (finalDamage < 0) {
-            effectiveDamage = Math.abs(finalDamage);
-        } else {
-            effectiveDamage = 0;
-        }
-
-        int amount = (int) Math.round(effectiveDamage);
-        if (effectiveDamage > 0 && amount == 0) {
-            amount = 1;
-        }
-        return Math.max(0, amount);
+    private int calculateDamageAmount(EntityDamageEvent event) {
+        double damage = event.getFinalDamage();
+        if (!Double.isFinite(damage) || damage <= 0) return 0;
+        // Preserve ordinary rounding/minimum progress, clamping before the int conversion.
+        return (int) Math.max(1L, Math.min(Integer.MAX_VALUE, Math.round(damage)));
     }
 
     private List<String> enumerateVictimTypes(Entity victim) {
